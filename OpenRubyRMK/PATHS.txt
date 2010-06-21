@@ -1,0 +1,42 @@
+Encoding: UTF-8
+
+/ #OpenRubyRMK - The toplevel directory of an installed OpenRubyRMK. 
+
+/bin #OpenRubyRMK GUI executable 
+	- OpenRubyRMK.bat #For Windows game developers, starts the 
+				above file with the correct Ruby 
+				interpreter. 
+	- OpenRubyRMK.sh #Same as above, but for *nix users. 
+
+/config #OpenRubyRMK configuration
+	interpreter.txt #Contains exactly one line - the Ruby Interpreter to 
+			use for OpenRubyRMK. The first line must be 
+			terminated with a Windows newline CR + LF. 
+
+/game #Game template
+	/bin #Game executables
+		- game.rb #Ruby executable
+		- game.exe #For Windows users who don't have Ruby
+	/data #Game data
+		/audio #Multimedia files
+			/music #Background music
+			/sounds #Sounds
+		/graphics #Graphics
+			/character #Persons, trees, etc. 
+			/map #Map tiles
+		/maps #Maps the game developer created
+		/saves #A game player's saved games
+	/ext #C-Extensions. If we don't code any, this directory will be 
+		removed. 
+	/lib #This contains the code that runs the game. 
+
+/lib #Code for the Maker itself
+	- OpenRubyRMK.rb #This starts the main GUI. This script should 
+		only be invoked from those in the /bin directory. 
+
+/locale #Localization files
+
+/ruby #This directory contains a complete Ruby interpreter the game 
+	developer can use. He doesn't have to if he sets 
+	/config/interpreter.txt to something else. It's platform dependent 
+	and therefore empty on the GitHub sources. 
