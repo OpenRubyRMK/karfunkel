@@ -1,0 +1,29 @@
+#Encoding: UTF-8
+
+menus:
+  file:
+    name: File
+    open: 
+      name: Open...
+      tooltip: Opens a saved project.
+    save:
+      name: Save
+      tooltip: Saves the project.
+    saveas:
+      name: Save as...
+      tooltip: Saves the project under a specific directory.
+    exit:
+      name: Exit
+      tooltip: Quits OpenRubyRMK.
+      
+  edit:
+    name: Edit
+    
+  help:
+    name: Help
+    help:
+      name: Help...
+      tooltip: Opens OpenRubyRMK's help.
+    about:
+      name: About OpenRubyRMK...
+      tooltip: Information about the application.

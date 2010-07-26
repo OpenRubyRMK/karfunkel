@@ -26,18 +26,29 @@ if RUBY_VERSION != "1.9.1"
   exit 1
 end
 
-#Now start OpenRubyRMK
-#...since the GUI isn't wrote, just do something else. 
-#Hey, it's only for testing! 
+#Load dependendies - we don't need all the warnings displayed 
+#when loading wxRuby, so silence them by unsetting $VERBOSE 
+#and reassigning it later. 
+v, $VERBOSE = $VERBOSE, nil
+require "pathname"
+require "r18n-desktop"
+require "wx"
+$VERBOSE = v
 
-if RUBY_PLATFORM =~ /linux/
-  system("xmessage", 'This is an awesome test for linux platforms!')
-elsif RUBY_PLATFORM =~ /mingw|mswin/
-  require "win32api"
-  msgbox = Win32API.new("user32", "MessageBoxA", 'LPPI', 'I')
-  msgbox.call(0, "You're now running OpenRubyRMK! ... At least a test for it.", "OpenRubyRMK", 0)
-else
-  raise("Unsupported platform!")
+#Set up the directory configuration so we can do relative operations without 
+#harm. 
+
+module OpenRubyRMK
+  ROOT_DIR = Pathname.new(File.expand_path(".."))
+  LOCALE_DIR = ROOT_DIR + "locale"
+  CONFIG_FILE = ROOT_DIR + "config" + "OpenRubyRMK-rc.yml"
 end
-#Feel free to add test messsages for other platforms 
-#until we are building the GUI!
+
+#Require all the GUI files
+require_relative "open_ruby_rmk/gui/application"
+require_relative "open_ruby_rmk/gui/main_frame"
+
+#Now start OpenRubyRMK
+
+app = OpenRubyRMK::GUI::Application.new
+app.main_loop
