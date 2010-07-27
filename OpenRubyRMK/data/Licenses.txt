@@ -9,3 +9,7 @@ ruby16x16.png:
 ruby24x24.png: 
 	Copyright © 2006 Yukihiro Matsumoto
 	Licensed under the Creative Commons Attribution-ShareAlike 2.5 license.
+
+ruby32x32.png: 
+	Copyright © 2006 Yukihiro Matsumoto
+	Licensed under the Creative Commons Attribution-ShareAlike 2.5 license.
