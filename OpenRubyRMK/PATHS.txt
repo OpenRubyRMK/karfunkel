@@ -13,6 +13,8 @@ Encoding: UTF-8
 			use for OpenRubyRMK. The first line must be 
 			terminated with a Windows newline CR + LF. 
 
+/data #Graphics, etc. used by the GUI
+
 /game #Game template
 	/bin #Game executables
 		- game.rb #Ruby executable
@@ -33,6 +35,8 @@ Encoding: UTF-8
 /lib #Code for the Maker itself
 	- OpenRubyRMK.rb #This starts the main GUI. This script should 
 		only be invoked from those in the /bin directory. 
+	/open_ruby_rmk #Namespace of the OpenRubyRMK module
+		/gui #Namespace of the OpenRubyRMK::GUI module
 
 /locale #Localization files
 

@@ -30,6 +30,7 @@ end
 #when loading wxRuby, so silence them by unsetting $VERBOSE 
 #and reassigning it later. 
 v, $VERBOSE = $VERBOSE, nil
+require "yaml"
 require "pathname"
 require "r18n-desktop"
 require "wx"
@@ -39,7 +40,10 @@ $VERBOSE = v
 #harm. 
 
 module OpenRubyRMK
+  VERSION = "0.0.1-dev (27.7.10)".freeze
+  
   ROOT_DIR = Pathname.new(File.expand_path(".."))
+  DATA_DIR = ROOT_DIR + "data"
   LOCALE_DIR = ROOT_DIR + "locale"
   CONFIG_FILE = ROOT_DIR + "config" + "OpenRubyRMK-rc.yml"
 end
@@ -47,6 +51,7 @@ end
 #Require all the GUI files
 require_relative "open_ruby_rmk/gui/application"
 require_relative "open_ruby_rmk/gui/main_frame"
+require_relative "open_ruby_rmk/gui/map_hierarchy"
 
 #Now start OpenRubyRMK
 

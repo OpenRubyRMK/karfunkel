@@ -1,0 +1,11 @@
+file24x24.png:
+	Copyright © 2007-2008 Abdylas Tynyshov (userinterfaceicons.com)
+	Licensed under the Creative Commons Attribution 3.0 US license. 
+
+ruby16x16.png:
+	Copyright © 2006 Yukihiro Matsumoto
+	Licensed under the Creative Commons Attribution-ShareAlike 2.5 license.
+
+ruby24x24.png: 
+	Copyright © 2006 Yukihiro Matsumoto
+	Licensed under the Creative Commons Attribution-ShareAlike 2.5 license.

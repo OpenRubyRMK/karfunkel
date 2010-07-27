@@ -1,8 +1,67 @@
 #Encoding: UTF-8
+#This file contains the ENGLISH translation for OpenRubyRMK. 
+#
+#=========================================
+#This is the main locale file for OpenRubyRMK. If no translation 
+#for any other language is found, OpenRubyRMK looks into this 
+#file to at least display _something_. DO NOT DELETE THIS FILE! 
+#=========================================
+#
+#HOWTO TRANSLATE OpenRubyRMK INTO OTHER LANGUAGES
+#
+#It's really easy! Make a copy of this file inside OpenRubyRMK's locale/ 
+#directory and name it as the ISO abbreviation for your language 
+#("es.yml" for Spanish, for example). Then start translating all 
+#the english words and phrases in your copy and make sure to surround 
+#phrases which containg non-standard characters (like !) with double 
+#quotes (you're actually writing YAML markup, if you're interested in the reason). 
+#
+#If your system is set up with the language you are creating the translation 
+#for, OpenRubyRMK will automatically pick up your new translation and 
+#display strings accordingly. However, if you're translating for another 
+#locale than your system's, you have to edit OpenRubyRMK's configuration 
+#file (config/OpenRubyRMK-rc.yml) and change the value for "locale" to 
+#the ISO language abbreviation for the language you translate into. 
+#This will force OpenRubyRMK to use the language you put into the config. 
+#
+#When you're finished, you should remove this statement and just state 
+#(in English) for which language the file serves. If you like, you could 
+#also translate this text rather than removing it, but remove the "this 
+#is the main locale file..." statement from your translation file anyway, 
+#since the "main locale file" IS the English locale file. 
+#
+#=================
+#START OF TRANSLATIONS
 
+
+#These are some general strings. The "application_name" will 
+#be used from OpenRubyRMK whenever it refers to itself and 
+#it shouldn't be changed. The "application_slogan" is the 
+#string that will be displayed in the window's title bar next 
+#to the application name and "description" shows up 
+#in the "about" menu as the program's description. 
+#And last but not least, don't forget to put your name into 
+#"translators"! If you do so, OpenRubyRMK will automatically 
+#honor you if somebody clicks on "Help" -> "About..." (or 
+#however the menus are named in your translation). 
+general:
+  application_name: OpenRubyRMK
+  application_slogan: "The free and open-source RPG creation program!"
+  description: "A free and open-source RPG (role-play games) creation program."
+  translators: "Quintus"
+
+#The menu labels are described here. The "name" of a menu 
+#is what gets displayed in the menu bar, and the "tooltip" is 
+#what you see in the statusbar's last field when you hover the 
+#cursor over an item. It's named "tooltip" since the toolbar 
+#items use these strings either and if you stay with your cursor 
+#above a tool button, you get... right! A tooltip! ;-)
 menus:
   file:
     name: File
+    new:
+      name: New project...
+      tooltip: Creates a new project.
     open: 
       name: Open...
       tooltip: Opens a saved project.
