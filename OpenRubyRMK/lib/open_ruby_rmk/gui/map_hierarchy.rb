@@ -45,8 +45,8 @@ module OpenRubyRMK
         super(parent)
         
         i = ImageList.new(24, 24)
-        i.add(Bitmap.new(DATA_DIR.join("ruby24x24.png").to_s, BITMAP_TYPE_PNG))
-        i.add(Bitmap.new(DATA_DIR.join("file24x24.png").to_s, BITMAP_TYPE_PNG))
+        i.add(Bitmap.new(DATA_DIR.join("ruby16x16.png").to_s, BITMAP_TYPE_PNG))
+        i.add(Bitmap.new(DATA_DIR.join("map16x16.png").to_s, BITMAP_TYPE_PNG))
         self.image_list = i
         
         @root = add_root(root_name, 0)
@@ -55,7 +55,7 @@ module OpenRubyRMK
         buildup_tree(maps)
       end
       
-      #Recreates the tree view completely. Pass in the rood node's string 
+      #Recreates the tree view completely. Pass in the root node's string 
       #and the hash containing the maps to display. See MapHierarchy.new for 
       #a description of the hash's format. 
       def recreate_tree!(root_name, maps)

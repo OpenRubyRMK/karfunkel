@@ -181,7 +181,7 @@ module OpenRubyRMK
       
       def on_menu_about(event)
         i = AboutDialogInfo.new
-        i.artists = ["Abdylas Tynyshov", "Yukihiro Matsumoto"]
+        i.artists = ["Tango project (http://tango.freedesktop.org)", "Yukihiro Matsumoto (http://www.rubyidentity.org)"]
         i.developers = %w[Hanmac Kjarrigan Quintus]
         i.translators = t.general.translators.split(/,\s?/)
         #i.doc_writers = []

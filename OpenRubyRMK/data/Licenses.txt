@@ -1,6 +1,7 @@
-file24x24.png:
-	Copyright © 2007-2008 Abdylas Tynyshov (userinterfaceicons.com)
-	Licensed under the Creative Commons Attribution 3.0 US license. 
+map16x16.png:
+	Public Domain.
+	Many thanks to the tango project (http://tango.freedesktop.org)
+	for creating icons!
 
 ruby16x16.png:
 	Copyright © 2006 Yukihiro Matsumoto
