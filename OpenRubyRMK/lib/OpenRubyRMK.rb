@@ -40,7 +40,7 @@ $VERBOSE = v
 #harm. 
 
 module OpenRubyRMK
-  VERSION = "0.0.1-dev (1.8.10)".freeze
+  VERSION = "0.0.1-dev (2.8.10)".freeze
   
   ROOT_DIR = Pathname.new(File.expand_path(".."))
   DATA_DIR = ROOT_DIR + "data"
