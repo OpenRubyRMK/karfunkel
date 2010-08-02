@@ -21,8 +21,8 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
 #Check out the Ruby version
-if RUBY_VERSION != "1.9.1"
-  $stderr.puts("Unsuitable Ruby version. Please use a 1.9.1 Ruby.")
+if RUBY_VERSION < "1.9.1"
+  $stderr.puts("Unsuitable Ruby version. Please use a 1.9.1 or greater Ruby.")
   exit 1
 end
 
