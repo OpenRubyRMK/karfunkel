@@ -1,3 +1,4 @@
+/opt/rubies/ruby-1.9.1-p429/bin/ruby
 C:\rubies\ruby-1.9.1-p378-i386-mingw32\bin\ruby.exe
 
 The first line of this file describes which Ruby Interpreter shall be used to start OpenRubyRMK. 

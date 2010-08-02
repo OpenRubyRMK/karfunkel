@@ -57,12 +57,12 @@ module OpenRubyRMK
         
         #File
         menu = Menu.new
-        menu.append(ID_NEW, t.menus.file.new.name, t.menus.file.new.tooltip)
-        menu.append(ID_OPEN, t.menus.file.open.name, t.menus.file.open.tooltip)
-        menu.append(ID_SAVE, t.menus.file.save.name, t.menus.file.save.tooltip)
-        menu.append(ID_SAVEAS, t.menus.file.saveas.name, t.menus.file.saveas.tooltip)
+        menu.append(ID_NEW, t.menus.file.new.name, t.menus.file.new.statusbar)
+        menu.append(ID_OPEN, t.menus.file.open.name, t.menus.file.open.statusbar)
+        menu.append(ID_SAVE, t.menus.file.save.name, t.menus.file.save.statusbar)
+        menu.append(ID_SAVEAS, t.menus.file.saveas.name, t.menus.file.saveas.statusbar)
         menu.append_separator
-        menu.append(ID_EXIT, t.menus.file.exit.name, t.menus.file.exit.tooltip)
+        menu.append(ID_EXIT, t.menus.file.exit.name, t.menus.file.exit.statusbar)
         @menu_bar.append(menu, t.menus.file.name)
         
         #Edit
@@ -71,9 +71,9 @@ module OpenRubyRMK
         
         #Help
         menu = Menu.new
-        menu.append(ID_HELP, t.menus.help.help.name, t.menus.help.help.tooltip)
+        menu.append(ID_HELP, t.menus.help.help.name, t.menus.help.help.statusbar)
         menu.append_separator
-        menu.append(ID_ABOUT, t.menus.help.about.name, t.menus.help.about.tooltip)
+        menu.append(ID_ABOUT, t.menus.help.about.name, t.menus.help.about.statusbar)
         @menu_bar.append(menu, t.menus.help.name)
         
         #TODO - at this point, load external menu plugins. 
@@ -83,6 +83,24 @@ module OpenRubyRMK
       
       def create_toolbar
         @tool_bar = create_tool_bar
+        @tool_bar.add_tool(
+          ID_NEW, 
+          t.menus.file.new.name, 
+          Bitmap.new(DATA_DIR.join("new16x16.png").to_s, BITMAP_TYPE_PNG), 
+          NULL_BITMAP, 
+          ITEM_NORMAL, 
+          t.menus.file.new.tooltip, 
+          t.menus.file.new.statusbar
+        )
+        @tool_bar.add_tool(
+          ID_OPEN, 
+          t.menus.file.open.name, 
+          Bitmap.new(DATA_DIR.join("open16x16.png").to_s, BITMAP_TYPE_PNG), 
+          NULL_BITMAP, 
+          ITEM_NORMAL, 
+          t.menus.file.open.tooltip, 
+          t.menus.file.open.statusbar
+        )
       end
       
       def create_statusbar
