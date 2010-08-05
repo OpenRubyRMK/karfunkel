@@ -1,24 +1,21 @@
 Encoding: UTF-8
 
-/ #OpenRubyRMK - The toplevel directory of an installed OpenRubyRMK. 
+==For the development version==
+
+/ #OpenRubyRMK - The toplevel directory.  
 
 /bin #OpenRubyRMK GUI executable 
-	- OpenRubyRMK.bat #For Windows game developers, starts the 
-				above file with the correct Ruby 
-				interpreter. 
-	- OpenRubyRMK.sh #Same as above, but for *nix users. 
+	- OpenRubyRMK.rb #This starts the main GUI.
 
 /config #OpenRubyRMK configuration
-	interpreter.txt #Contains exactly one line - the Ruby Interpreter to 
-			use for OpenRubyRMK. The first line must be 
-			terminated with a Windows newline CR + LF. 
+	- OpenRubyRMK-rc.yml # OpenRubyRMK's configuration file.  
 
 /data #Graphics, etc. used by the GUI
 
 /game #Game template
 	/bin #Game executables
-		- game.rb #Ruby executable
-		- game.exe #For Windows users who don't have Ruby
+		- name_of_proj.rb # Starts the game.
+		- name_of_proj.rmk # OpenRubyRMK project file, may be assosiated with OpenRubyRMK for convenient opening. 
 	/data #Game data
 		/audio #Multimedia files
 			/music #Background music
@@ -27,20 +24,36 @@ Encoding: UTF-8
 			/character #Persons, trees, etc. 
 			/map #Map tiles
 		/maps #Maps the game developer created
-		/saves #A game player's saved games
-	/ext #C-Extensions. If we don't code any, this directory will be 
-		removed. 
 	/lib #This contains the code that runs the game. 
+	/saves #A game player's saved games
 
 /lib #Code for the Maker itself
-	- OpenRubyRMK.rb #This starts the main GUI. This script should 
-		only be invoked from those in the /bin directory. 
+	- OpenRubyRMK.rb #OpenRubyRMK module
 	/open_ruby_rmk #Namespace of the OpenRubyRMK module
 		/gui #Namespace of the OpenRubyRMK::GUI module
 
 /locale #Localization files
 
-/ruby #This directory contains a complete Ruby interpreter the game 
-	developer can use. He doesn't have to if he sets 
-	/config/interpreter.txt to something else. It's platform dependent 
-	and therefore empty on the GitHub sources. 
+/ruby 	#By issuing "rake compress" (or it's dependency task "get_ruby") a fully configured
+	#Ruby will be installed here. We ship a Ruby installation with OpenRubyRMK since not 
+	#everybody has a Ruby installation suitable for use with OpenRubyRMK. See the project's 
+	#main README at GitHub for more information on this. 
+
+==For the compressed Windows version==
+
+/
+
+bin/
+	- OpenRubyRMK.exe #OCRA-compressed OpenRubyRMK. 
+config/
+	(as development)
+game/
+	(as development)
+locale/
+	(as development)
+ruby/ #A mingw32 Ruby installation. 
+	(Ruby installation)
+
+==For the compressed version of other OS's)==
+
+Just as in "development" with the exception of the missing "Rakefile.rb" and "PATHS.txt" files and the _ruby/_ directory which now contains a Ruby installation compiled for a special platform. 

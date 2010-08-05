@@ -33,18 +33,19 @@ module OpenRubyRMK
       #that will be displayed next to the root node. The +maps+ argument is a 
       #multidimensional hash of the following form: 
       #  {
-      #    "name1" => aMap, #This is a normal map. 
-      #    "name2" => {:map => aSecondMap, :hsh => {<same_format_again>}} #This map has got submaps. 
+      #    id1 => {:map => aMap, :children => {}}, #This is a normal map. 
+      #    id2 => {:map => aSecondMap, :children => {<same_format_again>}} #This map has got submaps. 
       #  }
-      #where "name1" and "name2" are the strings that will be displayed next to the node containing 
-      #the given map. Note that this class doesn't actually do anything with the maps you 
-      #assign, it just remembers them. You should use the <tt>evt_tree_sel_changed(id)</tt> event handler and 
+      #where id1 and id2 are a map's unique identifier. The actual string that is displayed next
+      #to the map icon is determined from <tt>aMap.name</tt>. 
+      #Note that this class doesn't actually do anything with the maps you assign (beside using the name), 
+      #it just remembers them. You should use the <tt>evt_tree_sel_changed(id)</tt> event handler and 
       #call TreeEvent#item on the event, from whose return value in turn you can retrieve the Map object 
       #from the MapHierarchy instance via #get_item_data. 
       def initialize(parent, root_name, maps = {})
         super(parent)
         
-        i = ImageList.new(24, 24)
+        i = ImageList.new(16, 16)
         i.add(Bitmap.new(DATA_DIR.join("ruby16x16.png").to_s, BITMAP_TYPE_PNG))
         i.add(Bitmap.new(DATA_DIR.join("map16x16.png").to_s, BITMAP_TYPE_PNG))
         self.image_list = i
@@ -62,6 +63,7 @@ module OpenRubyRMK
         delete_all_items
         @root = add_root(root_name, 0)
         buildup_tree(maps)
+        expand(@root) #Looks better
       end
       
       private
@@ -70,12 +72,12 @@ module OpenRubyRMK
       #to the tree view. See MapHierarchy.new for a description of 
       #the hash's format. 
       def buildup_tree(hsh, parent = @root)
-        hsh.each_pair do |name, map|
-          if map.kind_of? Hash
-            par = append_item(parent, name, 1, -1, map[:map])
-            buildup_tree(map[:hsh], par)
+        hsh.each_pair do |id, hsh2|
+          if !hsh2[:children].empty?
+            par = append_item(parent, hsh2[:map].name, 1, -1, hsh2[:map])
+            buildup_tree(hsh2[:children], par)
           else
-            append_item(parent, name, 1, -1, map)
+            append_item(parent, hsh2[:map].name, 1, -1, hsh2[:map])
           end
         end
       end

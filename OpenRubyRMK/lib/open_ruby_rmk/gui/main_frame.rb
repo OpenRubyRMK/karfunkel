@@ -68,6 +68,7 @@ module OpenRubyRMK
         #Edit
         menu = Menu.new
         @menu_bar.append(menu, t.menus.edit.name)
+        menu.append(ID_ADD, t.menus.edit.new_map.name, t.menus.edit.new_map.statusbar)
         
         #Help
         menu = Menu.new
@@ -101,6 +102,8 @@ module OpenRubyRMK
           t.menus.file.open.tooltip, 
           t.menus.file.open.statusbar
         )
+        
+        @tool_bar.realize
       end
       
       def create_statusbar
@@ -129,7 +132,6 @@ module OpenRubyRMK
         @left_panel.sizer = left_sizer
         
         @map_hierarchy = MapHierarchy.new(@left_panel, "N/A")
-        #~ @map_hierarchy = TextCtrl.new(@left_panel, style: TE_MULTILINE)
         left_sizer.add_item(@map_hierarchy, proportion: 3, flag: EXPAND)
         
         @map_properties = TextCtrl.new(@left_panel, style: TE_MULTILINE, value: "At some time, the selected map's properties will apear here.")
@@ -146,7 +148,7 @@ module OpenRubyRMK
       
       def setup_event_handlers
         [:new, :open, :save, :saveas, :exit, #File
-        #Edit
+        :add, #Edit
         :help, :about #Help
         ].each{|sym| evt_menu(Wx.const_get(:"ID_#{sym.upcase}")){|event| send(:"on_menu_#{sym}", event)}}
         
@@ -164,33 +166,68 @@ module OpenRubyRMK
       end
       
       def on_menu_open(event)
-        #NOTE: This is experimental and only used for the time we don't 
-        #have specified how we want to save data. 
-        #So I just construct something here, rather than accessing something saved. 
-        @maps = {
-          "Map1" => "Here's a great Map object -- we just don't have a Map class!", 
-          "Map2" => "2", 
-          "Map3" => {:map => "3", :hsh => {
-            "Map3-1" => "3-1", 
-            "Map3-2" => {:map => "3-2", :hsh => {
-              "Map3-2-1" => "3-2-1"
-            }}, 
-            "Map3-3" => "3-3"
-          }}
-        }
-        @map_hierarchy.recreate_tree!("MyProject", @maps)
+        fd = FileDialog.new(self, 
+          message: t.dialogs.open_project.title, 
+          default_dir: THE_APP.remembered_dir.to_s, 
+          wildcard: "OpenRubyRMK project files (*.rmk)|*.rmk;*.RMK", 
+          style: FD_OPEN | FD_FILE_MUST_EXIST
+        )
+        return if fd.show_modal == ID_CANCEL
+        #Remember the directory for convenience
+        THE_APP.remembered_dir = Pathname.new(fd.directory)
+        #Set the OpenRubyRMK project dir, from which all other dirs can be computed
+        OpenRubyRMK.project_path = Pathname.new(fd.directory).parent
+        
+        structure_hsh = OpenRubyRMK.project_maps_structure_file.open("rb"){|f| Marshal.load(f)}
+        @maps = buildup_hash(structure_hsh)
+        @project_name = fd.filename.match(/\.rmk$/).pre_match
+        @map_hierarchy.recreate_tree!(@project_name, @maps)
       end
       
       def on_menu_save(event)
+        return show_no_project_dlg unless OpenRubyRMK.has_project?
+        
         
       end
       
       def on_menu_saveas(event)
+        return show_no_project_dlg unless OpenRubyRMK.has_project?
+        
         
       end
       
       def on_menu_exit(event)
         close
+      end
+      
+      def on_menu_add(event)
+        return show_no_project_dlg unless OpenRubyRMK.has_project?
+        
+        md = NewMapDialog.new(self, available_mapsets: [Mapset.load("test")]) #DEBUG: Mapsets?
+        return if md.show_modal == ID_CANCEL
+        
+        #Put the new map in the right place inside the map hierarchy
+        if md.map.parent == 0 #0 means no parent
+          @maps[md.map.id] = md.map
+        else
+          parents = md.map.parent_ids
+          if parents.empty? #We want to add to root and root doesn't have a :children key, just plain IDs
+            @maps[md.map.id] = {:map => md.map, :children => {}}
+          else #We have at least one parent
+            last_parent_hsh = @maps
+            until parents.empty?
+              if last_parent_hsh.has_key?(:children) #Child
+                last_parent_hsh = last_parent_hsh[:children][parents.shift] #We get a reference to a part of the original hash here
+              else #Root element
+                last_parent_hsh = last_parent_hsh[parents.shift] #We get a reference to a part of the original hash here
+              end
+            end
+            
+            #Add the map to the end of the hierarchy
+            last_parent_hsh[:children][md.map.id] = {:map => md.map, :children => {}}
+          end
+        end
+        @map_hierarchy.recreate_tree!(@project_name, @maps)
       end
       
       def on_menu_help(event)
@@ -215,9 +252,29 @@ module OpenRubyRMK
       
       def on_map_hier_clicked(event)
         if event.item.nonzero?
-          @dummy_ctrl.label = @map_hierarchy.get_item_data(event.item).to_s
+          @dummy_ctrl.label = @map_hierarchy.get_item_data(event.item).inspect
         end
         event.skip
+      end
+      
+      #==================================
+      #Helper methods
+      #==================================
+      
+      #{map => MAP, children => {}}
+      def buildup_hash(hsh)
+        result = {}
+        hsh.each_pair do |map_id, children_hsh|
+          result[map_id] = {}
+          result[map_id][:map] = Map.load(map_id)
+          result[map_id][:children] = buildup_hash(children_hsh)
+        end
+        result
+      end
+      
+      def show_no_project_dlg
+        md = MessageDialog.new(self, caption: t.errors.no_project.title, message: t.errors.no_project.message, style: OK | ICON_WARNING)
+        md.show_modal
       end
       
     end

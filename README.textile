@@ -1,23 +1,40 @@
-h1. OpenRubyRMK - An open-source and free RPG Maker!
+h1. OpenRubyRMK - An open-source and free RPG creation program!
 ...at least when it's finished. ;-)
 
 h2. Roadmap
 
-The "installer" directory once will contain the installer for Windows systems, but that's for from today - focus on the other directory, "OpenRubyRMK". This directory reflects how an installed OpenRubyRMK will look like; basically it's what an installer would create. To start up the (yet not exisiting) OpenRubyRMK main script, you first have to edit _config/interpreter.txt_ and set it to the absolute path where your Ruby Interpreter resides. This has to be done, since we want to ship OpenRubyRMK with our own Ruby finally, but give the game developer the freedom to use his/her own Ruby installation. Also, you should have a look at the _PATHS.txt_ file which describes where you should put what. 
+OpenRubyRMK is going to be a free and OpenSource RPG creation program when it's finished. As of now, there is some development going on, but we just left the planning state and started coding. So don't be surprised if nothing works. 
 
-After setting _config/interpreter.txt_, do one of the following steps: 
+You can use OpenRubyRMK as it is directly from the _OpenRubyRMK_ subdirectory with some initial setup, but that is only recommanded for testing purposes¹. If you want to get a "correct" installation, install some kind of Ruby (version is mostly unimportant, every recent 1.8 and 1.9 release should work) and @rake@, afterwards do (NOTE: OpenRubyRMK isn't even alpha, the following is for *later*!!): 
 
-h3. Windows
+bc. rake compress
 
-bc. cd bin
-OpenRubyRMK.bat
+in the _OpenRubyRMK_ directory. On Windows, this will download the current RubyInstaller 7-Zip package, unzip it and put it inside the _ruby/_ directory (you'll need 7-Zip here and the @7z@ executable has to be in your PATH). On any other platform, it will download the current Ruby's sources from ftp.ruby-lang.org and compile it, afterwards placing it inside _ruby/_ (you'll need to have Ruby's dependencies and the development headers of readline5, openssl and zlib). 
+In both cases, all gems necessary for running an OpenRubyRMK-created game will be installed for that Ruby. Then the actual :compress task takes place (until here we've been diskussing what :get_ruby, :compress's dependency task, does) and puts everything needed for an OpenRubyRMK installation into a single archive; on Windows, you'll get _OpenRubyRMK.zip_, on other systems _OpenRubyRMK.tar.bz2_. It's planned to create the full Windows installer at this point, thus making the _installer/_ directory here on GitHub unnecessary, leading to a probable removal. 
+You can now extract this archive wherever you want. On Windows, after extracting it you can run _bin/OpenRubyRMK.exe_ and enjoy it. On other platforms, you need a Ruby 1.9 installation² and an installed @wxruby-ruby19@ gem. Use that Ruby installation to run _bin/OpenRubyRMK.rb_. 
 
-h3. *nix
 
-bc. cd bin
-./OpenRubyRMK.sh
 
-h3. License
+¹ If you actually *want* to test and develop OpenRubyRMK (and we highly appreciate this!) you need to have an installed Ruby. We recommend version 1.9.1-p429 and the @wxruby-ruby19@ (Ubuntu versions are available from "Downloads" at our GitHub page), @r18n-desktop@, @gosu@ and @chingu@ gems should be installed. Since no Ruby has been installed to the _ruby/_ directory at this point, you have to edit OpenRubyRMK's configuration file at _config/OpenRubyRMK-rc.yml_ and tell it that you want to use your personal Ruby for compressing the actual games created with OpenRubyRMK. But *don't forget* to set the configuration back to _ruby/bin/ruby_ before you @compress@ OpenRubyRMK, because the end-user is likely to have his/her Ruby installed elsewhere than you. 
+
+² You can also use the Ruby installation shipped with OpenRubyRMK for running OpenRubyRMK itself, but then you have to install the @wxruby-ruby19@ gem for it after you unpacked OpenRubyRMK from it's archive. Since the precompiled gem available via RubyGems causes problems on Ubuntu Karmic and newer, we maintain a binary gem for recent Ubuntu releases at our "Downloads" page at GitHub. 
+
+h3. Too much text?
+
+OK, I can see the problem with that. You should really read what's stated above, but here is what you want and what you need: 
+
+bc. 
+You want to...         | You need: 
+=======================+=========================================================
+run OpenRubyRMK        | Windows: Nothing. Other: Ruby 1.9 with @wxruby-ruby19@. 
+                       | See also Footnote 2 of above paragraph.
+                       | *Use an already compressed version and not Git-sources.*
+-----------------------+---------------------------------------------------------
+develop OpenRubyRMK    | Ruby 1.9.1-p429 with @wxruby-ruby19@, @r18n-desktop@, 
+                       | @gosu@ and @chingu@. Change _config/OpenRubyRMK-rc.yml_ 
+                       | to your Ruby installation. Reset it before compressing.
+
+h2. License
 
 OpenRubyRMK is a free and open-source RPG maker. 
 

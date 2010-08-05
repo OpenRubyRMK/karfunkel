@@ -22,7 +22,7 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 #Check out the Ruby version
 if RUBY_VERSION < "1.9.1"
-  $stderr.puts("Unsuitable Ruby version. Please use a 1.9.1 or greater Ruby.")
+  $stderr.puts("Unsuitable Ruby version. Use 1.9.1 or greater.")
   exit 1
 end
 
@@ -30,28 +30,16 @@ end
 #when loading wxRuby, so silence them by unsetting $VERBOSE 
 #and reassigning it later. 
 v, $VERBOSE = $VERBOSE, nil
-require "yaml"
-require "pathname"
-require "r18n-desktop"
 require "wx"
 $VERBOSE = v
 
-#Set up the directory configuration so we can do relative operations without 
-#harm. 
-
-module OpenRubyRMK
-  VERSION = "0.0.1-dev (2.8.10)".freeze
-  
-  ROOT_DIR = Pathname.new(File.expand_path(".."))
-  DATA_DIR = ROOT_DIR + "data"
-  LOCALE_DIR = ROOT_DIR + "locale"
-  CONFIG_FILE = ROOT_DIR + "config" + "OpenRubyRMK-rc.yml"
-end
-
-#Require all the GUI files
-require_relative "open_ruby_rmk/gui/application"
-require_relative "open_ruby_rmk/gui/main_frame"
-require_relative "open_ruby_rmk/gui/map_hierarchy"
+#Require the lib
+require_relative "../lib/open_ruby_rmk"
+#Require the GUI lib
+require_relative "../lib/open_ruby_rmk/gui/application"
+require_relative "../lib/open_ruby_rmk/gui/main_frame"
+require_relative "../lib/open_ruby_rmk/gui/map_hierarchy"
+require_relative "../lib/open_ruby_rmk/gui/map_dialog"
 
 #Now start OpenRubyRMK
 

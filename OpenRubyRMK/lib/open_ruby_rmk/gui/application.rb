@@ -29,10 +29,18 @@ module OpenRubyRMK
       
       attr_reader :config
       attr_reader :mainwindow
+      #The current project's root path. 
+      attr_accessor :project_path
+      #The last dir navigated into by a file open/save dialog. 
+      #This is just for convenience, so that you don't have to 
+      #navigate into the same dir again and again. 
+      attr_accessor :remembered_dir
       
       def on_init
         load_config
         setup_localization
+        
+        @remembered_dir = Pathname.new(".").expand_path
         
         @mainwindow = MainFrame.new
         @mainwindow.show

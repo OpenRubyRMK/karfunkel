@@ -1,7 +1,0 @@
-/opt/rubies/ruby-1.9.1-p429/bin/ruby
-C:\rubies\ruby-1.9.1-p378-i386-mingw32\bin\ruby.exe
-
-The first line of this file describes which Ruby Interpreter shall be used to start OpenRubyRMK. 
-All other lines are ignored. Please make sure that this file is written in Windows newline format, 
-i.e. CR + LF, and that the first line, even if it's the only one, is terminated with such 
-a newline, otherwise CMD is too silly to execute the command. 

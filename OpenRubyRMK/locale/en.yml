@@ -30,6 +30,12 @@
 #is the main locale file..." statement from your translation file anyway, 
 #since the "main locale file" IS the English locale file. 
 #
+#Some translation strings can contain special character sequences 
+#beginning with a percent sign %. Those will be replaced by a 
+#run-time value such as an ID a user entered. Wherever this 
+#is possible, it's commented. Technically, those escape 
+#sequences are evaluated by the String#% method, with takes 
+#a format string according to Kernel#sprintf. 
 #=================
 #START OF TRANSLATIONS
 
@@ -49,6 +55,10 @@ general:
   application_slogan: "The free and open-source RPG creation program!"
   description: "A free and open-source RPG (role-play games) creation program."
   translators: "Quintus"
+  often_used:
+    width: Width
+    height: Height
+    depth: Depth
 
 #The menu labels are described here. The "name" of a menu 
 #is what gets displayed in the menu bar, "tooltip"s are shown 
@@ -80,6 +90,10 @@ menus:
       
   edit:
     name: Edit
+    new_map:
+      name: New Map...
+      tooltip: Creates a new map.
+      statusbar: Creates a new map.
     
   help:
     name: Help
@@ -91,3 +105,41 @@ menus:
       name: About OpenRubyRMK...
       tooltip: Information about the application.
       statusbar: Information about the application.
+
+#The following are dialog strings. All of them have a 
+#title string you may translate or not, and some have a message. 
+#Other dialogs, such as the map dialog, define a whole lot of 
+#text which needs to be translated. 
+dialogs:
+  #File -> Open...
+  open_project: 
+    title: Select the project file
+  #New and edit map dialog
+  map_dialog:
+    title_new: Create a new map
+    title_edit: Edit a map
+    map_name: Map name
+    parent_id: Parent ID
+    map_id: Map ID
+    mapset: Mapset
+
+#Error messages that are displayed if the user makes mistakes or just 
+#behaves anormally. 
+errors:
+  no_project:
+    title: No project selected
+    message: You don't have a project opened. In order to execute this action you have to create a new project or open up an existing one.
+  id_in_use:
+    title: ID already in use
+    #The ID is available via %i here. 
+    message: The ID %i is already in use. Please choose a different one.
+  id_not_in_use:
+    title: Non-existing ID
+    #The ID is available via %i here. 
+    message: The ID %i doesn't exist. 
+  invalid_id:
+    title: Invalid ID
+    message: You entered an invalid ID value. Make sure the ID doesn't contain anything other than decimal numbers.
+  zero_reserved:
+    title: ID zero is reserved
+    message: The ID 0 (zero) is reserved. Please choose a different one.
