@@ -23,16 +23,9 @@ h3. Too much text?
 
 OK, I can see the problem with that. You should really read what's stated above, but here is what you want and what you need: 
 
-bc. 
-You want to...         | You need: 
-=======================+=========================================================
-run OpenRubyRMK        | Windows: Nothing. Other: Ruby 1.9 with @wxruby-ruby19@. 
-                       | See also Footnote 2 of above paragraph.
-                       | *Use an already compressed version and not Git-sources.*
------------------------+---------------------------------------------------------
-develop OpenRubyRMK    | Ruby 1.9.1-p429 with @wxruby-ruby19@, @r18n-desktop@, 
-                       | @gosu@ and @chingu@. Change _config/OpenRubyRMK-rc.yml_ 
-                       | to your Ruby installation. Reset it before compressing.
+|_. You want to... |_. You need: |
+|run OpenRubyRMK| Windows: Nothing. Other: Ruby 1.9 with @wxruby-ruby19@ and @r18n-desktop@. See also Footnote 2 of above paragraph. *You can't use the Git sources with this setup, only an already compressed version!*|
+|develop OpenRubyRMK|Ruby 1.9.1-p429 with @wxruby-ruby19@, @r18n-desktop@, @gosu@ and @chingu@. Change _config/OpenRubyRMK-rc.yml_ to your Ruby installation. Reset it before compressing.|
 
 h2. License
 
