@@ -42,9 +42,11 @@ RUBY_DOWNLOAD_DIRNAME = "ruby-1.9.1-p429"
 RUBY_WIN32_DOWNLOAD_DIR = "http://rubyforge.org/frs/download.php/71496/"
 #Remote Ruby package file. Will also be used as the local filename. 
 RUBY_WIN32_DOWNLOAD_FILE = "ruby-1.9.1-p429-i386-mingw32.7z"
+#Name of the directory contained in RUBY_WIN32_DOWNLOAD_FILE. 
+RUBY_WIN32_DOWNLOAD_DIRNAME = "ruby-1.9.1-p429-i386-mingw32"
 
 #After removing these files the generated result is still usable. 
-CLEAN.include(RUBY_DOWNLOAD_FILE, RUBY_DOWNLOAD_DIRNAME, RUBY_WIN32_DOWNLOAD_FILE, "OpenRubyRMK")
+CLEAN.include(RUBY_DOWNLOAD_FILE, RUBY_DOWNLOAD_DIRNAME, RUBY_WIN32_DOWNLOAD_FILE, "OpenRubyRMK", "OpenRubyRMK.rb")
 #Removing these files gives us a blank environment. 
 CLOBBER.include("ruby/**/**", "OpenRubyRMK.tar.bz2", "OpenRubyRMK.zip")
 
@@ -71,61 +73,77 @@ end
 
 desc "Creates (with download) a suitable Ruby in ruby/."
 task :get_ruby do
+  if File.directory?("ruby/bin")
+    puts "Found ruby/bin/ruby."
+    puts "No need to get it."
+    next #Neither return nor break work here and since I didn't want such a big if-clause...
+  end
+  
   print "Checking OS... "
   if RUBY_PLATFORM =~ /mswin32|mingw32/
     puts "Windows."
-    puts "We're going to download the 7-Zip binary package."
+    puts "We're going to download the RubyInstaller's 7-Zip binary package."
     z7 = z7_path
     
-    print "Dowloading #{RUBY_WIN32_DOWNLOAD_FILE}... "
-    str = open(RUBY_WIN32_DOWNLOAD_DIR + RUBY_WIN32_DOWNLOAD_FILE, "rb"){|page| page.read} #5MB fit in RAM, don't they?
-    puts "Done."
-    open(RUBY_WIN32_DOWNLOAD_FILE, "wb"){|f| f.write(str)} #Produces RUBY_WIN32_DOWNLOAD_FILE <CLEAN>
-    sh "#{z7} x -o{ruby} #{RUBY_WIN32_DOWNLOAD_FILE}" #Produces "ruby/**/**" <CLOBBER>
+    if File.file?(RUBY_WIN32_DOWNLOAD_FILE)
+      puts "Found #{RUBY_WIN32_DOWNLOAD_FILE}."
+      puts "No need to download it."
+    else
+      print "Dowloading #{RUBY_WIN32_DOWNLOAD_FILE}... "
+      str = open(RUBY_WIN32_DOWNLOAD_DIR + RUBY_WIN32_DOWNLOAD_FILE, "rb"){|page| page.read} #5MB fit in RAM, don't they?
+      puts "Done."
+      open(RUBY_WIN32_DOWNLOAD_FILE, "wb"){|f| f.write(str)} #Produces RUBY_WIN32_DOWNLOAD_FILE <CLEAN>
+    end
+    rm_r "ruby" if File.directory?("Ruby") #We'll replace it... 
+    sh "#{z7} x #{RUBY_WIN32_DOWNLOAD_FILE} > nul"
+    mv RUBY_WIN32_DOWNLOAD_DIRNAME, "ruby" #...with the extracted archive. 
   else
     puts "Other OS."
-    if File.file?("ruby/bin/ruby")
-      puts "Found ruby/bin/ruby. No need to compile it."
+    puts "We're going to compile Ruby."
+    puts
+    puts "WARNING: Make sure that the development headers of these libraries: "
+    puts "readline5, openssl, zlib"
+    puts "are installed, because they are essential for RubyGems and irb!"
+    print "Do you want to continue? (y/n): "
+    raise("Aborted by user!") if $stdin.gets =~ /^n/i
+    
+    if File.file?(RUBY_DOWNLOAD_FILE)
+      puts "Found #{RUBY_DOWNLOAD_FILE}."
+      puts "No need to download it."
     else
-      puts "We're going to compile Ruby."
-      puts
-      puts "WARNING: Make sure that the development packes of these libraries: "
-      puts "readline5, openssl, zlib"
-      puts "are installed, because they are essential for RubyGems and irb!"
-      print "Do you want to continue? (y/n): "
-      raise("Aborted by user!") if $stdin.gets =~ /^n/i
-      
-      if File.file?(RUBY_DOWNLOAD_FILE)
-        puts "Found #{RUBY_DOWNLOAD_FILE}."
-        puts "No need to download it."
-      else
-        print "Downloading #{RUBY_DOWNLOAD_FILE}..."
-        Net::FTP.open("ftp.ruby-lang.org") do |ftp|
-          ftp.login
-          ftp.chdir(RUBY_DOWNLOAD_DIR)
-          ftp.getbinaryfile(RUBY_DOWNLOAD_FILE) #Produces RUBY_DOWNLOAD_FILE <CLEAN>
-        end
-        puts "Done."
+      print "Downloading #{RUBY_DOWNLOAD_FILE}..."
+      Net::FTP.open("ftp.ruby-lang.org") do |ftp|
+        ftp.login
+        ftp.chdir(RUBY_DOWNLOAD_DIR)
+        ftp.getbinaryfile(RUBY_DOWNLOAD_FILE) #Produces RUBY_DOWNLOAD_FILE <CLEAN>
       end
-      
-      sh "tar -xjf #{RUBY_DOWNLOAD_FILE}" #Produces RUBY_DOWNLOAD_DIRNAME <CLEAN>
-      goal_dir = File.join(File.expand_path(Dir.pwd), "ruby")
-      cd RUBY_DOWNLOAD_DIRNAME
-      sh %Q<./configure --enable-shared --prefix="#{goal_dir}">
-      sh "make"
-      sh "make install" #Produces "ruby/**/**" <CLOBBER>
-      cd ".."
+      puts "Done."
     end
     
-    #Now install the necessary gems. 
-    sh "./ruby/bin/gem update --system" #Ensure RubyGems is up to date
-    sh "./ruby/bin/gem install gosu chingu --ri --no-rdoc"
+    sh "tar -xjf #{RUBY_DOWNLOAD_FILE}" #Produces RUBY_DOWNLOAD_DIRNAME <CLEAN>
+    goal_dir = File.join(File.expand_path(Dir.pwd), "ruby")
+    cd RUBY_DOWNLOAD_DIRNAME
+    sh %Q<./configure --enable-shared --prefix="#{goal_dir}">
+    sh "make"
+    sh "make install" #Produces "ruby/**/**" <CLOBBER>
+    cd ".."
   end
     
 end
 
+task :get_gems => :get_ruby do
+  gems = "gosu chingu"
+  if RUBY_PLATFORM =~ /mingw|mswin32/
+    sh "ruby\\bin\\gem update --system > nul" #Ensure RubyGems is up to date
+    sh "ruby\\bin\\gem install #{gems} --no-ri --no-rdoc"
+  else
+    sh "./ruby/bin/gem update --system > /dev/null" #Ensure RubyGems is up to date
+    sh "./ruby/bin/gem install #{gems} --no-ri --no-rdoc"
+  end
+end
+
 desc "Compresses OpenRubyRMK into a usable form."
-task :compress => :get_ruby do #Produces "OpenRubyRMK" <CLEAN>
+task :compress => [:get_ruby, :get_gems] do #Produces "OpenRubyRMK" <CLEAN>
   mkdir "OpenRubyRMK"
   cp_r "config", "OpenRubyRMK/config"
   cp_r "game", "OpenRubyRMK/game"
@@ -135,12 +153,26 @@ task :compress => :get_ruby do #Produces "OpenRubyRMK" <CLEAN>
   
   if RUBY_PLATFORM =~ /mswin32|mingw32/
     z7 = z7_path
-    raise("You don't have OCRA installed!") unless system("ocra --help")
+    `ocra --help` #Raises Errno::ENOENT if ocra is not found
     
-    sh "ocra bin/OpenRubyRMK.rb data/*.* lib/**/**"
+    #OCRA can't cope with the fact that executables may reside in subdirectories, 
+    #therefore I'll cheat here and create a helper script at the toplevel. 
+    helpscript =<<EOF
+#!/usr/bin/env ruby
+#Encoding: UTF-8
+#This is a help script for OCRA. It's necessary because 
+#OCRA can't understand that executables may reside in 
+#subdirectories. 
+
+require_relative "bin/OpenRubyRMK.rb"
+EOF
+    print "Creating OCRA help script... "
+    File.open("OpenRubyRMK.rb", "w"){|file| file.write(helpscript)} #Produces "OpenRubyRMK.rb" <CLEAN>
+    puts "Done."
+    sh "ocra OpenRubyRMK.rb data/**/* lib/**/* bin/**/* > nul"
     mkdir "OpenRubyRMK/bin"
     mv "OpenRubyRMK.exe", "OpenRubyRMK/bin/OpenRubyRMK.exe"
-    sh "#{z7} a OpenRubyRMK.zip OpenRubyRMK" #Produces "OpenRubyRMK.zip" <CLOBBER>
+    sh "#{z7} a OpenRubyRMK.zip OpenRubyRMK > nul" #Produces "OpenRubyRMK.zip" <CLOBBER>
   else
     cp_r "bin", "OpenRubyRMK/bin"
     cp_r "data", "OpenRubyRMK/data"

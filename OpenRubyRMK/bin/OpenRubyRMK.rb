@@ -41,6 +41,8 @@ require_relative "../lib/open_ruby_rmk/gui/main_frame"
 require_relative "../lib/open_ruby_rmk/gui/map_hierarchy"
 require_relative "../lib/open_ruby_rmk/gui/map_dialog"
 
+exit if defined? Ocra #That means the script is being compiled for Windows by OCRA
+
 #Now start OpenRubyRMK
 
 app = OpenRubyRMK::GUI::Application.new

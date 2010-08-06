@@ -42,9 +42,9 @@ module OpenRubyRMK
   #Directory where GUI icons etc. are found. 
   DATA_DIR = ROOT_DIR + "data"
   #This directory contains OpenRubyRMK's translation files. 
-  LOCALE_DIR = ROOT_DIR + "locale"
+  LOCALE_DIR = ENV.has_key?("OCRA_EXECUTABLE") ? Pathname.new(ENV["OCRA_EXECUTABLE"].tr("\\", "/")).parent.parent + "locale" : ROOT_DIR + "locale" #OCRA_EXECUTABLE is defined for Windows *.exe files
   #This is the path of OpenRubyRMK's configuration file. 
-  CONFIG_FILE = ROOT_DIR + "config" + "OpenRubyRMK-rc.yml"
+  CONFIG_FILE = ENV.has_key?("OCRA_EXECUTABLE") ? Pathname.new(ENV["OCRA_EXECUTABLE"].tr("\\", "/")).parent.parent + "config" + "OpenRubyRMK-rc.yml" : ROOT_DIR + "config" + "OpenRubyRMK-rc.yml"
   
   @project_path = nil #Supresses this silly "not defined" warning when calling ::has_project?. 
   
