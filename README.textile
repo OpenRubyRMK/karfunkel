@@ -5,7 +5,7 @@ h2. Roadmap
 
 OpenRubyRMK is going to be a free and OpenSource RPG creation program when it's finished. As of now, there is some development going on, but we just left the planning state and started coding. So don't be surprised if nothing works. 
 
-You can use OpenRubyRMK as it is directly from the _OpenRubyRMK_ subdirectory with some initial setup, but that is only recommanded for testing purposes¹. If you want to get a "correct" installation, install some kind of Ruby (version is mostly unimportant, every recent 1.8 and 1.9 release should work) and @rake@, afterwards do (NOTE: OpenRubyRMK isn't even alpha, the following is for *later*!!): 
+You can use OpenRubyRMK as it is directly from the _OpenRubyRMK_ subdirectory with some initial setup, but that is only recommanded for testing purposes¹. If you want to get a "correct" installation, first install Ruby: For Windows, you'll need a recent Ruby 1.9 (we recommend 1.9.1-p429) with @wxruby-ruby19@ and @r18n-desktop@ gems installed (that's because OCRA, which creates the Windows executable, needs to run OpenRubyRMK before compressing it). For other platforms, any recent Ruby 1.8 or 1.9 should do, just make sure @rake@ is available. Second, execute this: 
 
 bc. rake compress
 
@@ -26,6 +26,9 @@ OK, I can see the problem with that. You should really read what's stated above,
 |_. You want to... |_. You need: |
 |run OpenRubyRMK| Windows: Nothing. Other: Ruby 1.9 with @wxruby-ruby19@ and @r18n-desktop@. See also Footnote 2 of above paragraph. *You can't use the Git sources with this setup, only an already compressed version!*|
 |develop OpenRubyRMK|Ruby 1.9.1-p429 with @wxruby-ruby19@, @r18n-desktop@, @gosu@ and @chingu@. Change _config/OpenRubyRMK-rc.yml_ to your Ruby installation. Reset it before compressing.|
+|compress newest OpenRubyRMK from the Git sources|On Windows: Recent Ruby 1.9 with the @wxruby-ruby19@ and @r18n-desktop@ gems installed, plus manifest files for wxRuby in your Ruby's _bin/_ directory. Other platform: Recent Ruby 1.8 or 1.9.|
+
+Note that you may combine option 1 and 3 into "run newest compressed OpenRubyRMK", effectively combining the requirements. 
 
 h2. License
 
