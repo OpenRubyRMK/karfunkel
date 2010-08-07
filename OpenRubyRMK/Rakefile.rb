@@ -169,7 +169,7 @@ EOF
     print "Creating OCRA help script... "
     File.open("OpenRubyRMK.rb", "w"){|file| file.write(helpscript)} #Produces "OpenRubyRMK.rb" <CLEAN>
     puts "Done."
-    sh "ocra OpenRubyRMK.rb data/**/* lib/**/* bin/**/* > nul"
+    sh "ocra --quiet --dll ruby.exe.manifest --dll rubyw.exe.manifest #{ENV.has_key?("ORR_MAKE_CONSOLE_APP") ? "--console" : "--windows"} OpenRubyRMK.rb data/**/* lib/**/* bin/**/*"
     mkdir "OpenRubyRMK/bin"
     mv "OpenRubyRMK.exe", "OpenRubyRMK/bin/OpenRubyRMK.exe"
     sh "#{z7} a OpenRubyRMK.zip OpenRubyRMK > nul" #Produces "OpenRubyRMK.zip" <CLOBBER>
@@ -179,4 +179,58 @@ EOF
     cp_r "lib", "OpenRubyRMK/lib"
     sh "tar -cjf OpenRubyRMK.tar.bz2 OpenRubyRMK" #Produces "OpenRubyRMK.tar.bz2" <CLOBBER>
   end
+end
+
+desc "Displays a help message"
+task :help do
+  puts(<<HELP)
+USAGE: 
+  rake [OPTIONS] [TASK]
+
+DESCRIPTION
+This is OpenRubyRMK's project Rakefile. It provides you with tasks 
+to automatically generate a deployable version of OpenRubyRMK. Usually, 
+all you need to do is to execute
+
+  rake compress
+
+which gives you an archive containing OpenRubyRMK specifically 
+designed for your platform. If that's really everything you want to 
+do with the Git sources, it's enough if you have a recent 1.9 Ruby 
+installed. Please note that you won't be able to run OpenRubyRMK 
+neither from the Git sources nor from the created archive (except you're 
+on Windows). See the project's README for more information on this. 
+
+WINDOWS
+To compress OpenRubyRMK on Windows, you have to do a bit 
+of extra effort. Since the OpenRubyRMK GUI is written in wxRuby 
+and wxRuby doesn't use Windows's Visual Styles by default, 
+we added the options to overwrite this default. However, in order to 
+work you must have the files "ruby.exe.manifest" and 
+"rubyw.exe.manifest" in your Ruby installation's bin/ directory. 
+You may obtain them from 
+http://wiki.ruby-portal.de/wxRuby#Visual_Styles_unter_Windows. 
+Additionally, you have to have the wxruby-ruby19 gem installed 
+for your Ruby installation, because OCRA (our *.exe generator) 
+will run OpenRubyRMK to obtain it's dependencies. 
+
+UBUNTU 9.10 (KARMIC) AND NEWER
+There is a problem with the Linux binary of wxRuby provided by 
+the wxRuby development team. In order to run OpenRubyRMK 
+(not in order to compress it!) you have to get a binary build for 
+your system. Either build wxRuby from the sources yourself, 
+or use the precompiled gems we provide at 
+http://www.github.com/Quintus/OpenRubyRMK/Downloads. 
+
+ENVIRONMENT VARIABLES
+The following environment variables influence the compression 
+process: 
+
+  ORR_MAKE_CONSOLE_APP
+    On Windows, attaches a console to the OpenRubyRMK 
+    executable. That's useful for debugging, but should be 
+    avoided if you want to deploy the resulting archive. Set it 
+    to anything you like, e.g. "yes", the Rakefile will only look 
+    wheather it's defined or not. 
+HELP
 end
