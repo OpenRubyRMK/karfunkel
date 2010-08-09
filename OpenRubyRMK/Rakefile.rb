@@ -4,7 +4,7 @@
 =begin
 This file is part of OpenRubyRMK. 
 
-Copyright © 2010 Hanmac, Kjarrigan, Quintus
+Copyright © 2010 OpenRubyRMK Team
 
 OpenRubyRMK is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ def z7_path
 end
 
 Rake::RDocTask.new do |rt|
-  rt.rdoc_files.include("lib/**/*.rb", "README.rdoc", "COPYING.txt")
+  rt.rdoc_files.include("lib/**/*.rb", "README.rdoc", "AUTHORS.rdoc", "COPYING.txt")
   rt.title = "OpenRubyRMK RDocs"
   rt.main = "README.rdoc"
 end

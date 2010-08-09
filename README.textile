@@ -32,9 +32,9 @@ Note that you may combine option 1 and 3 into "run newest compressed OpenRubyRMK
 
 h2. License
 
-OpenRubyRMK is a free and open-source RPG maker. 
+OpenRubyRMK is a free and open-source RPG creation program. 
 
-Copyright © 2010 Hanmac, Kjarrigan, Quintus
+Copyright © 2010 OpenRubyRMK Team
 
 This program is free software: you can redistribute it and/or modifyit under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -44,11 +44,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 h4. Contact
 
-You can contact us as as follows: 
-
-* Hanmac: hanmac@@gmx@de
-* Kjarrigan: masamunes_son@@web@de
-* Quintus: sutniuq@@gmx@net
+You can contact us as via the mail adress openrubyrmk@googlemail.com. 
 
 h4. Disclaimer of Warranty
 
