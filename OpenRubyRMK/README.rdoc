@@ -1,0 +1,39 @@
+=OpenRubyRMK
+
+==What is OpenRubyRMK?
+
+OpenRubyRMK is a program to create 2D games. Mostly it's used to create role play games (RPG for short), but if you do enough effort, you can create anything you'd like to. Furthermore, OpenRubyRMK does not want to restrict you in any way, including modifying and deploying itself. It's free in any sense you can think of: You don't have to pay for it (free as in "free beer") _and_ you're free to modify and redistribute the program (free as in "freedom"). The OpenRubyRMK Team is always looking for new developers and contributors: Feel free to report bugs, submit improvements or just propose new features at http://github.com/Quintus/OpenRubyRMK . If you have any questions or don't want to register at GitHub, feel free (once again) to email us at openrubyrmk@googlemail.com; to this adress everyone of us is subscribed, so it's likely to get an answer from more than one team member. 
+
+==How to use it?
+
+OpenRubyRMK is platform-independent. That means, it runs on Linux systems as well as on Macintosh or Microsoft Windows ones. That's because it is written in Ruby, the most beautiful programming language every invented, have a look at it at http://www.ruby-lang.org . For Windows we supply a full-featured installer, on other systems you have to have a working Ruby 1.9 installation (although nothing prevents you from installing Ruby 1.9 on Windows and using that instead of the installer). 
+
+==Windows==
+
+Just start up _bin/OpenRubyRMK.exe_. 
+
+==Other systems==
+
+First, make sure you have a working Ruby 1.9 installation. We recommend 1.9.1-p429, although that might change in the future, since we try to be up to date. Additionally, you have to install these gems: @wxruby-ruby@, @r18n-desktop@. Since the precompiled wxRuby gem causes problems on Ubuntu 9.10 (Karmic) and newer, the OpenRubyRMK Team provides gems specifically compiled for recent Ubuntu versions. We did not make any modifications to wxRuby, if you don't trust us you can use the compile bash script available from our {Download page}[http://github.com/Quintus/OpenRubyRMK/Downloads] as well. 
+
+Second, use that Ruby installation to start _bin/OpenRubyRMK.rb_. 
+
+==License==
+
+OpenRubyRMK is a free and open-source RPG creation program. 
+
+Copyright © 2010 OpenRubyRMK Team
+
+This program is free software: you can redistribute it and/or modifyit under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+
+===Contact
+
+You can contact us as via the mail adress openrubyrmk@googlemail.com. 
+
+===Disclaimer of Warranty
+
+THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
