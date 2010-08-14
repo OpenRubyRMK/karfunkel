@@ -29,6 +29,7 @@ module OpenRubyRMK
       
       attr_reader :config
       attr_reader :mainwindow
+      attr_reader :id_generator
       #The current project's root path. 
       attr_accessor :project_path
       #The last dir navigated into by a file open/save dialog. 
@@ -39,6 +40,9 @@ module OpenRubyRMK
       def on_init
         load_config
         setup_localization
+        load_plugins
+        
+        @id_generator =  Enumerator.new(1000..INFINITY)
         
         @remembered_dir = Pathname.new(".").expand_path
         
@@ -62,6 +66,11 @@ module OpenRubyRMK
       
       def load_config
         @config = YAML.load_file(CONFIG_FILE)
+      end
+      
+      def load_plugins
+        Plugins.load_plugins
+        Plugins[:startup].each(&:call)
       end
       
     end

@@ -143,3 +143,6 @@ errors:
   zero_reserved:
     title: ID zero is reserved
     message: The ID 0 (zero) is reserved. Please choose a different one.
+
+plugins:
+  your_plugin_here: "Write your plugins translations here!"

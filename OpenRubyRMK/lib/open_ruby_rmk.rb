@@ -45,6 +45,12 @@ module OpenRubyRMK
   LOCALE_DIR = ENV.has_key?("OCRA_EXECUTABLE") ? Pathname.new(ENV["OCRA_EXECUTABLE"].tr("\\", "/")).parent.parent + "locale" : ROOT_DIR + "locale" #OCRA_EXECUTABLE is defined for Windows *.exe files
   #This is the path of OpenRubyRMK's configuration file. 
   CONFIG_FILE = ENV.has_key?("OCRA_EXECUTABLE") ? Pathname.new(ENV["OCRA_EXECUTABLE"].tr("\\", "/")).parent.parent + "config" + "OpenRubyRMK-rc.yml" : ROOT_DIR + "config" + "OpenRubyRMK-rc.yml"
+  #In this directory and it's subdirectories reside plugins. 
+  PLUGINS_DIR = ENV.has_key?("OCRA_EXECUTABLE") ? Pathname.new(ENV["OCRA_EXECUTABLE"].tr("\\", "/")).parent.parent + "plugins" : ROOT_DIR + "plugins"
+  #Since Ruby's Math module doesn't define INFINITY for whatever reason...
+  INFINITY = 1.0/0.0
+  #Negative infinity. 
+  NINFINITY = -INFINITY
   
   @project_path = nil #Supresses this silly "not defined" warning when calling ::has_project?. 
   

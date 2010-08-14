@@ -44,6 +44,7 @@ module OpenRubyRMK
         create_statusbar
         create_controls
         setup_event_handlers
+        Plugins[:mainwindow].each{|block| instance_eval(&block)}
       end
       
       private
