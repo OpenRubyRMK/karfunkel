@@ -241,7 +241,7 @@ module OpenRubyRMK
         i.developers = %w[Hanmac Kjarrigan Quintus]
         i.translators = t.general.translators.split(/,\s?/)
         #i.doc_writers = []
-        i.copyright = "Copyright © 2010 Hanmac, Kjarrigan, Quintus"
+        i.copyright = "Copyright © 2010 OpenRubyRMK Team"
         i.name = t.general.application_name
         i.version = OpenRubyRMK::VERSION
         i.description = t.general.description
