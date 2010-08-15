@@ -55,30 +55,29 @@ module OpenRubyRMK
       
       def create_menubar
         @menu_bar = MenuBar.new
+        @menus = {}
         
         #File
-        menu = Menu.new
-        menu.append(ID_NEW, t.menus.file.new.name, t.menus.file.new.statusbar)
-        menu.append(ID_OPEN, t.menus.file.open.name, t.menus.file.open.statusbar)
-        menu.append(ID_SAVE, t.menus.file.save.name, t.menus.file.save.statusbar)
-        menu.append(ID_SAVEAS, t.menus.file.saveas.name, t.menus.file.saveas.statusbar)
-        menu.append_separator
-        menu.append(ID_EXIT, t.menus.file.exit.name, t.menus.file.exit.statusbar)
-        @menu_bar.append(menu, t.menus.file.name)
+        @menus[:file] = Menu.new
+        @menus[:file].append(ID_NEW, t.menus.mainwindow.file.new.name, t.menus.mainwindow.file.new.statusbar)
+        @menus[:file].append(ID_OPEN, t.menus.mainwindow.file.open.name, t.menus.mainwindow.file.open.statusbar)
+        @menus[:file].append(ID_SAVE, t.menus.mainwindow.file.save.name, t.menus.mainwindow.file.save.statusbar)
+        @menus[:file].append(ID_SAVEAS, t.menus.mainwindow.file.saveas.name, t.menus.mainwindow.file.saveas.statusbar)
+        @menus[:file].append_separator
+        @menus[:file].append(ID_EXIT, t.menus.mainwindow.file.exit.name, t.menus.mainwindow.file.exit.statusbar)
+        @menu_bar.append(@menus[:file], t.menus.mainwindow.file.name)
         
         #Edit
-        menu = Menu.new
-        @menu_bar.append(menu, t.menus.edit.name)
-        menu.append(ID_ADD, t.menus.edit.new_map.name, t.menus.edit.new_map.statusbar)
+        @menus[:edit] = Menu.new
+        @menus[:edit].append(ID_ADD, t.menus.mainwindow.edit.new_map.name, t.menus.mainwindow.edit.new_map.statusbar)
+        @menu_bar.append(@menus[:edit], t.menus.mainwindow.edit.name)
         
         #Help
-        menu = Menu.new
-        menu.append(ID_HELP, t.menus.help.help.name, t.menus.help.help.statusbar)
-        menu.append_separator
-        menu.append(ID_ABOUT, t.menus.help.about.name, t.menus.help.about.statusbar)
-        @menu_bar.append(menu, t.menus.help.name)
-        
-        #TODO - at this point, load external menu plugins. 
+        @menus[:help] = Menu.new
+        @menus[:help].append(ID_HELP, t.menus.mainwindow.help.help.name, t.menus.mainwindow.help.help.statusbar)
+        @menus[:help].append_separator
+        @menus[:help].append(ID_ABOUT, t.menus.mainwindow.help.about.name, t.menus.mainwindow.help.about.statusbar)
+        @menu_bar.append(@menus[:help], t.menus.mainwindow.help.name)
         
         self.menu_bar = @menu_bar
       end
@@ -87,21 +86,21 @@ module OpenRubyRMK
         @tool_bar = create_tool_bar
         @tool_bar.add_tool(
           ID_NEW, 
-          t.menus.file.new.name, 
+          t.menus.mainwindow.file.new.name, 
           Bitmap.new(DATA_DIR.join("new16x16.png").to_s, BITMAP_TYPE_PNG), 
           NULL_BITMAP, 
           ITEM_NORMAL, 
-          t.menus.file.new.tooltip, 
-          t.menus.file.new.statusbar
+          t.menus.mainwindow.file.new.tooltip, 
+          t.menus.mainwindow.file.new.statusbar
         )
         @tool_bar.add_tool(
           ID_OPEN, 
-          t.menus.file.open.name, 
+          t.menus.mainwindow.file.open.name, 
           Bitmap.new(DATA_DIR.join("open16x16.png").to_s, BITMAP_TYPE_PNG), 
           NULL_BITMAP, 
           ITEM_NORMAL, 
-          t.menus.file.open.tooltip, 
-          t.menus.file.open.statusbar
+          t.menus.mainwindow.file.open.tooltip, 
+          t.menus.mainwindow.file.open.statusbar
         )
         
         @tool_bar.realize
@@ -154,8 +153,6 @@ module OpenRubyRMK
         ].each{|sym| evt_menu(Wx.const_get(:"ID_#{sym.upcase}")){|event| send(:"on_menu_#{sym}", event)}}
         
         evt_tree_sel_changed(@map_hierarchy){|event| on_map_hier_clicked(event)}
-        
-        #TODO - at this point, load external event handler plugins. 
       end
       
       #==================================

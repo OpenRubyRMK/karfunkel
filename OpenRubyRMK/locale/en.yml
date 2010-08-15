@@ -65,46 +65,54 @@ general:
 #if a toolbar tool exists for that menu entry and the strings 
 #stated in "statusbar" get shown in the statusbar. 
 menus:
-  file:
-    name: File
-    new:
-      name: New project...
-      tooltip: Creates a new project.
-      statusbar: Creates a new project.
-    open: 
-      name: Open...
-      tooltip: Opens a saved project.
-      statusbar: Opens a saved project.
-    save:
-      name: Save
-      tooltip: Saves the project.
-      statusbar: Saves the project.
-    saveas:
-      name: Save as...
-      tooltip: Saves the project under a specific directory.
-      statusbar: Saves the project under a specific directory.
-    exit:
-      name: Exit
-      tooltip: Quits OpenRubyRMK.
-      statusbar: Quits OpenRubyRMK.
+  mainwindow:
+    file:
+      name: File
+      new:
+        name: New project...
+        tooltip: Creates a new project.
+        statusbar: Creates a new project.
+      open: 
+        name: Open...
+        tooltip: Opens a saved project.
+        statusbar: Opens a saved project.
+      save:
+        name: Save
+        tooltip: Saves the project.
+        statusbar: Saves the project.
+      saveas:
+        name: Save as...
+        tooltip: Saves the project under a specific directory.
+        statusbar: Saves the project under a specific directory.
+      exit:
+        name: Exit
+        tooltip: Quits OpenRubyRMK.
+        statusbar: Quits OpenRubyRMK.
+        
+    edit:
+      name: Edit
+      new_map:
+        name: New Map...
+        tooltip: Creates a new map.
+        statusbar: Creates a new map.
       
-  edit:
-    name: Edit
-    new_map:
-      name: New Map...
-      tooltip: Creates a new map.
-      statusbar: Creates a new map.
-    
-  help:
-    name: Help
     help:
-      name: Help...
-      tooltip: Opens OpenRubyRMK's help.
-      statusbar: Opens OpenRubyRMK's help.
-    about:
-      name: About OpenRubyRMK...
-      tooltip: Information about the application.
-      statusbar: Information about the application.
+      name: Help
+      help:
+        name: Help...
+        tooltip: Opens OpenRubyRMK's help.
+        statusbar: Opens OpenRubyRMK's help.
+      about:
+        name: About OpenRubyRMK...
+        tooltip: Information about the application.
+        statusbar: Information about the application.
+  mapset_window:
+    file:
+      name: File
+      close:
+        name: Close
+        tooltip: Closes the mapset window
+        statusbar: Closes the mapset window
 
 #The following are dialog strings. All of them have a 
 #title string you may translate or not, and some have a message. 
