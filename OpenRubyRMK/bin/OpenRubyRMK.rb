@@ -36,11 +36,15 @@ $VERBOSE = v
 #Require the lib
 require_relative "../lib/open_ruby_rmk"
 #Require the GUI lib
+require_relative "../lib/open_ruby_rmk/gui"
 require_relative "../lib/open_ruby_rmk/gui/application"
 require_relative "../lib/open_ruby_rmk/gui/main_frame"
 require_relative "../lib/open_ruby_rmk/gui/map_hierarchy"
 require_relative "../lib/open_ruby_rmk/gui/map_dialog"
-require_relative "../lib/open_ruby_rmk/plugins"
+require_relative "../lib/open_ruby_rmk/gui/mapset_window"
+require_relative "../lib/open_ruby_rmk/gui/mapset_table_base"
+require_relative "../lib/open_ruby_rmk/gui/field_renderer"
+require_relative "../lib/open_ruby_rmk/plugins" #Not sure -- belongs this to the GUI or the core lib?
 
 exit if defined? Ocra #That means the script is being compiled for Windows by OCRA
 

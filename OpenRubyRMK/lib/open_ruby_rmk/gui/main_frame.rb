@@ -28,6 +28,10 @@ module OpenRubyRMK
       include Wx
       include R18n::Helpers
       
+      IDS = {
+        :mapset_window => ID_GENERATOR.next
+      }.freeze
+      
       def initialize(parent = nil)
         super(parent, title: "#{t.general.application_name} - #{t.general.application_slogan}", size: Size.new(600, 400), style: DEFAULT_FRAME_STYLE | MAXIMIZE)
         self.background_colour = NULL_COLOUR #Ensure that we get a platform-native background color
@@ -71,6 +75,14 @@ module OpenRubyRMK
         @menus[:edit] = Menu.new
         @menus[:edit].append(ID_ADD, t.menus.mainwindow.edit.new_map.name, t.menus.mainwindow.edit.new_map.statusbar)
         @menu_bar.append(@menus[:edit], t.menus.mainwindow.edit.name)
+        
+        #View
+        @menus[:view] = {}
+        @menus[:view][:menu] = Menu.new
+        @menus[:view][:windows] = Menu.new
+        @menus[:view][:windows].append(IDS[:mapset_window], t.menus.mainwindow.view.windows.mapset.name, t.menus.mainwindow.view.windows.mapset.statusbar)
+        @menus[:view][:menu].append_menu(ID_ANY, t.menus.mainwindow.view.windows.name, @menus[:view][:windows])
+        @menu_bar.append(@menus[:view][:menu], t.menus.mainwindow.view.name)
         
         #Help
         @menus[:help] = Menu.new
@@ -147,11 +159,21 @@ module OpenRubyRMK
       end
       
       def setup_event_handlers
+        #Menu events
         [:new, :open, :save, :saveas, :exit, #File
         :add, #Edit
+        :mapset_window, #View->Windows
         :help, :about #Help
-        ].each{|sym| evt_menu(Wx.const_get(:"ID_#{sym.upcase}")){|event| send(:"on_menu_#{sym}", event)}}
+        ].each do |sym| 
+          id = if Wx.const_defined?(:"ID_#{sym.upcase}")
+            Wx.const_get(:"ID_#{sym.upcase}")
+          else
+            IDS[sym]
+          end
+          evt_menu(id){|event| send(:"on_menu_#{sym}", event)}
+        end
         
+        #Other events
         evt_tree_sel_changed(@map_hierarchy){|event| on_map_hier_clicked(event)}
       end
       
@@ -196,6 +218,18 @@ module OpenRubyRMK
       
       def on_menu_exit(event)
         close
+      end
+      
+      def on_menu_mapset_window(event)
+        return show_no_project_dlg unless OpenRubyRMK.has_project?
+        
+        map = @map_hierarchy.selected_map
+        if map.nil?
+          md = MessageDialog.new(self, caption: t.errors.no_map.title, message: t.errors.no_map.message, style: OK | ICON_WARNING)
+          return md.show_modal
+        end
+        @win = MapsetWindow.new(self, map.mapset)
+        @win.show
       end
       
       def on_menu_add(event)

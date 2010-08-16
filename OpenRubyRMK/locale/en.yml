@@ -88,7 +88,16 @@ menus:
         name: Exit
         tooltip: Quits OpenRubyRMK.
         statusbar: Quits OpenRubyRMK.
-        
+    
+    view:
+      name: View
+      windows:
+        name: Windows
+        mapset: 
+          name: Mapset
+          tooltip: Shows the mapset window
+          statusbar: Shows the mapset window
+    
     edit:
       name: Edit
       new_map:
@@ -151,6 +160,9 @@ errors:
   zero_reserved:
     title: ID zero is reserved
     message: The ID 0 (zero) is reserved. Please choose a different one.
+  no_map:
+    title: No map selected
+    message: You don't have a map selected.
 
 plugins:
   your_plugin_here: "Write your plugins translations here!"

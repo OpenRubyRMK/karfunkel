@@ -66,6 +66,10 @@ module OpenRubyRMK
         expand(@root) #Looks better
       end
       
+      def selected_map
+        get_item_data(get_selection)
+      end
+      
       private
       
       #Recursively iterates over the given hash and appends the maps 

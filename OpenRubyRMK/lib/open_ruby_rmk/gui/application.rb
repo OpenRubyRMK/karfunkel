@@ -42,8 +42,6 @@ module OpenRubyRMK
         setup_localization
         load_plugins
         
-        @id_generator =  Enumerator.new(1000..INFINITY)
-        
         @remembered_dir = Pathname.new(".").expand_path
         
         @mainwindow = MainFrame.new

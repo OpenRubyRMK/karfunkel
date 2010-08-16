@@ -84,9 +84,15 @@ module OpenRubyRMK
       project_maps_dir + "structure.bin"
     end
     
+    def project_mapsets_dir
+      @project_path + "data" + "graphics" + "mapsets"
+    end
+    
   end
 end
 
 #Internal requires
+require_relative "open_ruby_rmk/errors"
 require_relative "open_ruby_rmk/map"
 require_relative "open_ruby_rmk/mapset"
+require_relative "open_ruby_rmk/field"
