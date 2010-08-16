@@ -90,15 +90,6 @@ module OpenRubyRMK
       used_ids.include?(id)
     end
     
-    def self.maps_dir=(dir)
-      @maps_dir = Pathname.new(dir)
-    end
-    
-    def self.maps_dir
-      raise(ArgumentError, "No map dir specified!") if @maps_dir.nil?
-      @maps_dir
-    end
-    
     #Loads a map object from a file. The filename is detected by 
     #using OpenRubyRMK.project_maps_dir and the given ID. Raises an ArgumentError 
     #if no file is found. 
@@ -113,7 +104,7 @@ module OpenRubyRMK
       obj.instance_eval do
         @id = id
         @name = hsh[:name]
-        @mapset = hsh[:mapset]
+        @mapset = Mapset.load(hsh[:mapset])
         @table = hsh[:table]
         @parent = self.class.from_id(hsh[:parent])
         @parent.children_ids << @id unless @parent.nil? #Map.from_id returns nil if there's no parent
@@ -249,7 +240,7 @@ module OpenRubyRMK
     def save
       hsh = {
         :name => name, #@name may be unset
-        :mapset => @mapset, 
+        :mapset => @mapset.filename, 
         :table => @table, 
         :parent => @parent.nil? ? 0 : @parent.id #0 means there's no parent
       }
