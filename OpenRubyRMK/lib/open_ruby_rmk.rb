@@ -33,7 +33,7 @@ require "pp"
 module OpenRubyRMK
   
   #The version of the OpenRubyRMK lib you're using. 
-  VERSION = "0.0.1-dev (5.8.10)".freeze
+  VERSION = "0.0.1-dev (18.8.10)".freeze
   
   #OpenRubyRMK's root dir. This is *not* the root dir of a game 
   #created with OpenRubyRMK, but refers to OpenRubyRMK's 

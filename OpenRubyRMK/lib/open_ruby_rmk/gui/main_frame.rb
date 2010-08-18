@@ -286,7 +286,7 @@ module OpenRubyRMK
       def on_menu_about(event)
         i = AboutDialogInfo.new
         i.artists = ["Tango project ( http://tango.freedesktop.org )", "Yukihiro Matsumoto ( http://www.rubyidentity.org )"]
-        i.developers = %w[Hanmac Kjarrigan Quintus]
+        i.developers = %w[The OpenRubyRMK Team <openrubyrmk@googlemail.com>]
         i.translators = t.general.translators.split(/,\s?/)
         #i.doc_writers = []
         i.copyright = "Copyright © 2010 OpenRubyRMK Team"

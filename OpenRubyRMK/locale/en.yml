@@ -49,12 +49,14 @@
 #And last but not least, don't forget to put your name into 
 #"translators"! If you do so, OpenRubyRMK will automatically 
 #honor you if somebody clicks on "Help" -> "About..." (or 
-#however the menus are named in your translation). 
+#however the menus are named in your translation). Separate 
+#multiple names with a comma and a space, e.g. 
+#"Foo <foo@example.com>, Bar <bar@example.com>". 
 general:
   application_name: OpenRubyRMK
   application_slogan: "The free and open-source RPG creation program!"
   description: "A free and open-source RPG (role-play games) creation program."
-  translators: "Quintus"
+  translators: "Quintus <sutniuq@gmx.net>"
   often_used:
     width: Width
     height: Height
