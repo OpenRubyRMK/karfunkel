@@ -6,3 +6,11 @@
 #will be detected automatically from your OS setup. 
 #Default value: auto
 locale: en
+#This is the Ruby installation that will be used for editing 
+#games with OpenRubyRMK. If you choose your own installation, 
+#make sure it's 1.9 and has the "gosu" and "chingu" gems installed. 
+#Examples: 
+#  ruby: "/home/freak/myruby/bin"
+#  ruby: "C:\myruby\bin"
+#Default value: auto
+ruby: "/opt/rubies/ruby-1.9.1-p429/bin"
