@@ -23,6 +23,13 @@ module OpenRubyRMK
           setup_event_handlers
         end
         
+        def alive?
+          shown?
+          true
+        rescue ObjectPreviouslyDeleted
+          false
+        end
+        
         private
         
         def create_menu

@@ -53,6 +53,13 @@ module OpenRubyRMK
           super
         end
         
+        def alive?
+          shown?
+          true
+        rescue ObjectPreviouslyDeleted
+          false
+        end
+        
         private
         
         def create_controls

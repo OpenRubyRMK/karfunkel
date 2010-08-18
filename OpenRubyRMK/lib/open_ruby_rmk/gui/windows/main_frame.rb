@@ -234,11 +234,7 @@ module OpenRubyRMK
         def on_menu_mapset_window(event)
           return show_no_project_dlg unless OpenRubyRMK.has_project?
           #Ensure we don't get two mapset windows
-          begin
-            return if @mapset_window and @mapset_window.shown?
-          rescue ObjectPreviouslyDeleted ##shown? called on a closed window raises this
-            @mapset_window = nil
-          end
+          return if @mapset_window and @mapset_window.alive? and @mapset_window.shown?
           
           map = @map_hierarchy.selected_map
           if map.nil?
@@ -252,11 +248,7 @@ module OpenRubyRMK
         def on_menu_properties_window(event)
           return show_no_project_dlg unless OpenRubyRMK.has_project?
           #Ensure we don't get two properties windows
-          begin
-            return if @properties_window and @properties_window.shown?
-          rescue ObjectPreviouslyDeleted ##shown? called on a closed window raises this
-            @properties_window = nil
-          end
+          return if @properties_window and @properties_window.alive? and @properties_window.shown?
           
           map = @map_hierarchy.selected_map
           if map.nil?
