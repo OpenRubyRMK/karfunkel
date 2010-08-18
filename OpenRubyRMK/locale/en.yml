@@ -104,7 +104,14 @@ menus:
         name: New Map...
         tooltip: Creates a new map.
         statusbar: Creates a new map.
-      
+    
+    extras:
+      name: Extras
+      console:
+        name: OpenRubyRMKonsole
+        tooltip: Opens OpenRubyRMKonsole. 
+        statusbar: Opens OpenRubyRMKonsole.
+    
     help:
       name: Help
       help:

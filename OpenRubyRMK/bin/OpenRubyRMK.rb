@@ -31,6 +31,7 @@ end
 #and reassigning it later. 
 v, $VERBOSE = $VERBOSE, nil
 require "wx"
+require "stringio"
 $VERBOSE = v
 
 #Require the lib
@@ -44,6 +45,8 @@ require_relative "../lib/open_ruby_rmk/gui/map_dialog"
 require_relative "../lib/open_ruby_rmk/gui/mapset_window"
 require_relative "../lib/open_ruby_rmk/gui/mapset_table_base"
 require_relative "../lib/open_ruby_rmk/gui/field_renderer"
+require_relative "../lib/open_ruby_rmk/gui/terminal"
+require_relative "../lib/open_ruby_rmk/gui/console_window"
 require_relative "../lib/open_ruby_rmk/plugins" #Not sure -- belongs this to the GUI or the core lib?
 
 exit if defined? Ocra #That means the script is being compiled for Windows by OCRA

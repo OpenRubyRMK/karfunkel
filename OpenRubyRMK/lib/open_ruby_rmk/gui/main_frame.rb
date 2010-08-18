@@ -29,7 +29,8 @@ module OpenRubyRMK
       include R18n::Helpers
       
       IDS = {
-        :mapset_window => ID_GENERATOR.next
+        :mapset_window => ID_GENERATOR.next, 
+        :console => ID_GENERATOR.next
       }.freeze
       
       def initialize(parent = nil)
@@ -83,6 +84,11 @@ module OpenRubyRMK
         @menus[:view][:windows].append(IDS[:mapset_window], t.menus.mainwindow.view.windows.mapset.name, t.menus.mainwindow.view.windows.mapset.statusbar)
         @menus[:view][:menu].append_menu(ID_ANY, t.menus.mainwindow.view.windows.name, @menus[:view][:windows])
         @menu_bar.append(@menus[:view][:menu], t.menus.mainwindow.view.name)
+        
+        #Extras
+        @menus[:extras] = Menu.new
+        @menus[:extras].append(IDS[:console], t.menus.mainwindow.extras.console.name, t.menus.mainwindow.extras.console.statusbar)
+        @menu_bar.append(@menus[:extras], t.menus.mainwindow.extras.name)
         
         #Help
         @menus[:help] = Menu.new
@@ -163,6 +169,7 @@ module OpenRubyRMK
         [:new, :open, :save, :saveas, :exit, #File
         :add, #Edit
         :mapset_window, #View->Windows
+        :console, #Extras
         :help, :about #Help
         ].each do |sym| 
           id = if Wx.const_defined?(:"ID_#{sym.upcase}")
@@ -260,6 +267,11 @@ module OpenRubyRMK
           end
         end
         @map_hierarchy.recreate_tree!(@project_name, @maps)
+      end
+      
+      def on_menu_console(event)
+        cons = ConsoleWindow.new(self)
+        cons.show
       end
       
       def on_menu_help(event)
