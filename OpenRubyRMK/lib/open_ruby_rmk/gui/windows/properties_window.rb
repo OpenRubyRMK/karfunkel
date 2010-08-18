@@ -60,6 +60,26 @@ module OpenRubyRMK
           false
         end
         
+        def reload(map, available_mapsets = @available_mapsets)
+          @map = map
+          @available_mapsets = available_mapsets
+          
+          @map_name_txt.value = @map.name
+          @parent_id_txt.value = @map.has_parent? ? @map.parent.id.to_s : "0"
+          @map_id_txt.value = @map.id.to_s
+          @mapset_drop.clear
+          @available_mapsets.each{|mapset| @mapset_drop.append(mapset.filename.basename.to_s)}
+          @width_spin.value = @map.width
+          @height_spin.value = @map.height
+          @depth_spin.value = @map.depth
+          
+          @mapset_drop.selection = @available_mapsets.index(@map.mapset)
+          #Undo setting of @something_changed and the button, which are both 
+          #triggered by the above operations. 
+          @something_changed = false
+          @ok_button.disable
+        end
+        
         private
         
         def create_controls
@@ -75,7 +95,7 @@ module OpenRubyRMK
           @mapset_drop.selection = @available_mapsets.index(@map.mapset)
           @parent_id_txt.disable #Neither this nor the next one...
           @map_id_txt.disable #...is editable after map creation. 
-          @ok_button.disable #Only clickable after something was changed
+          @ok_button.disable #Only clickable after something has changed
         end
         
         def make_sizers

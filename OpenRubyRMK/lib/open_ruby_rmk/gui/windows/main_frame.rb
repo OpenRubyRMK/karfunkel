@@ -318,6 +318,11 @@ module OpenRubyRMK
         def on_map_hier_clicked(event)
           if event.item.nonzero?
             @dummy_ctrl.label = @map_hierarchy.get_item_data(event.item).inspect
+            unless @map_hierarchy.selected_map.nil?
+              @properties_window.reload(@map_hierarchy.selected_map) if @properties_window and @properties_window.alive? and @properties_window.shown?
+            else #Root item selected
+              @properties_window.close
+            end
           end
           event.skip
         end
