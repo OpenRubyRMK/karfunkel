@@ -136,6 +136,10 @@ menus:
         tooltip: Closes the mapset window
         statusbar: Closes the mapset window
 
+window_titles:
+  mapset_window: Current mapset
+  properties_window: Map properties
+
 #The following are dialog strings. All of them have a 
 #title string you may translate or not, and some have a message. 
 #Other dialogs, such as the map dialog, define a whole lot of 

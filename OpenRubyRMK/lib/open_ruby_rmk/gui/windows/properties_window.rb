@@ -26,43 +26,57 @@ module OpenRubyRMK
     
     module Windows
       
+      #In this window everything known about a map is displayed. 
       class PropertiesWindow < Wx::MiniFrame
         include Wx
         include R18n::Helpers
         
-        def initialize(parent, map, available_mapsets)
-          super(parent, size: Size.new(300, 300), pos: Point.new(300, 20), title: map.name)
+        #Creates a new PropertiesWindow. The window is disabled at the beginning, allowing 
+        #to show and hide a single instance rather than creating and destroying new ones all the time. 
+        #Call #reload to enable the window. 
+        #
+        #Please also note that you have to call #on_change before you can show the window. 
+        def initialize(parent)
+          super(parent, size: Size.new(300, 300), pos: Point.new(300, 20), title: t.window_titles.properties_window)
           self.background_colour = NULL_COLOUR
           
-          @map = map
-          @available_mapsets = available_mapsets
+          @map = nil
+          @available_mapsets = nil
           @something_changed = false
           @block = nil
           
           create_controls
           make_sizers
           setup_event_handlers
+          
+          #Only a call to #reload can enable the window
+          self.disable
         end
         
+        #Pass this method a block you want to be called every time the user confirms 
+        #his or her changements. 
         def on_change(&block)
           @block = block
         end
         
+        #Shows this window. Implementation is as in the superclass, just a check for 
+        #the code block passed to #on_change is done. 
         def show(*)
-          raise(ArgumentError, "No on_change block passed!") unless @block
+          Kernel.raise(ArgumentError, "No on_change block passed!") unless @block
           super
         end
         
-        def alive?
-          shown?
-          true
-        rescue ObjectPreviouslyDeleted
-          false
-        end
-        
-        def reload(map, available_mapsets = @available_mapsets)
+        #Refreshes all internal data and enables the window. If you pass +nil+ for 
+        #+map+, the inverse happens: The window is disabled. 
+        def reload(map, available_mapsets)
           @map = map
           @available_mapsets = available_mapsets
+          
+          if @map.nil?
+            self.disable
+            return
+          end
+          self.enable
           
           @map_name_txt.value = @map.name
           @parent_id_txt.value = @map.has_parent? ? @map.parent.id.to_s : "0"
@@ -83,16 +97,15 @@ module OpenRubyRMK
         private
         
         def create_controls
-          @map_name_txt = TextCtrl.new(self, value: @map.name)
-          @parent_id_txt = TextCtrl.new(self, value: @map.has_parent? ? @map.parent.id.to_s : "0")
-          @map_id_txt = TextCtrl.new(self, value: @map.id.to_s)
-          @mapset_drop = Choice.new(self, choices: @available_mapsets.map{|mapset| mapset.filename.basename.to_s})
-          @width_spin = SpinCtrl.new(self, initial: @map.width, min: 20, max: 999)
-          @height_spin = SpinCtrl.new(self, initial: @map.height, min: 15, max: 999)
-          @depth_spin = SpinCtrl.new(self, initial: @map.depth, min: 3, max: 999)
+          @map_name_txt = TextCtrl.new(self)
+          @parent_id_txt = TextCtrl.new(self)
+          @map_id_txt = TextCtrl.new(self)
+          @mapset_drop = Choice.new(self)
+          @width_spin = SpinCtrl.new(self, min: 20, max: 999)
+          @height_spin = SpinCtrl.new(self, min: 15, max: 999)
+          @depth_spin = SpinCtrl.new(self, min: 3, max: 999)
           @ok_button = Button.new(self, id: ID_OK, label: "OK")
           
-          @mapset_drop.selection = @available_mapsets.index(@map.mapset)
           @parent_id_txt.disable #Neither this nor the next one...
           @map_id_txt.disable #...is editable after map creation. 
           @ok_button.disable #Only clickable after something has changed
@@ -178,6 +191,7 @@ module OpenRubyRMK
         end
         
         def setup_event_handlers
+          evt_close{|event| self.hide; event.veto} #We don't close the window, we just hide it
           evt_text(@map_name_txt){|event| on_val_changed(event)}
           evt_combobox(@mapset_drop){|event| on_val_changed(event)}
           evt_spinctrl(@width_spin){|event| on_val_changed(event)}

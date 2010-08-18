@@ -44,13 +44,11 @@ module OpenRubyRMK
           #the window after a short waiting delay on other platforms. 
           Timer.after(1000){self.maximize(true)} unless RUBY_PLATFORM =~ /mingw|mswin/
           
-          @mapset_window = nil
-          @properties_window = nil
-          
           create_menubar
           create_toolbar
           create_statusbar
           create_controls
+          create_extra_windows
           setup_event_handlers
           Plugins[:mainwindow].each{|block| instance_eval(&block)}
         end
@@ -168,6 +166,12 @@ module OpenRubyRMK
           @dummy_ctrl = StaticText.new(@right_panel, label: "")
         end
         
+        def create_extra_windows
+          @mapset_window = Windows::MapsetWindow.new(self)
+          @properties_window = Windows::PropertiesWindow.new(self)
+          @properties_window.on_change{@map_hierarchy.update_map_names}
+        end
+        
         def setup_event_handlers
           #Menu events
           [:new, :open, :save, :saveas, :exit, #File
@@ -233,30 +237,15 @@ module OpenRubyRMK
         
         def on_menu_mapset_window(event)
           return show_no_project_dlg unless OpenRubyRMK.has_project?
-          #Ensure we don't get two mapset windows
-          return if @mapset_window and @mapset_window.alive? and @mapset_window.shown?
+          return if @mapset_window.shown?
           
-          map = @map_hierarchy.selected_map
-          if map.nil?
-            md = MessageDialog.new(self, caption: t.errors.no_map.title, message: t.errors.no_map.message, style: OK | ICON_WARNING)
-            return md.show_modal
-          end
-          @mapset_window = Windows::MapsetWindow.new(self, map.mapset)
           @mapset_window.show
         end
         
         def on_menu_properties_window(event)
           return show_no_project_dlg unless OpenRubyRMK.has_project?
-          #Ensure we don't get two properties windows
-          return if @properties_window and @properties_window.alive? and @properties_window.shown?
+          return if @properties_window.shown?
           
-          map = @map_hierarchy.selected_map
-          if map.nil?
-            md = MessageDialog.new(self, caption: t.errors.no_map.title, message: t.errors.no_map.message, style: OK | ICON_WARNING)
-            return md.show_modal
-          end
-          @properties_window = Windows::PropertiesWindow.new(self, map, [Mapset.load("test1.png")]) #DEBUG: Mapsets?
-          @properties_window.on_change{|changed_map| @map_hierarchy.update_map_names}
           @properties_window.show
         end
         
@@ -318,11 +307,8 @@ module OpenRubyRMK
         def on_map_hier_clicked(event)
           if event.item.nonzero?
             @dummy_ctrl.label = @map_hierarchy.get_item_data(event.item).inspect
-            unless @map_hierarchy.selected_map.nil?
-              @properties_window.reload(@map_hierarchy.selected_map) if @properties_window and @properties_window.alive? and @properties_window.shown?
-            else #Root item selected
-              @properties_window.close
-            end
+            @mapset_window.reload(@map_hierarchy.selected_map.nil? ? nil : @map_hierarchy.selected_map.mapset)
+            @properties_window.reload(@map_hierarchy.selected_map, [Mapset.load("test1.png")])
           end
           event.skip
         end

@@ -12,22 +12,36 @@ module OpenRubyRMK
         include Wx
         include R18n::Helpers
         
-        def initialize(parent, mapset)
-          super(parent, size: Size.new(260, 650), pos: Point.new(20, 20), title: "Test")
+        #Creates a new MapsetWindow. The window is disabled at the beginning, 
+        #allowing to show and hide a single instance without the need to create 
+        #new ones all the time. 
+        #Call #reload to enable everything. 
+        def initialize(parent)
+          super(parent, size: Size.new(260, 650), pos: Point.new(20, 20), title: t.window_titles.mapset_window)
           self.background_colour = NULL_COLOUR
           
-          @mapset = mapset
+          @mapset = nil
           
           create_menu
           create_controls
           setup_event_handlers
+          
+          #Only a call to #reload can enable the window
+          self.disable
         end
         
-        def alive?
-          shown?
-          true
-        rescue ObjectPreviouslyDeleted
-          false
+        #Reloads all internal data from the given mapset and enables 
+        #the window. If you pass +nil+, it will be disabled. 
+        def reload(mapset)
+          @mapset = mapset
+          
+          if @mapset.nil?
+            self.disable
+            return
+          end
+          self.enable
+          
+          @mapset_grid.table = MapsetTableBase.new(@mapset)
         end
         
         private
@@ -52,12 +66,12 @@ module OpenRubyRMK
           @mapset_grid.col_label_size = 0
           @mapset_grid.row_label_size = 0
           @mapset_grid.register_data_type(GRID_FIELD_TYPE, FieldRenderer.new, GridCellTextEditor.new)
-          @mapset_grid.table = MapsetTableBase.new(@mapset)
-          @mapset_grid.evt_grid_select_cell{|event| @mapset_grid.refresh; event.skip}
         end
         
         def setup_event_handlers
+          evt_close{|event| self.hide; event.veto}
           evt_menu(ID_CLOSE){close}
+          @mapset_grid.evt_grid_select_cell{|event| @mapset_grid.refresh; event.skip}
         end
         
       end #MapsetWindow
