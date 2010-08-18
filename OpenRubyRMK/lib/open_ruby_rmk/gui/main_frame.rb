@@ -43,6 +43,7 @@ module OpenRubyRMK
         
         #This will contain the path of the project we're currently working with. 
         @project_path = nil
+        @mapset_window = nil
         
         create_menubar
         create_toolbar
@@ -229,14 +230,20 @@ module OpenRubyRMK
       
       def on_menu_mapset_window(event)
         return show_no_project_dlg unless OpenRubyRMK.has_project?
+        #Ensure we don't get two mapset windows
+        begin
+          return if @mapset_window and @mapset_window.shown?
+        rescue ObjectPreviouslyDeleted ##shown? called on a closed window raises this
+          @mapset_window = nil
+        end
         
         map = @map_hierarchy.selected_map
         if map.nil?
           md = MessageDialog.new(self, caption: t.errors.no_map.title, message: t.errors.no_map.message, style: OK | ICON_WARNING)
           return md.show_modal
         end
-        @win = MapsetWindow.new(self, map.mapset)
-        @win.show
+        @mapset_window = MapsetWindow.new(self, map.mapset)
+        @mapset_window.show
       end
       
       def on_menu_add(event)
