@@ -44,7 +44,7 @@ module OpenRubyRMK
         
         @remembered_dir = Pathname.new(".").expand_path
         
-        @mainwindow = MainFrame.new
+        @mainwindow = Windows::MainFrame.new
         @mainwindow.show
       end
       

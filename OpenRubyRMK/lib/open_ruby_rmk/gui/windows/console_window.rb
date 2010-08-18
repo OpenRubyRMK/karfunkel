@@ -24,28 +24,32 @@ module OpenRubyRMK
   
   module GUI
     
-    #The window used to display OpenRubyRMKonsole. 
-    class ConsoleWindow < Wx::Frame
-      include Wx
+    module Windows
       
-      def initialize(parent = nil)
-        super(parent, title: "OpenRubyRMKonsole", size: Size.new(660, 400))
-        self.background_colour = NULL_COLOUR
+      #The window used to display OpenRubyRMKonsole. 
+      class ConsoleWindow < Wx::Frame
+        include Wx
         
-        @console = Terminal.new(self)
-        evt_idle{|event| on_idle(event)}
-      end
+        def initialize(parent = nil)
+          super(parent, title: "OpenRubyRMKonsole", size: Size.new(660, 400))
+          self.background_colour = NULL_COLOUR
+          
+          @console = Controls::Terminal.new(self)
+          evt_idle{|event| on_idle(event)}
+        end
+        
+        private
+        
+        #This event handler ensures that the console window 
+        #closes after the terminal session has been ended by "exit". 
+        def on_idle(event)
+          close if @console.finished?
+        end
+        
+      end #ConsoleWindow
       
-      private
-      
-      #This event handler ensures that the console window 
-      #closes after the terminal session has been ended by "exit". 
-      def on_idle(event)
-        close if @console.finished?
-      end
-      
-    end
+    end #Windows
     
-  end
+  end #GUI
   
-end
+end #OpenRubyRMK
