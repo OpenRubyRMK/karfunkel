@@ -99,6 +99,10 @@ menus:
           name: Mapset
           tooltip: Shows the mapset window
           statusbar: Shows the mapset window
+        properties:
+          name: Map properties
+          tooltip: Shows the map properties window
+          statusbar: Shows the map properties window
     
     edit:
       name: Edit

@@ -55,7 +55,9 @@ module OpenRubyRMK
     
     #The unique ID of a map. Cannot be changed. 
     attr_reader :id
+    #The parent map as a Map object or nil if there is no parent. 
     attr_reader :parent
+    #An array of all children maps in form of their IDs. 
     attr_reader :children_ids
     #The mapset used to display this map. 
     attr_accessor :mapset
@@ -64,6 +66,19 @@ module OpenRubyRMK
     # :attr_acessor: name
     #The name of this map. If no name is set or it is empty, 
     #a stringified version of it's ID will be returned. 
+    
+    ##
+    # :attr_accessor: width
+    #The map's width in fields. 
+    
+    ##
+    # :attr_accessor: height
+    #The map's height in fields. 
+    
+    ##
+    # :attr_accessor: depth
+    #The map's depth. Indicates how many elements may 
+    #reside above each other. 
     
     @maps = []
     
@@ -170,6 +185,61 @@ module OpenRubyRMK
       @children_ids = []
       #Remember the map
       self.class.maps << self
+    end
+    
+    #true if this map has a parent map. 
+    def has_parent?
+      !@parent.nil?
+    end
+    
+    #true if this map hasn't a parent map. 
+    def is_toplevel?
+      @parent.nil?
+    end
+    
+    #See accessor. 
+    def width # :nodoc:
+      @table.size
+    end
+    
+    #See accessor.
+    def height # :nodoc:
+      @table[0].size
+    end
+    
+    #See accessor. 
+    def depth # :nodoc:
+      @table[0][0].size
+    end
+    
+    #See accessor. 
+    def width=(val) # :nodoc:
+      #Handle smaller and equal widths
+      @table = @table[0...val] #excusive, b/c index is 0-based
+      #If the map is enlarged, we need to append extra columns
+      @table.size.upto(val - 1){@table << Array.new(height){Array.new(depth){[0, 0]}}} #-1, b/c index is 0-based
+    end
+    
+    #See accessor. 
+    def height=(val) # :nodoc:
+      @table.map! do |col|
+        #Handle smaller and equal heights
+        col = col[0...val] #excusive, b/c index is 0-based
+        #Handle greater heights
+        col.size.upto(val - 1){col << Array.new(depth){[0, 0]}} #-1, b/c index is 0-based
+        col
+      end
+    end
+    
+    #See accessor. 
+    def depth=(val) # :nodoc:
+      @table.each do |col|
+        col.map! do |depth_row|
+          depth_row = depth_row[0...val] #excusive, b/c index is 0-based
+          depth_row.size.upto(val - 1){depth_row << [0, 0]} #-1, b/c index is 0-based
+          depth_row
+        end
+      end
     end
     
     #Returns an array containing all parent IDs of this map, 

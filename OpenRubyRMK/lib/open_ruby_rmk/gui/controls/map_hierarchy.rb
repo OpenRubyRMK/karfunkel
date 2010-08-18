@@ -72,6 +72,14 @@ module OpenRubyRMK
           get_item_data(get_selection)
         end
         
+        def update_map_names
+          each do |id|
+            data = get_item_data(id)
+            next if data.nil? #Root item
+            set_item_text(id, data.name)
+          end
+        end
+        
         private
         
         #Recursively iterates over the given hash and appends the maps 

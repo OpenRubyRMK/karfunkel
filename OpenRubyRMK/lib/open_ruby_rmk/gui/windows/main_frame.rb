@@ -32,6 +32,7 @@ module OpenRubyRMK
         
         IDS = {
           :mapset_window => ID_GENERATOR.next, 
+          :properties_window => ID_GENERATOR.next, 
           :console => ID_GENERATOR.next
         }.freeze
         
@@ -44,6 +45,7 @@ module OpenRubyRMK
           Timer.after(1000){self.maximize(true)} unless RUBY_PLATFORM =~ /mingw|mswin/
           
           @mapset_window = nil
+          @properties_window = nil
           
           create_menubar
           create_toolbar
@@ -83,6 +85,7 @@ module OpenRubyRMK
           @menus[:view][:menu] = Menu.new
           @menus[:view][:windows] = Menu.new
           @menus[:view][:windows].append(IDS[:mapset_window], t.menus.mainwindow.view.windows.mapset.name, t.menus.mainwindow.view.windows.mapset.statusbar)
+          @menus[:view][:windows].append(IDS[:properties_window], t.menus.mainwindow.view.windows.properties.name, t.menus.mainwindow.view.windows.properties.statusbar)
           @menus[:view][:menu].append_menu(ID_ANY, t.menus.mainwindow.view.windows.name, @menus[:view][:windows])
           @menu_bar.append(@menus[:view][:menu], t.menus.mainwindow.view.name)
           
@@ -169,7 +172,7 @@ module OpenRubyRMK
           #Menu events
           [:new, :open, :save, :saveas, :exit, #File
           :add, #Edit
-          :mapset_window, #View->Windows
+          :mapset_window, :properties_window, #View->Windows
           :console, #Extras
           :help, :about #Help
           ].each do |sym| 
@@ -246,10 +249,29 @@ module OpenRubyRMK
           @mapset_window.show
         end
         
+        def on_menu_properties_window(event)
+          return show_no_project_dlg unless OpenRubyRMK.has_project?
+          #Ensure we don't get two properties windows
+          begin
+            return if @properties_window and @properties_window.shown?
+          rescue ObjectPreviouslyDeleted ##shown? called on a closed window raises this
+            @properties_window = nil
+          end
+          
+          map = @map_hierarchy.selected_map
+          if map.nil?
+            md = MessageDialog.new(self, caption: t.errors.no_map.title, message: t.errors.no_map.message, style: OK | ICON_WARNING)
+            return md.show_modal
+          end
+          @properties_window = Windows::PropertiesWindow.new(self, map, [Mapset.load("test1.png")]) #DEBUG: Mapsets?
+          @properties_window.on_change{|changed_map| @map_hierarchy.update_map_names}
+          @properties_window.show
+        end
+        
         def on_menu_add(event)
           return show_no_project_dlg unless OpenRubyRMK.has_project?
           
-          md = Windows::NewMapDialog.new(self, available_mapsets: [Mapset.load("test1.png")]) #DEBUG: Mapsets?
+          md = Windows::MapDialog.new(self, available_mapsets: [Mapset.load("test1.png")]) #DEBUG: Mapsets?
           return if md.show_modal == ID_CANCEL
           
           #Put the new map in the right place inside the map hierarchy

@@ -26,7 +26,7 @@ module OpenRubyRMK
     
     module Windows
       
-      class NewMapDialog < Wx::Dialog
+      class MapDialog < Wx::Dialog
         include Wx
         include R18n::Helpers
         
@@ -202,26 +202,7 @@ module OpenRubyRMK
           true
         end
         
-      end #NewMapDialog
-      
-      class EditMapDialog < NewMapDialog
-        
-        def initialize(parent, mapsets, map)
-          hsh = {
-            :id => map.id, 
-            :name => map.name, 
-            :mapsets => mapsets, 
-            :width => map.width, 
-            :height => map.height, 
-            :depth => map.depth, 
-            :parent_id => map.parent
-          }
-          super(parent, hsh)
-          self.title = t.dialogs.map_dialog.title_edit
-          @map_id_txt.disable #The ID of an already created map can't be changed
-        end
-        
-      end #EditMapDialog
+      end #MapDialog
       
     end #Windows
     
