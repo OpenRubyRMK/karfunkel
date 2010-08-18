@@ -41,8 +41,6 @@ module OpenRubyRMK
         #the window after a short waiting delay on other platforms. 
         Timer.after(1000){self.maximize(true)} unless RUBY_PLATFORM =~ /mingw|mswin/
         
-        #This will contain the path of the project we're currently working with. 
-        @project_path = nil
         @mapset_window = nil
         
         create_menubar
