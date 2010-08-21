@@ -21,7 +21,15 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
 #External requires
-require "yaml"
+if RUBY_VERSION >= "1.9.2"
+  #For whatever reasion, Psych's compatibility doesn't include YAML::PrivateType, 
+  #causing R18n to crash. As soon as I have Internet access again, I'll file a bug. 
+  #require "psych"
+  #YAML = Psych
+  require "yaml"
+else
+  require "yaml"
+end
 require "pathname"
 require "r18n-desktop"
 require "pp"
