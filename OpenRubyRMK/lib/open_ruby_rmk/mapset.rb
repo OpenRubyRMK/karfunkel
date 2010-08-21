@@ -57,7 +57,7 @@ module OpenRubyRMK
       obj
     end
     
-    #Grabs the field at the specified position. 
+    #Grabs the Wx::Image at the specified position. 
     def [](row, col)
       @data[col][row]
     end
@@ -81,7 +81,7 @@ module OpenRubyRMK
         0.upto(rows) do |field|
           subimg = img.sub_image(Wx::Rect.new(col * FIELD_EDGE, field * FIELD_EDGE, col * FIELD_EDGE + FIELD_EDGE, field * FIELD_EDGE + FIELD_EDGE))
           @data[col] ||= []
-          @data[col][field] = Field.new(subimg)
+          @data[col][field] = subimg
         end
       end
     end

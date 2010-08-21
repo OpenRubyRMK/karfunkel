@@ -35,13 +35,12 @@ module OpenRubyRMK
   #    :table => a_4dimensional_array, 
   #    :parent => the_id_of_the_parent_map_or_zero
   #  }
-  #where the 4-dimensional array is simply the description of the three-dimensional 
-  #map table (X, Y and Z coordinates) plus the coordinates of the mapset fields, which are 
-  #stored as an array of form <tt>[x, y]</tt>. 
-  #For example, 
-  #  ary[4, 2, 0] #=> [4, 7]
-  #tells us that for the field at (4|2) at the ground layer the mapset's field at position 
-  #(4|7) should be used. 
+  #where the 3-dimensional array is simply the description of the three-dimensional 
+  #map table (X, Y and Z coordinates) plus the information of the map field that 
+  #resides at that position in form of an array. This array has this form: 
+  #  [mapset_x, mapset_y, events_hsh]
+  #where +mapet_x+ and +mapset_y+ are both -1 if no field was specified at that position. 
+  #TODO: Describe the events hash!
   #
   #You may noticed that the ID of the map isn't contained in the serialized hash. 
   #That's because it is simply determined from the file's name, which should be 
@@ -50,6 +49,14 @@ module OpenRubyRMK
   #For instance: 
   #  3.bin
   #For the map with ID 3. 
+  #
+  #The map's hierarchy is described in the +structure.bin+ file. It a marshaled hash 
+  #of this form: 
+  #  {parent_id => {<hash_format>}}
+  #It just describes how the map's parent-and-children-relationship gets resolved
+  #and has no deep meaning besides making life easier (look at the code 
+  #that loads the maps!). If there was a nice way to get the relationship resolved, I'd 
+  #go it, especially because a Map object already knows about it's parent and children IDs. 
   class Map
     include Wx
     
@@ -120,7 +127,18 @@ module OpenRubyRMK
         @id = id
         @name = hsh[:name]
         @mapset = Mapset.load(hsh[:mapset])
-        @table = hsh[:table]
+        @table = []
+        hsh[:table].each_with_index do |col, i_col|
+          @table[i_col] = []
+          col.each_with_index do |depth_row, i_drow|
+            @table[i_col][i_drow] = Array.new(depth_row.size)
+            depth_row.each_with_index do |field_ary, i_field|
+              next if field_ary.nil? #That means no field is defined at this position
+              @mapset[i_col][i_drow][i_field] = Field.load(i_col, i_drow, i_field, @mapset, field_ary)
+            end
+          end
+        end
+        
         @parent = self.class.from_id(hsh[:parent])
         @parent.children_ids << @id unless @parent.nil? #Map.from_id returns nil if there's no parent
         @children_ids = []
@@ -132,7 +150,7 @@ module OpenRubyRMK
     
     #Deletes the map with the given ID from the list of remembered maps, 
     #plus all children's IDs (recursively, so a children's children etc. also 
-    #gets removed). 
+    #get removed). 
     #After a call to this method you shouldn't use any map object with this 
     #ID or a child ID anymore. 
     #Returns the deleted map's ID which can now be used as an available ID. 
@@ -176,10 +194,9 @@ module OpenRubyRMK
       raise(ArgumentError, "Parent ID #{parent} doesn't exist!") if parent.nonzero? and !self.class.id_in_use?(parent)
       raise(ArgumentError, "The ID #{id} is already in use!") if self.class.id_in_use?(id)
       @id = id
-      self.class.maps << self
       @name = name.to_str
       @mapset = mapset
-      @table = Array.new(width){Array.new(height){Array.new(depth){[0, 0]}}} #(0|0) should always be transparent on the mapset
+      @table = Array.new(width){Array.new(height){Array.new(depth)}} #nil means the field is empty
       @parent = self.class.from_id(parent)
       @parent.children_ids << @id unless @parent.nil? #Map.from_id returns nil if there's no parent
       @children_ids = []
@@ -217,7 +234,7 @@ module OpenRubyRMK
       #Handle smaller and equal widths
       @table = @table[0...val] #excusive, b/c index is 0-based
       #If the map is enlarged, we need to append extra columns
-      @table.size.upto(val - 1){@table << Array.new(height){Array.new(depth){[0, 0]}}} #-1, b/c index is 0-based
+      @table.size.upto(val - 1){@table << Array.new(height){Array.new(depth)}} #-1, b/c index is 0-based
     end
     
     #See accessor. 
@@ -226,7 +243,7 @@ module OpenRubyRMK
         #Handle smaller and equal heights
         col = col[0...val] #excusive, b/c index is 0-based
         #Handle greater heights
-        col.size.upto(val - 1){col << Array.new(depth){[0, 0]}} #-1, b/c index is 0-based
+        col.size.upto(val - 1){col << Array.new(depth)} #-1, b/c index is 0-based
         col
       end
     end
@@ -235,8 +252,10 @@ module OpenRubyRMK
     def depth=(val) # :nodoc:
       @table.each do |col|
         col.map! do |depth_row|
+          #Handle smaller and equal dephts
           depth_row = depth_row[0...val] #excusive, b/c index is 0-based
-          depth_row.size.upto(val - 1){depth_row << [0, 0]} #-1, b/c index is 0-based
+          #Handle greater depths
+          depth_row.size.upto(val - 1){depth_row << nil} #-1, b/c index is 0-based
           depth_row
         end
       end
@@ -264,28 +283,17 @@ module OpenRubyRMK
       self.class.delete(self.id)
     end
     
-    #Returns the field of the associated mapset that is used 
-    #at the given position. It's returned as a two-element 
-    #array of form
-    #  [x, y]
-    #where +x+ indicates the column index (0-based) and 
-    #+y+ indicates the row index (0-based, too). For example, 
-    #if 
-    #  my_map[2, 4, 0]
-    #returns <tt>[3, 7]</tt>, we get to know, that at position 
-    #(2|4) in the height 0 (that is the ground layer) the field 
-    #from the mapset was used, that can be found at position 
-    #(3|7) on the mapset. 
+    #Returns a Field object describing the given position or +nil+ if 
+    #no field has been associated with the position. 
+    #Note that this also returns nil for positions outside the map. 
     def [](x, y, z)
       @table[x][y][z]
     end
     
-    #Sets the tile that should be used at the given position. 
-    #+tile_pos+ is a two-element array of form
-    #  [x, y]
-    #. For an explanation, see #[]. 
-    def []=(x, y, z, tile_pos)
-      @table[x][y][z] = tile_pos.to_ary
+    #Sets the field that should be used at the specified position. Set to nil 
+    #if you want to delete the field. 
+    def []=(field)
+      @table[x][y][z] = field
     end
     
     #See accessor. 
@@ -305,16 +313,37 @@ module OpenRubyRMK
       "<#{self.class} ID: #{@id} Size: #{@table.size}x#{@table[0].size}x#{@table[0][0].size}>"
     end
     
-    #Saves this map to a file in OpenRubyRMK.project_maps_dir. See this class's documentation 
-    #for a description of the file format. 
+    #Saves this map to a file in OpenRubyRMK.project_maps_dir. and updates the structure file. 
+    #See this class's documentation for a description of the file format. Always make sure that 
+    #the parent map of this map has already been saved, otherwise you'll get a NoMethodError here 
+    #and a serialized map, although the structure file hasn't been updated!
     def save
+      #Umwandeln des Tabellenformats ins Serialisierformat
+      #~ table = @table.dup
+      #~ table.each do |col|
+        #~ col.each do |depth_row|
+          #~ depth_row.map! do |field|
+            #~ field.nil? ? [-1, -1, {}] : [field.mapset_x, field.mapset_y, {}] #TODO - characters hash!
+          #~ end
+        #~ end
+      #~ end
+      
       hsh = {
         :name => name, #@name may be unset
-        :mapset => @mapset.filename, 
+        :mapset => @mapset.filename.to_s, 
         :table => @table, 
         :parent => @parent.nil? ? 0 : @parent.id #0 means there's no parent
       }
-      OpenRubyRMK.projects_maps_dir.join("#{@id}.bin").open("wb"){|f| Marshal.dump(hsh, f)}
+      #Save the map
+      OpenRubyRMK.project_maps_dir.join("#{@id}.bin").open("wb"){|f| Marshal.dump(hsh, f)}
+      #Add it to the structure file
+      orig_hsh = hsh = OpenRubyRMK.project_maps_structure_file.open("rb"){|f| Marshal.load(f)}
+      ids = parent_ids
+      until ids.empty?
+        hsh = hsh[ids.shift] #By reference!
+      end
+      hsh[@id] = {}
+      OpenRubyRMK.project_maps_structure_file.open("wb"){|f| Marshal.dump(orig_hsh, f)}
     end
     
   end

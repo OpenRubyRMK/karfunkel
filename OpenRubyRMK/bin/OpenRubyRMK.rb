@@ -28,11 +28,13 @@ end
 
 #Load dependendies - we don't need all the warnings displayed 
 #when loading wxRuby, so silence them by unsetting $VERBOSE 
-#and reassigning it later. 
+#and re5assigning it later. 
 v, $VERBOSE = $VERBOSE, nil
 require "wx"
 require "stringio"
 $VERBOSE = v
+$stdout.sync = true
+$stderr.sync = true
 
 #Require the lib
 require_relative "../lib/open_ruby_rmk"
