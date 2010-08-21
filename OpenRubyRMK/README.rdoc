@@ -14,7 +14,7 @@ Just start up _bin/OpenRubyRMK.exe_.
 
 ==Other systems
 
-First, make sure you have a working Ruby 1.9 installation. We recommend 1.9.1-p429, although that might change in the future, since we try to be up to date. Additionally, you have to install these gems: @wxruby-ruby@, @r18n-desktop@. Since the precompiled wxRuby gem causes problems on Ubuntu 9.10 (Karmic) and newer, the OpenRubyRMK Team provides gems specifically compiled for recent Ubuntu versions. We did not make any modifications to wxRuby, if you don't trust us you can use the compile bash script available from our {Download page}[http://github.com/Quintus/OpenRubyRMK/Downloads] as well. 
+First, make sure you have a working Ruby 1.9 installation. We recommend 1.9.2-p0, although that might change in the future, since we try to be up to date. Additionally, you have to install these gems: +wxruby-ruby19+, +r18n-desktop+. Since the precompiled wxRuby gem causes problems on Ubuntu 9.10 (Karmic) and newer, the OpenRubyRMK Team provides gems specifically compiled for recent Ubuntu versions. We did not make any modifications to wxRuby, if you don't trust us you can use the compile bash script available from our {Download page}[http://github.com/Quintus/OpenRubyRMK/Downloads] as well. 
 
 Second, use that Ruby installation to start _bin/OpenRubyRMK.rb_. 
 
@@ -63,13 +63,14 @@ If you're interested, outside a call to #plug_into +self+ points to OpenRubyRMK:
 
 The above code is a complete plugin that adds a new menu "testmenu" containing a single entry "test" to the main window's menu bar. You can find this example in OpenRubyRMK's <i>plugins/</i> directory in the file <i>sample_plugin.rb</i>. Remove the comments to see it in effect. 
 
-One further note on the code: Please write your plugins in UTF-8, since wxRuby expects UTF-8-encoded strings for displaying. You'll get unreadable labels if your strings aren't UTF-8-encoded and contain characters like "ä". Please also note, that if you're writing a plugin you may want it to be auto-translated into other languages as OpenRubyRKM's main GUI is. Now, you can! Inside the GUI-extending plugin blocks, you have access to the auto-translation method #t. #t is your interface to OpenRubyRMK's translation files: With <tt>t.plugins.your_plugin_here</tt> you access the text saved in the translation files as
+One further note on the code: Please write your plugins in UTF-8, since wxRuby expects UTF-8-encoded strings for displaying. You'll get unreadable labels if your strings aren't UTF-8-encoded and contain characters like "ä". Please also note, that if you're writing a plugin you may want it to be auto-translated into other languages as OpenRubyRMK's main GUI is. Now, you can! Inside the GUI-extending plugin blocks, you have access to the auto-translation method #t. #t is your interface to OpenRubyRMK's translation files: With <tt>t.plugins.your_plugin_here</tt> you access the text saved in the translation files as
 
   plugins:
     your_plugin_here: "Your plugin's text here!"
 
 . If you don't want to widely deploy your plugins, it's enough to add the translations to your locale's translation file, but if you want to publish your plugin, please add an English translation, since OpenRubyRMK first looks into a user locale's translation and, if there's the translation not found, into the English translation file. If it doesn't find a translation there either, the user will be confronted with errors like this: <tt>NoMethodError: Undefined method #to_s for R18n::Untranslated</tt>. And of course, make sure that the name you want to use as a plugin name doesn't exist because a user is likely to have problems if he/she has more than one plugin with the same name installed. 
-==License==
+
+==License
 
 OpenRubyRMK is a free and open-source RPG creation program. 
 

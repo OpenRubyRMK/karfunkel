@@ -67,6 +67,7 @@ module OpenRubyRMK
           evt_left_down{|event| on_left_down(event)}
         end
         
+        #Returns true if the user entered "exit". 
         def finished?
           @exit
         end
@@ -160,7 +161,7 @@ module OpenRubyRMK
           set_insertion_point_end
         end
         
-        #Executes the given command line. 
+        #Executes the command line previously read by #process_input. 
         def execute_command
           cmd = @in_io.gets.chomp.split
           return "\n" if cmd.empty? #User entered empty command line

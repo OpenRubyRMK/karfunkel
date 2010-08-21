@@ -68,10 +68,14 @@ module OpenRubyRMK
           expand(@root) #Looks better
         end
         
+        #Returns the currently selected map or +nil+ if none or the root 
+        #node is selected. 
         def selected_map
           get_item_data(get_selection)
         end
         
+        #Iterates through all maps and refreshes the tree view's names 
+        #based on the +name+ values each map object returns. 
         def update_map_names
           each do |id|
             data = get_item_data(id)

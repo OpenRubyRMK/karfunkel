@@ -35,11 +35,11 @@ module OpenRubyRMK
   #    :table => a_4dimensional_array, 
   #    :parent => the_id_of_the_parent_map_or_zero
   #  }
-  #where the 3-dimensional array is simply the description of the three-dimensional 
+  #where the 4-dimensional array is simply the description of the three-dimensional 
   #map table (X, Y and Z coordinates) plus the information of the map field that 
   #resides at that position in form of an array. This array has this form: 
   #  [mapset_x, mapset_y, events_hsh]
-  #where +mapet_x+ and +mapset_y+ are both -1 if no field was specified at that position. 
+  #If no field was specified for that position, no array exists but rather a +nil+ object. 
   #TODO: Describe the events hash!
   #
   #You may noticed that the ID of the map isn't contained in the serialized hash. 
@@ -172,7 +172,7 @@ module OpenRubyRMK
     #that is, this equals true: 
     #  map = Map.new(112, ...)
     #  map2 = Map.from_id(112)
-    #  map.equal?(map)
+    #  map.equal?(map2)
     #That's possible since the Map class automatically remembers all 
     #created Map objects. If you want to "free" an ID, you have to explicitely 
     #delete a map by calling it's #delete! method or calling Map.delete which 
