@@ -92,6 +92,7 @@ module OpenRubyRMK
       project_maps_dir + "structure.bin"
     end
     
+    #This is the directory where a project's mapsets reside. 
     def project_mapsets_dir
       @project_path + "data" + "graphics" + "mapsets"
     end
