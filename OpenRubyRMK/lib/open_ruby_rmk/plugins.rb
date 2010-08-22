@@ -42,23 +42,30 @@ module OpenRubyRMK
     #This array contains the symbols in which you may plug your scripts into. 
     ALLOWED_PLUGIN_SYMBOLS = [:startup, :finish, :mainwindow, :mapset_window].freeze
     
+    #The Plugs module is the namespace in which plugins are executed by default. 
+    #It defines the methods necessary to specifiy where you want to plug your plugins 
+    #into, rather than filling Ruby's toplevel namespace. The trick is currently done via a 
+    #+module_eval+ on the plugin files. 
+    #
+    #The points where you may plug into are likely to change +self+ inside their block to 
+    #something else than Plug's namespace, look at ::plug_into for more information. 
     module Plugs
       
       #Call this method in a plugin script. It redirects +self+ inside the given block 
       #to something you specify through the symbol passed to this method. The full list of 
       #possible symbols is available via the OpenRubyRMK::Plugins::ALLOWED_PLUGIN_SYMBOLS 
       #array, or just here: 
-    #  Symbol          | call time           | self points to
-    #  ================+=====================+=========================================
-    #  :startup        | Plugin load time    | OpenRubyRMK::Plugins::Plugs
-    #  ----------------+---------------------+-----------------------------------------
-    #  :mainwindow     | Mainwindow creation | The mainwindow instance
-    #                  | time                | 
-    #  ----------------+---------------------+-----------------------------------------
-    #  :mapset_window  | Mapset window       | A mapset window instance
-    #                  | creation time       | 
-    #  ----------------+---------------------+-----------------------------------------
-    #  :finish         | Shortly before exit | OpenRubyRMK::Plugins::Plugs
+      #  Symbol          | call time           | self points to
+      #  ================+=====================+=========================================
+      #  :startup        | Plugin load time    | OpenRubyRMK::Plugins::Plugs
+      #  ----------------+---------------------+-----------------------------------------
+      #  :mainwindow     | Mainwindow creation | The mainwindow instance
+      #                  | time                | 
+      #  ----------------+---------------------+-----------------------------------------
+      #  :mapset_window  | Mapset window       | A mapset window instance
+      #                  | creation time       | 
+      #  ----------------+---------------------+-----------------------------------------
+      #  :finish         | Shortly before exit | OpenRubyRMK::Plugins::Plugs
       def self.plug_into(sym, &block)
         Plugins.allowed?(sym)
         Plugins.plugged[sym] << block

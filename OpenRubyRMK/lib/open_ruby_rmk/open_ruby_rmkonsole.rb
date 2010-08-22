@@ -1,6 +1,25 @@
 #!/usr/bin/env ruby
 #Encoding: UTF-8
 
+=begin
+This file is part of OpenRubyRMK. 
+
+Copyright © 2010 OpenRubyRMK Team
+
+OpenRubyRMK is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OpenRubyRMK is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
+=end
+
 module OpenRubyRMK
   
   #OpenRubyRMK's CUI. 
@@ -30,12 +49,14 @@ Go!
 ================================================================================
 BANNER
     
+    #OpenRubyRMK's copyright statement, available via the "copyright" command. 
     COPYRIGHT=<<COPYRIGHT
 OpenRubyRMK Copyright (C) 2010 OpenRubyRMK Team
 This is free software, see COPYING.txt for copying conditions. There is NO 
 warranty; not even for MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE.
 COPYRIGHT
     
+    #The GNU GPL's disclaimer of warranty, available via the "warranty" command. 
     WARRANTY=<<WARRANTY
   THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
 APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
