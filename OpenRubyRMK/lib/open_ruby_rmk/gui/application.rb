@@ -39,6 +39,8 @@ module OpenRubyRMK
       attr_accessor :remembered_dir
       
       def on_init
+        $log.info("Started.")
+        
         load_config
         setup_localization
         load_plugins
@@ -71,6 +73,7 @@ module OpenRubyRMK
       def on_exit
         $log.info "Running plugins for :finish."
         Plugins[:finish].each(&:call)
+        $log.info("Finished.")
       end
       
       private

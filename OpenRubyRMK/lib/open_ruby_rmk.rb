@@ -86,6 +86,7 @@ module OpenRubyRMK
         LOG_DIR.mkdir unless LOG_DIR.directory?
         $log = Logger.new(LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
       end
+      $log.level = level
       $log.datetime_format =  "%d.%m.%Y, %H:%M:%S Uhr "
     end
 
