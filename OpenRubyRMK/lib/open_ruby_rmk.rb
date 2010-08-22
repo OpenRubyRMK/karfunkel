@@ -30,6 +30,7 @@ if RUBY_VERSION >= "1.9.2"
 else
   require "yaml"
 end
+require "logger"
 require "pathname"
 require "r18n-desktop"
 require "pp"
@@ -45,16 +46,23 @@ module OpenRubyRMK
   
   #OpenRubyRMK's root dir. This is *not* the root dir of a game 
   #created with OpenRubyRMK, but refers to OpenRubyRMK's 
-  #installation directory. 
+  #installation directory. On Windows, it's the temporary directory 
+  #created by OCRA. 
   ROOT_DIR = Pathname.new(__FILE__).dirname.parent.expand_path
+  #OpenRubyRMK's real installation directory. On Windows, this is the 
+  #directory where OpenRubyRMK was installed to (in contrast to ROOT_DIR). 
+  #On other systems, this is the same as ROOT_DIR. 
+  INSTALL_DIR = ENV.has_key?("OCRA_EXECUTABLE") ? Pathname.new(ENV["OCRA_EXECUTABLE"].tr("\\", "/")).parent.parent : ROOT_DIR #OCRA_EXECUTABLE is defined for Windows *.exe files
   #Directory where GUI icons etc. are found. 
   DATA_DIR = ROOT_DIR + "data"
+  #The directory where log files are created in. 
+  LOG_DIR = INSTALL_DIR + "bin" + "logs"
   #This directory contains OpenRubyRMK's translation files. 
-  LOCALE_DIR = ENV.has_key?("OCRA_EXECUTABLE") ? Pathname.new(ENV["OCRA_EXECUTABLE"].tr("\\", "/")).parent.parent + "locale" : ROOT_DIR + "locale" #OCRA_EXECUTABLE is defined for Windows *.exe files
+  LOCALE_DIR =  INSTALL_DIR + "locale"
   #This is the path of OpenRubyRMK's configuration file. 
-  CONFIG_FILE = ENV.has_key?("OCRA_EXECUTABLE") ? Pathname.new(ENV["OCRA_EXECUTABLE"].tr("\\", "/")).parent.parent + "config" + "OpenRubyRMK-rc.yml" : ROOT_DIR + "config" + "OpenRubyRMK-rc.yml"
+  CONFIG_FILE = INSTALL_DIR + "config" + "OpenRubyRMK-rc.yml"
   #In this directory and it's subdirectories reside plugins. 
-  PLUGINS_DIR = ENV.has_key?("OCRA_EXECUTABLE") ? Pathname.new(ENV["OCRA_EXECUTABLE"].tr("\\", "/")).parent.parent + "plugins" : ROOT_DIR + "plugins"
+  PLUGINS_DIR = INSTALL_DIR + "plugins"
   #Since Ruby's Math module doesn't define INFINITY for whatever reason...
   INFINITY = 1.0/0.0
   #Negative infinity. 
@@ -63,6 +71,33 @@ module OpenRubyRMK
   @project_path = nil #Supresses this silly "not defined" warning when calling ::has_project?. 
   
   class << self
+    
+    #Creates OpenRubyRMK's Logger. Pass in the Logger level and if you want to 
+    #log to $stdout (+false+ by default). If you don't want to log to the standard 
+    #output, the logger will be setup to generate up to 5 "OpenRubyRMK.log" files 
+    #in the <i>bin/logs</i> directory. Each of them will have a size around 1MiB. 
+    #
+    #The logger will be assigned to the global variable $log, making it available for 
+    #logging everywhere. 
+    def create_logger(level = Logger::WARN, stdout = false)
+      if stdout
+        $log = Logger.new($stdout)
+      else
+        LOG_DIR.mkdir unless LOG_DIR.directory?
+        $log = Logger.new(LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
+      end
+      $log.datetime_format =  "%d.%m.%Y, %H:%M:%S Uhr "
+    end
+
+    #This method executes the given code block if OpenRubyRMK 
+    #is run in debug mode. When executing a debug block, it prints 
+    #information about the execution time. 
+    def debug
+      return unless $DEBUG
+      @logger.debug "Executing debug code at: "
+      caller.each{|call| @logger.debug(call)}
+      yield
+    end
     
     #Convenience method that checks wheather ::project_path returns nil. 
     #If so, no project is considered selected and false is returned, true otherwise. 
@@ -95,6 +130,10 @@ module OpenRubyRMK
     #This is the directory where a project's mapsets reside. 
     def project_mapsets_dir
       @project_path + "data" + "graphics" + "mapsets"
+    end
+    
+    def project_characters_dir
+      @project_path + "data" + "graphics" + "characters"
     end
     
   end

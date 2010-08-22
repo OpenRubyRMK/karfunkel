@@ -50,6 +50,8 @@ module OpenRubyRMK
           create_controls
           create_extra_windows
           setup_event_handlers
+          
+          $log.info "Running plugins for :mainwindow."
           Plugins[:mainwindow].each{|block| instance_eval(&block)}
         end
         

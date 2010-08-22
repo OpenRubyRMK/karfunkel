@@ -52,7 +52,26 @@ require_relative "../lib/open_ruby_rmk/plugins" #Not sure -- belongs this to the
 
 exit if defined? Ocra #That means the script is being compiled for Windows by OCRA
 
-#Now start OpenRubyRMK
+#Create the logger
+level = $DEBUG ? Logger::DEBUG : $VERBOSE ? Logger::INFO : Logger::WARN
+to_stdout = $DEBUG ? true : false
+OpenRubyRMK.create_logger(level, to_stdout)
 
-app = OpenRubyRMK::GUI::Application.new
-app.main_loop
+#Disable output buffering when in debug mode
+if $DEBUG
+  $stdout.sync = true
+  $stderr.sync = true
+end
+
+#Now start OpenRubyRMK
+begin
+  app = OpenRubyRMK::GUI::Application.new
+  app.main_loop
+rescue => e #If an error gets here, the GUI has failed at everything. 
+  $log.fatal(e.class.name + ": " + e.message)
+  $log.fatal("Backtrace:")
+  e.backtrace.each{|trace| $log.fatal(trace)}
+  
+  #Reraise
+  raise
+end

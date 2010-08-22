@@ -160,6 +160,11 @@ dialogs:
 #Error messages that are displayed if the user makes mistakes or just 
 #behaves anormally. 
 errors:
+  #Message for fatal errors shown when OpenRubyRMK crashes. You have three %s escapes available: 
+  #The first will be replaced by the error's class name, the second by the error message and the third 
+  #by the error's backtrace. Whatever you write here, you don't have any influence on how the 
+  #error will be written to the log file. 
+  fatal: "A fatal error occured during execution of OpenRubyRMK. \nWe're sorry for this, but please help us improving OpenRubyRMK by filing a bug at \nhttp://github.com/Quintus/OpenRubyRMK \nor by sending an email to \nopenrubyrmk@googlemail.com. \nDescribe what you did and attach the most recent log file. \nHere is the original error which can also be found in the log file: \n\n%s: %s\nBacktrace:\n%s"
   no_project:
     title: No project selected
     message: You don't have a project opened. In order to execute this action you have to create a new project or open up an existing one.
