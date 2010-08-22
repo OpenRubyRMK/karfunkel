@@ -6,7 +6,7 @@ OpenRubyRMK is a program to create 2D games. Mostly it's used to create role pla
 
 ==How to use it?
 
-OpenRubyRMK is platform-independent. That means, it runs on Linux systems as well as on Macintosh or Microsoft Windows ones. That's because it is written in Ruby, the most beautiful programming language every invented, have a look at it at http://www.ruby-lang.org . For Windows we supply a full-featured installer, on other systems you have to have a working Ruby 1.9 installation (although nothing prevents you from installing Ruby 1.9 on Windows and using that instead of the installer). 
+OpenRubyRMK is platform-independent. That means, it runs on Linux systems as well as on Macintosh or Microsoft Windows ones. That's because it is written in Ruby, the most beautiful programming language ever invented, have a look at it at http://www.ruby-lang.org . For Windows we supply a full-featured installer, on other systems you have to have a working Ruby 1.9 installation (although nothing prevents you from installing Ruby 1.9 on Windows and using that instead of the installer). 
 
 ==Windows
 
