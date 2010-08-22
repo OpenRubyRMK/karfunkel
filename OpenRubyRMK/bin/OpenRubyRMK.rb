@@ -28,7 +28,7 @@ end
 
 #Load dependendies - we don't need all the warnings displayed 
 #when loading wxRuby, so silence them by unsetting $VERBOSE 
-#and re5assigning it later. 
+#and reassigning it later. 
 v, $VERBOSE = $VERBOSE, nil
 require "wx"
 require "stringio"
