@@ -33,8 +33,6 @@ v, $VERBOSE = $VERBOSE, nil
 require "wx"
 require "stringio"
 $VERBOSE = v
-$stdout.sync = true
-$stderr.sync = true
 
 #Require the lib
 require_relative "../lib/open_ruby_rmk"
