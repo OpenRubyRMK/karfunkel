@@ -71,6 +71,7 @@ module OpenRubyRMK
       end
       
       def on_exit
+        super
         $log.info "Running plugins for :finish."
         Plugins[:finish].each(&:call)
         $log.info("Finished.")
