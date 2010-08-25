@@ -36,9 +36,9 @@ The very first thing to do is to become familiar with @git@, the version control
 
 The second thing you should probably do, is either to fork this repository and send a pull request or, if you want to become a core developer, send an email to openrubyrmk@googlemail.com. We'll grant you pushing rights on this repository then. 
 
-Next, you have to create a branch for your idea unless it's a small change that can directly contributed to one of the existing branches. To create a new branch, you first have to clone the repo: 
+Next, you have to create a branch for your idea unless it's a small change that can be directly contributed to one of the existing branches. To create a new branch, you first have to clone the repo: 
 
-bc. $ git clone git@github.com:Quintus/OpenRubyRMK
+bc. $ git clone git@github.com:Quintus/OpenRubyRMK.git
 
 If you forked the repository, you have to replace this with your own one. Then create the new branch: 
 
