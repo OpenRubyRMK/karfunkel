@@ -257,28 +257,7 @@ module OpenRubyRMK
           md = Windows::MapDialog.new(self, available_mapsets: [Mapset.load("test1.png")]) #DEBUG: Mapsets?
           return if md.show_modal == ID_CANCEL
           
-          #Put the new map in the right place inside the map hierarchy
-          if md.map.parent == 0 #0 means no parent
-            @maps[md.map.id] = md.map
-          else
-            parents = md.map.parent_ids
-            if parents.empty? #We want to add to root and root doesn't have a :children key, just plain IDs
-              @maps[md.map.id] = {:map => md.map, :children => {}}
-            else #We have at least one parent
-              last_parent_hsh = @maps
-              until parents.empty?
-                if last_parent_hsh.has_key?(:children) #Child
-                  last_parent_hsh = last_parent_hsh[:children][parents.shift] #We get a reference to a part of the original hash here
-                else #Root element
-                  last_parent_hsh = last_parent_hsh[parents.shift] #We get a reference to a part of the original hash here
-                end
-              end
-              
-              #Add the map to the end of the hierarchy
-              last_parent_hsh[:children][md.map.id] = {:map => md.map, :children => {}}
-            end
-          end
-          @map_hierarchy.recreate_tree!(@project_name, @maps)
+          add_map_to_hierarchy_control(md.map)
         end
         
         def on_menu_console(event)
@@ -328,6 +307,30 @@ module OpenRubyRMK
             result[map_id][:children] = buildup_hash(children_hsh)
           end
           result
+        end
+        
+        def add_map_to_hierarchy_control(map)
+          if map.parent == 0 #0 means no parent
+            @maps[map.id] = md.map #TODO - what's the sense of this? It's done by parents.empty? below
+          else
+            parents = map.parent_ids
+            if parents.empty? #We want to add to root and root doesn't have a :children key, just plain IDs
+              @maps[map.id] = {:map => map, :children => {}}
+            else #We have at least one parent
+              last_parent_hsh = @maps
+              until parents.empty?
+                if last_parent_hsh.has_key?(:children) #Child
+                  last_parent_hsh = last_parent_hsh[:children][parents.shift] #We get a reference to a part of the original hash here
+                else #Root element
+                  last_parent_hsh = last_parent_hsh[parents.shift] #We get a reference to a part of the original hash here
+                end
+              end
+              
+              #Add the map to the end of the hierarchy
+              last_parent_hsh[:children][map.id] = {:map => map, :children => {}}
+            end
+          end
+          @map_hierarchy.recreate_tree!(@project_name, @maps)
         end
         
         def show_no_project_dlg

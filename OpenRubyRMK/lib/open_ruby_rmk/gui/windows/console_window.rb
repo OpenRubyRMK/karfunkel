@@ -34,16 +34,10 @@ module OpenRubyRMK
           super(parent, title: "OpenRubyRMKonsole", size: Size.new(660, 400))
           self.background_colour = NULL_COLOUR
           
-          @console = Controls::Terminal.new(self)
-          evt_idle{|event| on_idle(event)}
-        end
-        
-        private
-        
-        #This event handler ensures that the console window 
-        #closes after the terminal session has been ended by "exit". 
-        def on_idle(event)
-          close if @console.finished?
+          @console = Controls::RMKonsole.new(self, main: OpenRubyRMKonsole::Main)
+          
+          #Make sure the extra command's output goes to the right direction, i.e. the console control. 
+          OpenRubyRMKonsole.output = @console.stdout
         end
         
       end #ConsoleWindow

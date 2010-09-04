@@ -22,22 +22,35 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 module OpenRubyRMK
   
-  #OpenRubyRMK's CUI. 
+  #OpenRubyRMK's CUI. The files that contain what RMKonsole does are a bit spread over the 
+  #directory structure, since I wanted to strictly separate GUI and non-GUI classes. 
+  #That means, the full inner GUI terminal is formed by the following files: 
+  #* lib/open_ruby_rmkonsole.rb (this file). Defines the commands executable in the CUI. 
+  #* lib/gui/controls/terminal.rb. Defines the superclass for the terminal widget. 
+  #* lib/gui/controls/rmkonsole.rb. This defines the terminal widget's class. 
+  #* lib/gui/windows/console_window.rb. This contains the terminal window's class definition. 
+  #Theoretically speaking, it should be possible to write a real CUI for OpenRubyRMK by 
+  #using the constants and methods defined under the module inside this file. However, practically 
+  #speaking that's unlikely, since the visual representation of the maps makes life a lot 
+  #easier. Nevertheless RMKonsole may help you to get away with instantly repeating processes. 
+  #Just define a plugin for :rmkonsole that encapsulates what you're doing and call the newly 
+  #defined method. TODO: Implement the plugin system for RMKonsole. 
   module OpenRubyRMKonsole
     
     #The version of the CUI. 
-    VERSION = "0.0.1-dev"
+    VERSION = "0.0.2-dev"
     
     #The banner that gets displayed every time you start the CUI. 
     BANNER =<<BANNER
 ================================================================================
-OpenRubyRMK Copyright (C) 2010 OpenRubyRMK Team
+OpenRubyRMK, a free and open-source RPG creation program.  
+Copyright (C) 2010 OpenRubyRMK Team
 This program comes with ABSOLUTELY NO WARRANTY; for details type 'warranty'.
 This is free software, and you are welcome to redistribute it
 under certain conditions; type 'copyright' for details.
 
 This is OpenRubyRMKonsole, the console of the OpenRubyRMK editor!
-You're experiencing version #{VERSION}, have fun and type 'help' for 
+You're experiencing version #{VERSION}, have fun and type 'please_help' for 
 more information (and help, of course). 
 
 Found a bug in RMKonsole? Feel free to file an issue at 
@@ -68,48 +81,83 @@ IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
 ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
 WARRANTY
     
+    #Destination where the methods in the Main module write to. 
+    @output = $stdout
+    
+    #Location where all output of the methods in the Main module goes to. 
+    #$stdout by default, but you should set it to the output of a RMKonsole instance 
+    #whenever you create a new one. 
+    def self.output
+      @output
+    end
+    
+    #See #output for a description. 
+    #Setter method. 
+    def self.output=(val)
+      @output = val
+    end
     
     #This module contains every command that is executable in the CUI. 
-    module Commands
+    #In fact, when using IRB in RMKonsole, the "main" object points to this 
+    #module, therefore this documentation can be seen as a kind of "command reference" of RMKonsole. 
+    #Note however, that you are free to use the whole OpenRubyRMK API in RMKonsole, 
+    #and we encourage you to do so. 
+    module Main
       
       class << self
         
-        def help
-          puts "Help!\n"
+        #This is shown inside IRB's prompt. 
+        def to_s
+          "Main"
         end
         
+        #Shows a help message. 
+        #TODO. 
+        def please_help
+          "help!"
+        end
+        
+        #Overwrite Kernel method in order to redirect output to the control. 
+        def print(*args)
+          OpenRubyRMKonsole.output.print(*args)
+        end
+        
+        #Overwrite Kernel method in order to redirect output to the control. 
+        def puts(*args)
+          OpenRubyRMKonsole.output.puts(*args)
+        end
+        
+        #Overwrite Kernel method in order to redirect output to the control. 
+        def p(*args)
+          args.each{|arg| self.puts(arg.inspect)}
+        end
+        
+        #Overwrite Kernel method in order to redirect output to the control. 
+        def y(*args)
+          args.each{|arg| self.puts(arg.to_yaml)}
+          nil
+        end
+        
+        #Shows OpenRubyRMK's copyright statement. 
         def copyright
-          puts COPYRIGHT
+          self.puts COPYRIGHT
         end
         
+        #Show's the Warranty section of the GNU GPL. 
         def warranty
-          puts WARRANTY
+          self.puts WARRANTY
         end
         
-        def ruby(line = nil)
-          if line
-            eval(line)
-          elsif $stdin.tty?
-            puts "End input with __END__"
-            ruby = ""
-            loop do
-              print "ruby>"
-              line = gets
-              break if line.comp == "__END__"
-              ruby << line
-            end
-            eval(ruby)
-          else
-            $stderr.puts("Interactive Ruby code only possible in a TTY.")
-          end
-        end
-        
-        def ruby_file(file)
-          if File.file?(file)
-            load(file)
-          else
-            $stderr.puts("File not found: '#{file}'.")
-          end
+        #Adds the given map object to the map hierarchy. 
+        #This is exactly what the Edit -> Add map... menu does; 
+        #note that the map doesn't get saved automatically, it will 
+        #be saved when the user saves the entire project. 
+        #If you want to enforce saving of the map, call #save on your 
+        #Map object. 
+        def add_map_to_gui(map)
+          return self.puts("No GUI loaded.") unless defined?(Wx)
+          return self.puts("No project selected.") unless OpenRubyRMK.has_project?
+          Wx::THE_APP.mainwindow.send(:add_map_to_hierarchy_control, map)
         end
         
       end

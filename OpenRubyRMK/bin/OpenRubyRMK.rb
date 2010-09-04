@@ -32,6 +32,8 @@ end
 v, $VERBOSE = $VERBOSE, nil
 require "wx"
 require "stringio"
+require "timeout"
+require "irb"
 $VERBOSE = v
 
 #Require the lib
@@ -47,6 +49,7 @@ require_relative "../lib/open_ruby_rmk/gui/windows/mapset_window"
 require_relative "../lib/open_ruby_rmk/gui/windows/console_window"
 require_relative "../lib/open_ruby_rmk/gui/windows/properties_window"
 require_relative "../lib/open_ruby_rmk/gui/controls/terminal"
+require_relative "../lib/open_ruby_rmk/gui/controls/rmkonsole"
 require_relative "../lib/open_ruby_rmk/gui/controls/map_hierarchy"
 require_relative "../lib/open_ruby_rmk/plugins" #Not sure -- belongs this to the GUI or the core lib?
 
