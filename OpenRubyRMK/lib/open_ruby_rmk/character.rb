@@ -22,33 +22,29 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 module OpenRubyRMK
   
-  #This module contains various OpenRubyRMK-related error classes. 
-  #Errors which always cause the same message to be emmited, support a 
-  #<tt>throw!</tt> class method. 
-  module Errors
+  class Character
     
-    #Superclass of every error specific to OpenRubyRMK. 
-    class OpenRubyRMKError < StandardError
-    end
+    attr_accessor :code
+    attr_reader :graphic_filename
+    attr_reader :x
+    attr_reader :y
     
-    #User tried action that requires an open project. 
-    class NoProjectError < OpenRubyRMKError
+    def self.extract_archives
+      Errors::NoProjectError.throw! unless OpenRubyRMK.has_project?
       
-      #Throws a NoProjectError with message 
-      #  No project opened!
-      #. 
-      def self.throw!
-        Kernel.raise(self, "No project opened!", caller)
+      Dir.glob(OpenRubyRMK.project_characters_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}.each do |filename|
+        $log.debug("Extracting character '#{filename}'")
+        temp_filename = OpenRubyRMK.temp_characters_dir + filename.relative_path_from(OpenRubyRMK.project_characters_dir)
+        gz = Zlib::GzipReader.open(filename)
+        Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
       end
       
     end
     
-    #Failed to load a plugin. 
-    class PluginError < OpenRubyRMKError
-    end
-    
-    #Something was wrong with a mapset file. 
-    class InvalidMapsetError < OpenRubyRMKError
+    def initialize(x, y, graphic_filename)
+      @x, @y = x, y
+      @graphic_filename = Pathname.new(graphic_filename)
+      @code = ""
     end
     
   end

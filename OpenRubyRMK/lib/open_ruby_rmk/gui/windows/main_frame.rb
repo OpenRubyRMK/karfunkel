@@ -214,6 +214,11 @@ module OpenRubyRMK
           THE_APP.remembered_dir = Pathname.new(fd.directory)
           #Set the OpenRubyRMK project dir, from which all other dirs can be computed
           OpenRubyRMK.project_path = Pathname.new(fd.directory).parent
+          #Clear the temporary directory for new files
+          OpenRubyRMK.clear_tempdir
+          #Extract the projects mapsets and characters (into the temporary directory)
+          Mapset.extract_archives
+          Character.extract_archives
           
           structure_hsh = OpenRubyRMK.project_maps_structure_file.open("rb"){|f| Marshal.load(f)}
           @maps = buildup_hash(structure_hsh)

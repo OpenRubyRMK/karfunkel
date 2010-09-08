@@ -66,6 +66,9 @@ if $DEBUG
   $stderr.sync = true
 end
 
+#Create the temporary directory
+OpenRubyRMK.create_tempdir
+
 #Now start OpenRubyRMK
 begin
   app = OpenRubyRMK::GUI::Application.new

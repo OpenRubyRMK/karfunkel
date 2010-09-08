@@ -30,8 +30,11 @@ if RUBY_VERSION >= "1.9.2"
 else
   require "yaml"
 end
+require "tempfile"
 require "logger"
 require "pathname"
+require "zlib"
+require "archive/tar/minitar"
 require "r18n-desktop"
 require "pp"
 
@@ -106,6 +109,37 @@ module OpenRubyRMK
       !project_path.nil?
     end
     
+    def create_tempdir
+      @temp_dir = Pathname.new(Dir.mktmpdir("OpenRubyRMK"))
+      $log.debug("Created temporary directory '#{@temp_dir}'.")
+      at_exit do
+        $log.debug("Removing temporary directory '#{@temp_dir}'.")
+        @temp_dir.rmtree
+      end
+    end
+    
+    def tempdir
+      @temp_dir
+    end
+    
+    def temp_mapsets_dir
+      @temp_dir + "mapsets"
+    end
+    
+    def temp_characters_dir
+      @temp_dir + "characters"
+    end
+    
+    def clear_tempdir
+      @temp_dir.children.each do |filename|
+        if filename.directory?
+          filename.rmtree
+        else
+          filename.delete
+        end
+      end
+    end
+    
     #The path of the project actually edited with OpenRubyRMK. 
     #+nil+, if no project is edited (usually at startup time). 
     def project_path
@@ -145,4 +179,5 @@ require_relative "open_ruby_rmk/errors"
 require_relative "open_ruby_rmk/map"
 require_relative "open_ruby_rmk/mapset"
 require_relative "open_ruby_rmk/field"
+require_relative "open_ruby_rmk/character"
 require_relative "open_ruby_rmk/open_ruby_rmkonsole"
