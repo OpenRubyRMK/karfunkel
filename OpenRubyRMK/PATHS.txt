@@ -28,7 +28,7 @@ Encoding: UTF-8
 	/saves #A game player's saved games
 
 /lib #Code for the Maker itself
-	- OpenRubyRMK.rb #OpenRubyRMK module
+	- open_ruby_rmk.rb #OpenRubyRMK module
 	/open_ruby_rmk #Namespace of the OpenRubyRMK module
 		/gui #Namespace of the OpenRubyRMK::GUI module
 
