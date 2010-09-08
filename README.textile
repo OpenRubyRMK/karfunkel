@@ -25,7 +25,7 @@ OK, I can see the problem with that. You should really read what's stated above,
 
 |_. You want to... |_. You need: |
 |run OpenRubyRMK| Windows: Nothing. Other: Ruby 1.9 with @wxruby-ruby19@, @r18n-desktop@ and @minitar@. See also Footnote 2 of above paragraph. *You can't use the Git sources with this setup, only an already compressed version!*|
-|develop OpenRubyRMK|Ruby 1.9.1-p429 with @wxruby-ruby19@, @r18n-desktop@, @minitar@, @gosu@ and @chingu@. Change _config/OpenRubyRMK-rc.yml_ to your Ruby installation. Reset it before compressing.|
+|develop OpenRubyRMK|Ruby 1.9.1-p429 with @wxruby-ruby19@, @r18n-desktop@, @minitar@, @gosu@ and @chingu@ (and @ocra@ on Windows). Change _config/OpenRubyRMK-rc.yml_ to your Ruby installation. Reset it before compressing.|
 |compress newest OpenRubyRMK from the Git sources|On Windows: Recent Ruby 1.9 with the @wxruby-ruby19@, @r18n-desktop@, @minitar@ and @ocra@ gems installed, plus manifest files for wxRuby in your Ruby's _bin/_ directory. Other platform: Recent Ruby 1.8 or 1.9.|
 
 Note that you may combine option 1 and 3 into "run newest compressed OpenRubyRMK", effectively combining the requirements. 
