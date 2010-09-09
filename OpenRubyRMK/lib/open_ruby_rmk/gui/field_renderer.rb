@@ -36,8 +36,8 @@ module OpenRubyRMK
       #+super+, since this class is derived from +GridCellStringRenderer+, which 
       #expects "STRING" types. 
       def draw(grid, attr, dc, rect, row, col, is_selected)
-        field = grid.table.get_value(row, col)
-        bmp = Wx::Bitmap.from_image(field.image)
+        img = grid.table.get_value(row, col)
+        bmp = Wx::Bitmap.from_image(img)
         dc.draw_bitmap(bmp, rect.x, rect.y, true)
       end
       
