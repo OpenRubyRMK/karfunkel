@@ -68,8 +68,8 @@ module OpenRubyRMK
     end
     
     #Grabs the Wx::Image at the specified position. 
-    def [](row, col)
-      @data[col][row]
+    def [](x, y)
+      @data[x][y]
     end
     
     #true if +self+ and +other+ refer to the same filename. 
@@ -86,11 +86,11 @@ module OpenRubyRMK
       raise(Errors::InvalidMapsetError, "Invalid mapset dimensions #{img.width} x #{img.height}!") unless img.width % FIELD_EDGE == 0 and img.height % FIELD_EDGE == 0
       cols = img.width / FIELD_EDGE
       rows = img.height / FIELD_EDGE
+      
       @data = Array.new(cols){Array.new(rows)}
-      0.upto(cols) do |col|
-        0.upto(rows) do |field|
-          subimg = img.sub_image(Wx::Rect.new(col * FIELD_EDGE, field * FIELD_EDGE, col * FIELD_EDGE + FIELD_EDGE, field * FIELD_EDGE + FIELD_EDGE))
-          @data[col] ||= []
+      0.upto(cols - 1) do |col|
+        0.upto(rows - 1) do |field|
+          subimg = img.sub_image(Wx::Rect.new(col * FIELD_EDGE, field * FIELD_EDGE, FIELD_EDGE, FIELD_EDGE))
           @data[col][field] = subimg
         end
       end
