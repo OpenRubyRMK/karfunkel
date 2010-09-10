@@ -121,11 +121,22 @@ module OpenRubyRMK
       def on_run
         super
       rescue => e
+        $log.debug("GUI exception handler triggered.")
         $log.fatal(e.class.name + ": " + e.message)
         $log.fatal("Backtrace:")
         e.backtrace.each{|trace| $log.fatal(trace)}
         
-        msg = sprintf(t.errors.fatal, e.class.name, e.message, e.backtrace.join("\n"))
+        #Only show the first 5 entries of the backtrace to prevent extra large 
+        #error windows. 
+        str = ""
+        if e.backtrace.size > 5
+          str << e.backtrace.first(5).join("\n")
+          str << "\n... (#{e.backtrace.size - 5} further traces) ...\n"
+        else
+          str << e.backtrace.join("\n")
+        end
+        
+        msg = sprintf(t.errors.fatal, e.class.name, e.message, str)
         md = MessageDialog.new(@mainwindow, caption: e.class.name, message: msg, style: OK | ICON_ERROR)
         md.show_modal
         

@@ -73,6 +73,7 @@ begin
   app = OpenRubyRMK::GUI::Application.new
   app.main_loop
 rescue => e #If an error gets here, the GUI has failed at everything. 
+  $log.debug("Global exception handler triggered.")
   $log.fatal(e.class.name + ": " + e.message)
   $log.fatal("Backtrace:")
   e.backtrace.each{|trace| $log.fatal(trace)}
