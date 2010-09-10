@@ -26,16 +26,20 @@ module OpenRubyRMK
     
     module Windows
       
+      #This is the main window. 
       class MainFrame < Wx::Frame
         include Wx
         include R18n::Helpers
         
+        #Every control that is not covered by a default wxRuby ID, 
+        #is associated with a free one. 
         IDS = {
           :mapset_window => ID_GENERATOR.next, 
           :properties_window => ID_GENERATOR.next, 
           :console => ID_GENERATOR.next
         }.freeze
         
+        #Creates the mainwindow. +parent+ should be +nil+. 
         def initialize(parent = nil)
           super(parent, title: "#{t.general.application_name} - #{t.general.application_slogan}", size: Size.new(600, 400), style: DEFAULT_FRAME_STYLE | MAXIMIZE)
           self.background_colour = NULL_COLOUR #Ensure that we get a platform-native background color
@@ -165,7 +169,12 @@ module OpenRubyRMK
           #NOTE: This is experimental and does nothing senseful. 
           #After the Map save format has been defined, a grid 
           #showing the map will be put here. 
-          @dummy_ctrl = StaticText.new(@right_panel, label: "")
+          #~ @dummy_ctrl = StaticText.new(@right_panel, label: "")
+          right_sizer = VBoxSizer.new
+          @right_panel.sizer = right_sizer
+          
+          @map_grid = Controls::MapGrid.new(@right_panel)
+          right_sizer.add_item(@map_grid, proportion: 1, flag: EXPAND)
         end
         
         def create_extra_windows
@@ -271,7 +280,9 @@ module OpenRubyRMK
         end
         
         def on_menu_help(event)
-          
+          field = MapField.new(@map_hierarchy.selected_map, 0, 0, 0, 1, 0)
+          @map_grid.table.set_value(0, 0, field)
+          @map_grid.refresh
         end
         
         def on_menu_about(event)
@@ -292,9 +303,16 @@ module OpenRubyRMK
         
         def on_map_hier_clicked(event)
           if event.item.nonzero?
-            @dummy_ctrl.label = @map_hierarchy.get_item_data(event.item).inspect
+            #~ @dummy_ctrl.label = @map_hierarchy.get_item_data(event.item).inspect
+            if @map_hierarchy.selected_map.nil?
+              @map_grid.disable
+            else
+              @map_grid.enable
+              @map_grid.table = Controls::MapGrid::MapTableBase.new(@map_hierarchy.selected_map)
+            end
+            @map_grid.refresh #The grid doesn't get updated otherwise
             @mapset_window.reload(@map_hierarchy.selected_map.nil? ? nil : @map_hierarchy.selected_map.mapset)
-            @properties_window.reload(@map_hierarchy.selected_map, [Mapset.load("test1.png")])
+            @properties_window.reload(@map_hierarchy.selected_map, [Mapset.load("test1.png")]) #DEBUG Mapsets?
           end
           event.skip
         end

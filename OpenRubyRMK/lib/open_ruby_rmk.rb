@@ -178,6 +178,6 @@ end
 require_relative "open_ruby_rmk/errors"
 require_relative "open_ruby_rmk/map"
 require_relative "open_ruby_rmk/mapset"
-require_relative "open_ruby_rmk/field"
+require_relative "open_ruby_rmk/map_field"
 require_relative "open_ruby_rmk/character"
 require_relative "open_ruby_rmk/open_ruby_rmkonsole"

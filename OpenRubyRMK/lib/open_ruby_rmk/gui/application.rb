@@ -20,6 +20,24 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
+#I monkeypatch the Wx::Image class because the grid cell renderers of the 
+#mapset window and the map need to display Wx::Images. Because I can't 
+#derive from Wx::GridCellRenderer for whatever reason, I derived my 
+#cell renderer from the Wx::GridCellStringRenderer. This one sadly expects 
+#strings to render and if fed with a Wx::Image it throws a TypeError. 
+#But fortunetaly, in best Ruby convention, it checks wheather the given 
+#object responds to #to_str and if so, uses that return value as the string. 
+#For this reason, I put in the #to_str method here, which simulates the 
+#image was an empty string. 
+class Wx::Image
+  
+  #Returns an empty string. Read in the above code to know why. 
+  def to_str
+    ""
+  end
+  
+end
+
 module OpenRubyRMK
   
   module GUI
@@ -28,9 +46,15 @@ module OpenRubyRMK
       include Wx
       include R18n::Helpers
       
+      #Your direct access to OpenRubyRMK's configuration file. This 
+      #is a hash of form 
+      #  {config_option => config_value, ...}
+      #where both objects are strings. Please don't change entries 
+      #you don't know about. If you want to add your own, do this 
+      #directly in the configuration file. 
       attr_reader :config
+      #The main GUI window, an instance of class OpenRubyRMK::GUI::Windows::MainFrame. 
       attr_reader :mainwindow
-      attr_reader :id_generator
       #The current project's root path. 
       attr_accessor :project_path
       #The last dir navigated into by a file open/save dialog. 
@@ -38,6 +62,42 @@ module OpenRubyRMK
       #navigate into the same dir again and again. 
       attr_accessor :remembered_dir
       
+      #Returns the currently selected map or +nil+ if no map 
+      #is selected (mostly the case if the root node has been selected). 
+      def selected_map
+        @mainwindow.instance_eval{@map_hierarchy.selected_map}
+      end
+      
+      #Returns the position of the currently selected field on the mapset, 
+      #a two-element array of form 
+      #  [x, y]
+      #. This doesn't contain any information on the used mapset; use 
+      #  Wx::THE_APP.selected_map.mapset
+      #in order to get the currently selected mapset. 
+      #If no map is currently selected (see #selected_map), this method returns 
+      #+nil+. If a map is selected, but the user hasn't selected a field on the 
+      #mapset window yet, you'll get a <tt>[0, 0]</tt> array and finally, 
+      #if everything is as it should be, you'll get the position of the field on the 
+      #mapset that has been selected as a two-element array of this form: 
+      #  [x, y]
+      #. When working with this method, you can ignore the special <tt>[0, 0]</tt> 
+      #array and just proceed as if you were processing a normal field position and 
+      #in fact, you cannot distinguish this case from that one that arises when the 
+      #users wants to draw the field at (0|0), which means that the first field 
+      #of a mapset (that one in the upper-left corner) is some kind of default value. 
+      def selected_mapset_field
+        ary = @mainwindow.instance_eval{@mapset_window.selected_field}
+        if selected_map.nil?
+          nil
+        elsif ary.all?{|v| v == -1}
+          [0, 0]
+        else
+          ary
+        end
+      end
+      
+      #First method called by wxRuby when initializing the Graphical 
+      #User Interface. 
       def on_init
         $log.info("Started.")
         
@@ -53,6 +113,11 @@ module OpenRubyRMK
         @mainwindow.show
       end
       
+      #Called once in an execution of the mainloop. If for a 
+      #reason I am not able to image in any way in *our* 
+      #great application this rare thing called an exception 
+      #occures, this method displays it to the user in a 
+      #hopefully friendly way. 
       def on_run
         super
       rescue => e
@@ -70,6 +135,8 @@ module OpenRubyRMK
         exit 2 #In contrast to 1 for the global exception handler
       end
       
+      #The last method called by wxRuby before it yields control back 
+      #to the code behind the Wx::App#main_loop call. 
       def on_exit
         super
         $log.info "Running plugins for :finish."
@@ -79,6 +146,8 @@ module OpenRubyRMK
       
       private
       
+      #Checks the configuration and sets the R18n localization 
+      #library accordingly. 
       def setup_localization
         $log.info "Detecting locale."
         if @config["locale"] == "auto"
@@ -89,11 +158,14 @@ module OpenRubyRMK
         $log.info "Detected " + r18n.locale.title + "."
       end
       
+      #Loads the main configuration file. 
       def load_config
         $log.info "Loading configuration file."
         @config = YAML.load_file(CONFIG_FILE)
       end
       
+      #Loads all plugins and runs the plugins for :startup 
+      #immediately after that. 
       def load_plugins
         $log.info "Loading plugins."
         Plugins.load_plugins

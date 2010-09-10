@@ -41,8 +41,6 @@ require_relative "../lib/open_ruby_rmk"
 #Require the GUI lib
 require_relative "../lib/open_ruby_rmk/gui"
 require_relative "../lib/open_ruby_rmk/gui/application"
-require_relative "../lib/open_ruby_rmk/gui/field_renderer"
-require_relative "../lib/open_ruby_rmk/gui/mapset_table_base"
 require_relative "../lib/open_ruby_rmk/gui/windows/main_frame"
 require_relative "../lib/open_ruby_rmk/gui/windows/map_dialog"
 require_relative "../lib/open_ruby_rmk/gui/windows/mapset_window"
@@ -51,6 +49,7 @@ require_relative "../lib/open_ruby_rmk/gui/windows/properties_window"
 require_relative "../lib/open_ruby_rmk/gui/controls/terminal"
 require_relative "../lib/open_ruby_rmk/gui/controls/rmkonsole"
 require_relative "../lib/open_ruby_rmk/gui/controls/map_hierarchy"
+require_relative "../lib/open_ruby_rmk/gui/controls/map_grid"
 require_relative "../lib/open_ruby_rmk/plugins" #Not sure -- belongs this to the GUI or the core lib?
 
 exit if defined? Ocra #That means the script is being compiled for Windows by OCRA

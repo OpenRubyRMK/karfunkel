@@ -133,8 +133,12 @@ module OpenRubyRMK
           col.each_with_index do |depth_row, i_drow|
             @table[i_col][i_drow] = Array.new(depth_row.size)
             depth_row.each_with_index do |field_ary, i_field|
-              next if field_ary.nil? #That means no field is defined at this position
-              @mapset[i_col][i_drow][i_field] = Field.load(i_col, i_drow, i_field, @mapset, field_ary)
+              if field_ary
+                @table[i_col][i_drow][i_field] = MapField.new(self, i_col, i_drow, i_field, field_ary[0], field_ary[1])
+              else
+                @table[i_col][i_drow][i_field] = MapField.new(self, i_col, i_drow, i_field)
+              end #TODO: Change the saved maps to have a [nil, nil, {}] array instead of plain nil for nonassigned fields!
+              #TODO: Assign characters!
             end
           end
         end
@@ -196,7 +200,7 @@ module OpenRubyRMK
       @id = id
       @name = name.to_str
       @mapset = mapset
-      @table = Array.new(width){Array.new(height){Array.new(depth)}} #nil means the field is empty
+      @table = Array.new(width){|x| Array.new(height){|y| Array.new(depth){|z| MapField.new(self, x, y, z)}}} #Initialize with empty fields
       @parent = self.class.from_id(parent)
       @parent.children_ids << @id unless @parent.nil? #Map.from_id returns nil if there's no parent
       @children_ids = []
@@ -283,16 +287,34 @@ module OpenRubyRMK
       self.class.delete(self.id)
     end
     
-    #Returns a Field object describing the given position or +nil+ if 
-    #no field has been associated with the position. 
-    #Note that this also returns nil for positions outside the map. 
+    #Returns a MapField object describing the given position. 
+    #Raises a RangeError if you try to access a position outside the map. 
     def [](x, y, z)
+      if [x, y, z].any?{|val| val < 0}
+        raise(RangeError, "Map position < 0 is invalid!")
+      elsif x >= @table.size
+        raise(RangeError, "X coordinate #{x} is out of range (< #{@table.size})!")
+      elsif y >= @table[0].size
+        raise(RangeError, "Y coordinate #{y} is out of range (< #{@table[0].size})!")
+      elsif z >= @table[0][0].size
+        raise(RangeError, "Z coordinate #{z} is out of range (< #{@table[0][0].size})!")
+      end
       @table[x][y][z]
     end
     
-    #Sets the field that should be used at the specified position. Set to nil 
-    #if you want to delete the field. 
-    def []=(field)
+    #Sets the field that should be used at the specified position. 
+    #Raises a RangeError if you try to access a position outside the map. 
+    #Call the #clear! method on a MapField if you want to "delete" it. 
+    def []=(x, y, z, field)
+      if [x, y, z].any?{|val| val < 0}
+        raise(RangeError, "Map position < 0 is invalid!")
+      elsif x >= @table.size
+        raise(RangeError, "X coordinate #{x} is out of range (< #{@table.size})!")
+      elsif y >= @table[0].size
+        raise(RangeError, "Y coordinate #{y} is out of range (< #{@table[0].size})!")
+      elsif z >= @table[0][0].size
+        raise(RangeError, "Z coordinate #{z} is out of range (< #{@table[0][0].size})!")
+      end
       @table[x][y][z] = field
     end
     
