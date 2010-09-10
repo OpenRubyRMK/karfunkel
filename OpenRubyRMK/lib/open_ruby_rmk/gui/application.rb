@@ -105,6 +105,8 @@ module OpenRubyRMK
         setup_localization
         load_plugins
         
+        Dir.chdir(@config["startup_dir"]) unless @config["startup_dir"] == "auto"
+        
         @remembered_dir = Pathname.new(".").expand_path
         
         $log.info "Creating mainwindow."

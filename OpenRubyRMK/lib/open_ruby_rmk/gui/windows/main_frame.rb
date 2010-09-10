@@ -41,12 +41,15 @@ module OpenRubyRMK
         
         #Creates the mainwindow. +parent+ should be +nil+. 
         def initialize(parent = nil)
-          super(parent, title: "#{t.general.application_name} - #{t.general.application_slogan}", size: Size.new(600, 400), style: DEFAULT_FRAME_STYLE | MAXIMIZE)
+          style = DEFAULT_FRAME_STYLE
+          style |= MAXIMIZE if THE_APP.config["maximize"]
+          pos = THE_APP.config["startup_pos"] == "auto" ? DEFAULT_POSITION : Point.new(*THE_APP.config["startup_pos"])
+          super(parent, title: "#{t.general.application_name} - #{t.general.application_slogan}", pos: pos, size: Size.new(*THE_APP.config["startup_size"]), style: style)
           self.background_colour = NULL_COLOUR #Ensure that we get a platform-native background color
           self.icon = Icon.new(DATA_DIR.join("ruby16x16.png").to_s, BITMAP_TYPE_PNG)
           #The MAXIMIZE flag only works on windows, so we need to maximize 
           #the window after a short waiting delay on other platforms. 
-          Timer.after(1000){self.maximize(true)} unless RUBY_PLATFORM =~ /mingw|mswin/
+          Timer.after(1000){self.maximize(true)} if THE_APP.config["maximize"] and RUBY_PLATFORM !~ /mingw|mswin/
           
           create_menubar
           create_toolbar
