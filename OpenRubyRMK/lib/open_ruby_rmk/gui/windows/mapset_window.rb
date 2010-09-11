@@ -118,7 +118,7 @@ module OpenRubyRMK
         #new ones all the time. 
         #Call #reload to enable everything. 
         def initialize(parent)
-          super(parent, size: Size.new(260, 650), pos: Point.new(*THE_APP.config["startup_mapset_pos"]), title: t.window_titles.mapset_window)
+          super(parent, size: Size.new(260, 650), pos: Point.new(*OpenRubyRMK.config["startup_mapset_pos"]), title: t.window_titles.mapset_window)
           self.background_colour = NULL_COLOUR
           
           @mapset = nil

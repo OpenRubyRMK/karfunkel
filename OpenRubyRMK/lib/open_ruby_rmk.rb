@@ -76,26 +76,25 @@ module OpenRubyRMK
   
   class << self
     
-    #Creates OpenRubyRMK's Logger. Pass in the Logger level and if you want to 
-    #log to $stdout (+false+ by default). If you don't want to log to the standard 
-    #output, the logger will be setup to generate up to 5 "OpenRubyRMK.log" files 
-    #in the <i>bin/logs</i> directory. Each of them will have a size around 1MiB. 
-    #
-    #The logger will be assigned to the global variable $log, making it available for 
-    #logging everywhere. 
-    def create_logger(level = Logger::WARN, file = nil)
-      if file.kind_of?(IO)
-        $log = Logger.new(file)
-      elsif file.nil?
-        LOG_DIR.mkdir unless LOG_DIR.directory?
-        $log = Logger.new(LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
-      else
-        $log = Logger.new(file)
-      end
-      $log.level = level
-      $log.datetime_format =  "%d.%m.%Y, %H:%M:%S Uhr "
+    #Initializes everything needed in order to run OpenRubyRMK. 
+    #It processes the command-line switches, sets the logger up 
+    #and loads the configuration file. Finally, it creates the 
+    #temporary directory OpenRubyRMK extracts files into. 
+    #Call this method before you start any working with OpenRubyRMK. 
+    def setup
+      parse_argv
+      create_logger
+      load_config
+      create_tempdir
+    end    
+    
+    #Returns true if either -D or -d was passed to 
+    #OpenRubyRMK, or if $DEBUG is set, which is the 
+    #case when -d was passed to Ruby itself. 
+    def debug_mode?
+      options[:debug] || $DEBUG
     end
-
+    
     #This method executes the given code block if OpenRubyRMK 
     #is run in debug mode. When executing a debug block, it prints 
     #information about the execution time. 
@@ -110,29 +109,45 @@ module OpenRubyRMK
     #If so, no project is considered selected and false is returned, true otherwise. 
     def has_project?
       !project_path.nil?
+    end    
+    
+    #The hash this method returns contains all passed command-line 
+    #switches and those not passed mapped to a default value. 
+    #It's just shorthand for <tt>OpenRubyRMK::OptionHandler.options</tt>. 
+    def options
+      OptionHandler.options
     end
     
-    def create_tempdir
-      @temp_dir = Pathname.new(Dir.mktmpdir("OpenRubyRMK"))
-      $log.debug("Created temporary directory '#{@temp_dir}'.")
-      at_exit do
-        $log.debug("Removing temporary directory '#{@temp_dir}'.")
-        @temp_dir.rmtree
-      end
+    #Your direct access to OpenRubyRMK's configuration file. This 
+    #is a hash of form 
+    #  {config_option => config_value, ...}
+    #where both objects are strings. Please don't change entries 
+    #you don't know about. If you want to add your own, do this 
+    #directly in the configuration file.
+    def config
+      @config
     end
     
+    #The path of the temporary directory that 
+    #was created at the beginning. 
     def tempdir
       @temp_dir
     end
     
+    #The directory the extracted mapsets of a project 
+    #reside in. 
     def temp_mapsets_dir
       @temp_dir + "mapsets"
     end
     
+    #The directory the extracted characters of a project 
+    #reside in. 
     def temp_characters_dir
       @temp_dir + "characters"
     end
     
+    #Deletes everything contained in the temporary directory 
+    #recursively, but doesn't delete the directory itself. 
     def clear_tempdir
       @temp_dir.children.each do |filename|
         if filename.directory?
@@ -170,11 +185,68 @@ module OpenRubyRMK
       @project_path + "data" + "graphics" + "mapsets"
     end
     
+    #In this directory reside a project's character graphics. 
     def project_characters_dir
       @project_path + "data" + "graphics" + "characters"
     end
     
+    private
+    
+    #Processes the command-line options. 
+    def parse_argv
+      OptionHandler.parse(ARGV)
+    end
+    
+    #Creates OpenRubyRMK's Logger. If the -d or -D option 
+    #was passed to OpenRubyRMK, it will be set up to to 
+    #log everything (i.e. the level is set to DEBUG) to 
+    #the standard output. If -l is given without a file 
+    #argument, it logs to the standard output as well, 
+    #and if a file argument is given, that file will be 
+    #logged into. If -l is not given at all, the logger writes 
+    #to auto-rolled logfiles in the bin/logs directory which 
+    #will be created if necessary. Note that the -l option 
+    #doesn't affect the logging level as -d and -D do. 
+    #Finally, there's the -L option which sets the logging 
+    #level, starting from 0 (DEBUG) and reaching to 5 (UNKNOWN). 
+    #If -L is not passed, the level is set to WARN (3). 
+    #As with the -l option, -L is ignored if -d or -D was passed. 
+    def create_logger
+      if debug_mode?
+        $log = Logger.new($stdout)  
+        $log.level = Logger::DEBUG
+        $stdout.sync = true
+        $stderr.sync = true
+      elsif options[:logfile].nil?
+        $log = Logger.new(LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
+        $log.level = options[:loglevel] #returns WARN if -L is not set
+      else
+        $log = Logger.new(options[:logfile])
+        $log.level = options[:loglevel] #returns WARN if -L is not set
+      end      
+      $log.datetime_format =  "%d.%m.%Y, %H:%M:%S Uhr "
+    end
+    
+    #Loads OpenRubyRMK's main configuration file. 
+    def load_config
+      $log.info "Loading configuration file."
+      @config = YAML.load_file(CONFIG_FILE)
+    end
+    
+    #Creates a temporary directory where we're going to 
+    #extract graphics into. 
+    def create_tempdir
+      @temp_dir = Pathname.new(Dir.mktmpdir("OpenRubyRMK"))
+      $log.debug("Created temporary directory '#{@temp_dir}'.")
+      at_exit do
+        $log.debug("Removing temporary directory '#{@temp_dir}'.")
+        @temp_dir.rmtree
+      end
+      
+    end
+    
   end
+  
 end
 
 #Internal requires

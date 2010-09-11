@@ -45,14 +45,7 @@ module OpenRubyRMK
     class Application < Wx::App
       include Wx
       include R18n::Helpers
-      
-      #Your direct access to OpenRubyRMK's configuration file. This 
-      #is a hash of form 
-      #  {config_option => config_value, ...}
-      #where both objects are strings. Please don't change entries 
-      #you don't know about. If you want to add your own, do this 
-      #directly in the configuration file. 
-      attr_reader :config
+            
       #The main GUI window, an instance of class OpenRubyRMK::GUI::Windows::MainFrame. 
       attr_reader :mainwindow
       #The current project's root path. 
@@ -100,12 +93,11 @@ module OpenRubyRMK
       #User Interface. 
       def on_init
         $log.info("Started.")
-        
-        load_config
+                
         setup_localization
         load_plugins
         
-        Dir.chdir(@config["startup_dir"]) unless @config["startup_dir"] == "auto"
+        Dir.chdir(OpenRubyRMK.config["startup_dir"]) unless OpenRubyRMK.config["startup_dir"] == "auto"
         
         @remembered_dir = Pathname.new(".").expand_path
         
@@ -163,19 +155,13 @@ module OpenRubyRMK
       #library accordingly. 
       def setup_localization
         $log.info "Detecting locale."
-        if @config["locale"] == "auto"
+        if OpenRubyRMK.config["locale"] == "auto"
           R18n.from_env(LOCALE_DIR.to_s)
         else
-          R18n.from_env(LOCALE_DIR.to_s, @config["locale"])
+          R18n.from_env(LOCALE_DIR.to_s, OpenRubyRMK.config["locale"])
         end
         $log.info "Detected " + r18n.locale.title + "."
-      end
-      
-      #Loads the main configuration file. 
-      def load_config
-        $log.info "Loading configuration file."
-        @config = YAML.load_file(CONFIG_FILE)
-      end
+      end      
       
       #Loads all plugins and runs the plugins for :startup 
       #immediately after that. 

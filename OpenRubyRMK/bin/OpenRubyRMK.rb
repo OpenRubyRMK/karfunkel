@@ -54,34 +54,8 @@ require_relative "../lib/open_ruby_rmk/plugins" #Not sure -- belongs this to the
 
 exit if defined? Ocra #That means the script is being compiled for Windows by OCRA
 
-#Parse command-line options
-OpenRubyRMK::OptionHandler.parse(ARGV)
-
-#Create the logger
-level = if $DEBUG or OpenRubyRMK::OptionHandler.options[:debug]
-          Logger::DEBUG
-        elsif $VERBOSE or OpenRubyRMK::OptionHandler.options[:verbose]
-          Logger::INFO
-        else
-          OpenRubyRMK::OptionHandler.options[:loglevel]
-        end
-
-file =  if $DEBUG or OpenRubyRMK::OptionHandler.options[:debug]
-          $stdout
-        else
-          OpenRubyRMK::OptionHandler.options[:logfile]          
-        end
-#
-OpenRubyRMK.create_logger(level, file)
-
-#Disable output buffering when in debug mode
-if $DEBUG or OpenRubyRMK::OptionHandler.options[:debug]
-  $stdout.sync = true
-  $stderr.sync = true
-end
-
-#Create the temporary directory
-OpenRubyRMK.create_tempdir
+#Initialize OpenRubyRMK. 
+OpenRubyRMK.setup
 
 #Now start OpenRubyRMK
 begin

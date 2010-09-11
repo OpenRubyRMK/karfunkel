@@ -37,7 +37,7 @@ module OpenRubyRMK
         #
         #Please also note that you have to call #on_change before you can show the window. 
         def initialize(parent)
-          super(parent, size: Size.new(300, 300), pos: Point.new(*THE_APP.config["startup_map_properties_pos"]), title: t.window_titles.properties_window)
+          super(parent, size: Size.new(300, 300), pos: Point.new(*OpenRubyRMK.config["startup_map_properties_pos"]), title: t.window_titles.properties_window)
           self.background_colour = NULL_COLOUR
           
           @map = nil
