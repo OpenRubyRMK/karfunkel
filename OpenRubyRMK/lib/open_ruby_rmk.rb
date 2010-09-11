@@ -32,6 +32,7 @@ else
 end
 require "tempfile"
 require "logger"
+require "optparse"
 require "pathname"
 require "zlib"
 require "archive/tar/minitar"
@@ -82,12 +83,14 @@ module OpenRubyRMK
     #
     #The logger will be assigned to the global variable $log, making it available for 
     #logging everywhere. 
-    def create_logger(level = Logger::WARN, stdout = false)
-      if stdout
-        $log = Logger.new($stdout)
-      else
+    def create_logger(level = Logger::WARN, file = nil)
+      if file.kind_of?(IO)
+        $log = Logger.new(file)
+      elsif file.nil?
         LOG_DIR.mkdir unless LOG_DIR.directory?
         $log = Logger.new(LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
+      else
+        $log = Logger.new(file)
       end
       $log.level = level
       $log.datetime_format =  "%d.%m.%Y, %H:%M:%S Uhr "
@@ -98,8 +101,8 @@ module OpenRubyRMK
     #information about the execution time. 
     def debug
       return unless $DEBUG
-      @logger.debug "Executing debug code at: "
-      caller.each{|call| @logger.debug(call)}
+      $log.debug "Executing debug code at: "
+      caller.each{|call| $log.debug(call)}
       yield
     end
     
@@ -180,4 +183,5 @@ require_relative "open_ruby_rmk/map"
 require_relative "open_ruby_rmk/mapset"
 require_relative "open_ruby_rmk/map_field"
 require_relative "open_ruby_rmk/character"
+require_relative "open_ruby_rmk/option_handler"
 require_relative "open_ruby_rmk/open_ruby_rmkonsole"
