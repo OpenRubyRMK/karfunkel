@@ -46,7 +46,7 @@ module OpenRubyRMK
     #Returns a 32x32 pixels graphic (a Wx::Image object). This is used where 
     #no field image has been set. 
     def self.null_image
-      @null_image ||= Wx::Image.new(OpenRubyRMK::DATA_DIR.join("transparent32x32.png").to_s, Wx::BITMAP_TYPE_PNG)
+      @null_image ||= Wx::Image.new(OpenRubyRMK::Paths::DATA_DIR.join("transparent32x32.png").to_s, Wx::BITMAP_TYPE_PNG)
     end
     
     #Creates a new Field. Pass in the field's X, Y and Z coordinates on 

@@ -45,9 +45,9 @@ module OpenRubyRMK
     
     def self.extract_archives
       Errors::NoProjectError.throw! unless OpenRubyRMK.has_project?
-      Dir.glob(OpenRubyRMK.project_mapsets_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}.each do |filename|
+      Dir.glob(OpenRubyRMK::Paths.project_mapsets_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}.each do |filename|
         $log.debug("Extracting map '#{filename}'")
-        temp_filename = OpenRubyRMK.temp_mapsets_dir + filename.relative_path_from(OpenRubyRMK.project_mapsets_dir)
+        temp_filename = OpenRubyRMK::Paths.temp_mapsets_dir + filename.relative_path_from(OpenRubyRMK::Paths.project_mapsets_dir)
         gz = Zlib::GzipReader.open(filename)
         Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
       end
@@ -58,7 +58,7 @@ module OpenRubyRMK
     def self.load(filename)
       obj = allocate
       obj.instance_eval do
-        @filename = OpenRubyRMK.temp_mapsets_dir + filename.match(/\..*?$/).pre_match + filename #Each map has it's own directory
+        @filename = OpenRubyRMK::Paths.temp_mapsets_dir + filename.match(/\..*?$/).pre_match + filename #Each map has it's own directory
         raise(Errno::ENOENT, "Mapset not found: #{filename}!") unless @filename.file?
         split_into_tiles
         @columns = @data.size

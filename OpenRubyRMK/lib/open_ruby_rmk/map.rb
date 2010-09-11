@@ -92,7 +92,7 @@ module OpenRubyRMK
     #Returns the next available map ID. 
     def self.next_free_id
       ids = @maps.map(&:id)
-      1.upto(1.0/0.0) do |n| #that's 1 upto infinity / 0 is used for the root element
+      1.upto(INFINITY) do |n|
         break(n) unless ids.include?(n)
       end
     end
@@ -117,7 +117,7 @@ module OpenRubyRMK
     #if no file is found. 
     #See this class's documentation for a description of the file format. 
     def self.load(id)
-      filename = Pathname.new(OpenRubyRMK.project_maps_dir + "#{id}.bin")
+      filename = Pathname.new(OpenRubyRMK::Paths.project_maps_dir + "#{id}.bin")
       raise(ArgumentError, "Map not found: #{id}!") unless filename.file?
       hsh = filename.open("rb"){|f| Marshal.load(f)}
       id = filename.basename.to_s.to_i #Filenames are of form "3.bin" and #to_i stops at the ".". 
@@ -165,7 +165,7 @@ module OpenRubyRMK
       end
       #Delete this map and remove it's file
       @maps.delete_if{|map| map.id == id}
-      OpenRubyRMK.project_maps_dir.join("#{id}.bin").delete rescue nil #If the file doesn't exist it can't be deleted
+      OpenRubyRMK::Paths.project_maps_dir.join("#{id}.bin").delete rescue nil #If the file doesn't exist it can't be deleted
       id
     end
     
@@ -357,15 +357,15 @@ module OpenRubyRMK
         :parent => @parent.nil? ? 0 : @parent.id #0 means there's no parent
       }
       #Save the map
-      OpenRubyRMK.project_maps_dir.join("#{@id}.bin").open("wb"){|f| Marshal.dump(hsh, f)}
+      OpenRubyRMK::Paths.project_maps_dir.join("#{@id}.bin").open("wb"){|f| Marshal.dump(hsh, f)}
       #Add it to the structure file
-      orig_hsh = hsh = OpenRubyRMK.project_maps_structure_file.open("rb"){|f| Marshal.load(f)}
+      orig_hsh = hsh = OpenRubyRMK::Paths.project_maps_structure_file.open("rb"){|f| Marshal.load(f)}
       ids = parent_ids
       until ids.empty?
         hsh = hsh[ids.shift] #By reference!
       end
       hsh[@id] = {}
-      OpenRubyRMK.project_maps_structure_file.open("wb"){|f| Marshal.dump(orig_hsh, f)}
+      OpenRubyRMK::Paths.project_maps_structure_file.open("wb"){|f| Marshal.dump(orig_hsh, f)}
     end
     
   end

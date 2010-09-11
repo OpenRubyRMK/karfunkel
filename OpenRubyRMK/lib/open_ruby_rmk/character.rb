@@ -32,9 +32,9 @@ module OpenRubyRMK
     def self.extract_archives
       Errors::NoProjectError.throw! unless OpenRubyRMK.has_project?
       
-      Dir.glob(OpenRubyRMK.project_characters_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}.each do |filename|
+      Dir.glob(OpenRubyRMK::Paths.project_characters_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}.each do |filename|
         $log.debug("Extracting character '#{filename}'")
-        temp_filename = OpenRubyRMK.temp_characters_dir + filename.relative_path_from(OpenRubyRMK.project_characters_dir)
+        temp_filename = OpenRubyRMK::Paths.temp_characters_dir + filename.relative_path_from(OpenRubyRMK::Paths.project_characters_dir)
         gz = Zlib::GzipReader.open(filename)
         Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
       end

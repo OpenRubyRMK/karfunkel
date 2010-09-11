@@ -91,7 +91,7 @@ module OpenRubyRMK
     #Loads all files from the plugins/ directory via #module_eval. 
     def self.load_plugins
       #The second argument to #module_eval specified the file name to display in error messages. 
-      Dir.glob(PLUGINS_DIR.join("**", "*.rb").to_s).each{|filename| Plugs.module_eval(File.read(filename), filename)} #TODO - someone knows a better way than evil eval?
+      Dir.glob(Paths::PLUGINS_DIR.join("**", "*.rb").to_s).each{|filename| Plugs.module_eval(File.read(filename), filename)} #TODO - someone knows a better way than evil eval?
     end
     
     #Returns an array of all codeblocks associated with the given symbol. 

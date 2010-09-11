@@ -48,8 +48,8 @@ module OpenRubyRMK
           super(parent)
           
           i = ImageList.new(16, 16)
-          i.add(Bitmap.new(DATA_DIR.join("ruby16x16.png").to_s, BITMAP_TYPE_PNG))
-          i.add(Bitmap.new(DATA_DIR.join("map16x16.png").to_s, BITMAP_TYPE_PNG))
+          i.add(Bitmap.new(Paths::DATA_DIR.join("ruby16x16.png").to_s, BITMAP_TYPE_PNG))
+          i.add(Bitmap.new(Paths::DATA_DIR.join("map16x16.png").to_s, BITMAP_TYPE_PNG))
           self.image_list = i
           
           @root = add_root(root_name, 0)

@@ -92,7 +92,7 @@ module OpenRubyRMK
       #First method called by wxRuby when initializing the Graphical 
       #User Interface. 
       def on_init
-        $log.info("Started.")
+        $log.info("Starting GUI.")
                 
         setup_localization
         load_plugins
@@ -156,9 +156,9 @@ module OpenRubyRMK
       def setup_localization
         $log.info "Detecting locale."
         if OpenRubyRMK.config["locale"] == "auto"
-          R18n.from_env(LOCALE_DIR.to_s)
+          R18n.from_env(Paths::LOCALE_DIR.to_s)
         else
-          R18n.from_env(LOCALE_DIR.to_s, OpenRubyRMK.config["locale"])
+          R18n.from_env(Paths::LOCALE_DIR.to_s, OpenRubyRMK.config["locale"])
         end
         $log.info "Detected " + r18n.locale.title + "."
       end      

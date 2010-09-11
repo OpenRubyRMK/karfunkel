@@ -46,7 +46,7 @@ module OpenRubyRMK
           pos = OpenRubyRMK.config["startup_pos"] == "auto" ? DEFAULT_POSITION : Point.new(*OpenRubyRMK.config["startup_pos"])
           super(parent, title: "#{t.general.application_name} - #{t.general.application_slogan}", pos: pos, size: Size.new(*OpenRubyRMK.config["startup_size"]), style: style)
           self.background_colour = NULL_COLOUR #Ensure that we get a platform-native background color
-          self.icon = Icon.new(DATA_DIR.join("ruby16x16.png").to_s, BITMAP_TYPE_PNG)
+          self.icon = Icon.new(Paths::DATA_DIR.join("ruby16x16.png").to_s, BITMAP_TYPE_PNG)
           #The MAXIMIZE flag only works on windows, so we need to maximize 
           #the window after a short waiting delay on other platforms. 
           Timer.after(1000){self.maximize(true)} if OpenRubyRMK.config["maximize"] and RUBY_PLATFORM !~ /mingw|mswin/
@@ -116,7 +116,7 @@ module OpenRubyRMK
           @tool_bar.add_tool(
             ID_NEW, 
             t.menus.mainwindow.file.new.name, 
-            Bitmap.new(DATA_DIR.join("new16x16.png").to_s, BITMAP_TYPE_PNG), 
+            Bitmap.new(Paths::DATA_DIR.join("new16x16.png").to_s, BITMAP_TYPE_PNG), 
             NULL_BITMAP, 
             ITEM_NORMAL, 
             t.menus.mainwindow.file.new.tooltip, 
@@ -125,7 +125,7 @@ module OpenRubyRMK
           @tool_bar.add_tool(
             ID_OPEN, 
             t.menus.mainwindow.file.open.name, 
-            Bitmap.new(DATA_DIR.join("open16x16.png").to_s, BITMAP_TYPE_PNG), 
+            Bitmap.new(Paths::DATA_DIR.join("open16x16.png").to_s, BITMAP_TYPE_PNG), 
             NULL_BITMAP, 
             ITEM_NORMAL, 
             t.menus.mainwindow.file.open.tooltip, 
@@ -225,14 +225,14 @@ module OpenRubyRMK
           #Remember the directory for convenience
           THE_APP.remembered_dir = Pathname.new(fd.directory)
           #Set the OpenRubyRMK project dir, from which all other dirs can be computed
-          OpenRubyRMK.project_path = Pathname.new(fd.directory).parent
+          OpenRubyRMK::Paths.project_path = Pathname.new(fd.directory).parent
           #Clear the temporary directory for new files
-          OpenRubyRMK.clear_tempdir
+          OpenRubyRMK::Paths.clear_tempdir
           #Extract the projects mapsets and characters (into the temporary directory)
           Mapset.extract_archives
           Character.extract_archives
           
-          structure_hsh = OpenRubyRMK.project_maps_structure_file.open("rb"){|f| Marshal.load(f)}
+          structure_hsh = OpenRubyRMK::Paths.project_maps_structure_file.open("rb"){|f| Marshal.load(f)}
           @maps = buildup_hash(structure_hsh)
           @project_name = fd.filename.match(/\.rmk$/).pre_match
           @map_hierarchy.recreate_tree!(@project_name, @maps)
@@ -298,8 +298,8 @@ module OpenRubyRMK
           i.name = t.general.application_name
           i.version = OpenRubyRMK::VERSION
           i.description = t.general.description
-          i.icon = Icon.new(DATA_DIR.join("ruby32x32.png").to_s, BITMAP_TYPE_PNG)
-          i.license = ROOT_DIR.join("COPYING.txt").read
+          i.icon = Icon.new(Paths::DATA_DIR.join("ruby32x32.png").to_s, BITMAP_TYPE_PNG)
+          i.license = Paths::ROOT_DIR.join("COPYING.txt").read
           i.web_site = "http://wiki.ruby-portal.de/OpenRubyRMK"
           Wx.about_box(i)
         end
@@ -324,7 +324,8 @@ module OpenRubyRMK
         #Helper methods
         #==================================
         
-        #{map => MAP, children => {}}
+        #Recursively builds up the hash that contains the 
+        #maps' relationships.
         def buildup_hash(hsh)
           result = {}
           hsh.each_pair do |map_id, children_hsh|
