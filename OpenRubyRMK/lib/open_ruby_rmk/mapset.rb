@@ -45,11 +45,13 @@ module OpenRubyRMK
     
     def self.extract_archives
       Errors::NoProjectError.throw! unless OpenRubyRMK.has_project?
-      Dir.glob(OpenRubyRMK::Paths.project_mapsets_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}.each do |filename|
+      files = Dir.glob(OpenRubyRMK::Paths.project_mapsets_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}
+      files.each_with_index do |filename, index|
         $log.debug("Extracting map '#{filename}'")
         temp_filename = OpenRubyRMK::Paths.temp_mapsets_dir + filename.relative_path_from(OpenRubyRMK::Paths.project_mapsets_dir)
         gz = Zlib::GzipReader.open(filename)
         Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
+        yield(index + 1, files.size) if block_given? #Yield progress
       end
     end
     

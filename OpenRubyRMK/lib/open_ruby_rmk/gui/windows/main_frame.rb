@@ -228,14 +228,35 @@ module OpenRubyRMK
           OpenRubyRMK::Paths.project_path = Pathname.new(fd.directory).parent
           #Clear the temporary directory for new files
           OpenRubyRMK::Paths.clear_tempdir
-          #Extract the projects mapsets and characters (into the temporary directory)
-          Mapset.extract_archives
-          Character.extract_archives
+          #Extract the projects mapsets and characters (into the temporary directory). 
+          #Give visual response since this is a long-running operation. 
+          pd = ProgressDialog.new(t.dialogs.load_project.title, t.dialogs.load_project.start_message, 100, self)                        
+          actions = 3
+          percent = 0.0          
           
+          last_value = percent
+          pd.update(percent.round, t.dialogs.load_project.load_mapsets)
+          Mapset.extract_archives do |i, all|
+            sub_percent = (i.to_f / all.to_f) * 100
+            percent = last_value + sub_percent / actions
+            pd.update(percent.round)
+          end
+          
+          last_value = percent
+          pd.update(percent.round, t.dialogs.load_project.load_characters)
+          Character.extract_archives do |i, all|
+            sub_percent = (i.to_f / all.to_f) * 100
+            percent = last_value + sub_percent / actions
+            pd.update(percent.round)
+          end
+          
+          last_value = percent
+          pd.update(percent.round, t.dialogs.load_project.build_map_structure)
           structure_hsh = OpenRubyRMK::Paths.project_maps_structure_file.open("rb"){|f| Marshal.load(f)}
           @maps = buildup_hash(structure_hsh)
           @project_name = fd.filename.match(/\.rmk$/).pre_match
           @map_hierarchy.recreate_tree!(@project_name, @maps)
+          pd.update(100)            
         end
         
         def on_menu_save(event)
