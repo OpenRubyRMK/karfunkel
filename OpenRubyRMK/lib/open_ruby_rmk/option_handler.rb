@@ -114,6 +114,7 @@ OPTIONS
       end
       
       def on_debug(bool)
+        Thread.abort_on_exception = true
         @options[:debug] = bool
       end
       
