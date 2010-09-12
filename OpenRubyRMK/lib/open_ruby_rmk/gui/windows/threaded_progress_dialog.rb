@@ -14,7 +14,11 @@ module OpenRubyRMK
           super(*args)
           @block = block
           @timer = Timer.every(10){Thread.pass}
-          Thread.new{@block.call(self)}
+          Thread.new do 
+            GC.disable #Prevents a "[BUG] object allocation during Garbage Collection phase"
+            @block.call(self)
+            GC.enable
+          end
         end
         
         def update(percent, newmsg = "")

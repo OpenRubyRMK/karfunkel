@@ -134,6 +134,7 @@ module OpenRubyRMK
         $stdout.sync = true
         $stderr.sync = true
       elsif options[:logfile].nil?
+        Paths::LOG_DIR.mkpath unless Paths::LOG_DIR.directory?
         $log = Logger.new(Paths::LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
         $log.level = options[:loglevel] #returns WARN if -L is not set
       else
