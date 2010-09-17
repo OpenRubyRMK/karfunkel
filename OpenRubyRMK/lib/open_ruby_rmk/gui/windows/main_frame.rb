@@ -327,6 +327,7 @@ module OpenRubyRMK
         end
         
         def on_map_hier_clicked(event)
+          return unless OpenRubyRMK.has_project? #This method gets triggered on Windows when loading
           if event.item.nonzero?
             #~ @dummy_ctrl.label = @map_hierarchy.get_item_data(event.item).inspect
             if @map_hierarchy.selected_map.nil?
