@@ -31,16 +31,17 @@ module OpenRubyRMK
   #is a hash of this form stored: 
   #  {
   #    :name => "the name of the map", 
-  #    :mapset => "name of the mapset", 
+  #    :mapset => "basename of the mapset file", 
   #    :table => a_4dimensional_array, 
   #    :parent => the_id_of_the_parent_map_or_zero
   #  }
   #where the 4-dimensional array is simply the description of the three-dimensional 
   #map table (X, Y and Z coordinates) plus the information of the map field that 
   #resides at that position in form of an array. This array has this form: 
-  #  [mapset_x, mapset_y, events_hsh]
-  #If no field was specified for that position, no array exists but rather a +nil+ object. 
-  #TODO: Describe the events hash!
+  #  [mapset_x, mapset_y, characters_hsh]
+  #If the field has no image and no characters, the array will look like this: 
+  #  [-1, -1, {}]
+  #TODO: Describe the characters hash!
   #
   #You may noticed that the ID of the map isn't contained in the serialized hash. 
   #That's because it is simply determined from the file's name, which should be 
@@ -54,8 +55,8 @@ module OpenRubyRMK
   #of this form: 
   #  {parent_id => {<hash_format>}}
   #It just describes how the map's parent-and-children-relationship gets resolved
-  #and has no deep meaning besides making life easier (look at the code 
-  #that loads the maps!). If there was a nice way to get the relationship resolved, I'd 
+  #and has no deep meaning besides making life easier (look at the code that 
+  #builds the map hierarchy!). If there was a nice way to get the relationship resolved, I'd 
   #go it, especially because a Map object already knows about it's parent and children IDs. 
   class Map
     include Wx
@@ -133,11 +134,7 @@ module OpenRubyRMK
           col.each_with_index do |depth_row, i_drow|
             @table[i_col][i_drow] = Array.new(depth_row.size)
             depth_row.each_with_index do |field_ary, i_field|
-              if field_ary
-                @table[i_col][i_drow][i_field] = MapField.new(self, i_col, i_drow, i_field, field_ary[0], field_ary[1])
-              else
-                @table[i_col][i_drow][i_field] = MapField.new(self, i_col, i_drow, i_field)
-              end #TODO: Change the saved maps to have a [nil, nil, {}] array instead of plain nil for nonassigned fields!
+              @table[i_col][i_drow][i_field] = MapField.new(self, i_col, i_drow, i_field, field_ary[0], field_ary[1])                
               #TODO: Assign characters!
             end
           end
