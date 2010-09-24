@@ -340,20 +340,22 @@ module OpenRubyRMK
     #the parent map of this map has already been saved, otherwise you'll get a NoMethodError here 
     #and a serialized map, although the structure file hasn't been updated!
     def save
-      #Umwandeln des Tabellenformats ins Serialisierformat
-      #~ table = @table.dup
-      #~ table.each do |col|
-        #~ col.each do |depth_row|
-          #~ depth_row.map! do |field|
-            #~ field.nil? ? [-1, -1, {}] : [field.mapset_x, field.mapset_y, {}] #TODO - characters hash!
-          #~ end
-        #~ end
-      #~ end
+      #Convert from internal format to serialization format
+      table = []
+      @table.each do |col|
+        table << []
+        col.each do |depth_row|
+          table.last << []
+          depth_row.each do |field|
+            table.last.last << (field.clear? ? [-1, -1, {}] : [field.mapset_x, field.mapset_y, {}]) #TODO - characters hash!
+          end
+        end
+      end
       
       hsh = {
         :name => name, #@name may be unset
-        :mapset => @mapset.filename.to_s, 
-        :table => @table, 
+        :mapset => @mapset.filename.basename.to_s, 
+        :table => table, 
         :parent => @parent.nil? ? 0 : @parent.id #0 means there's no parent
       }
       #Save the map

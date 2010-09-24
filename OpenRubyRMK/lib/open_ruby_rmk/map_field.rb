@@ -74,6 +74,8 @@ module OpenRubyRMK
     #Sets this field's image to that one at the given coordinate on the mapset. 
     def reassign_image(x, y)
       @image = @map.mapset[x, y]
+      @mapset_x = x
+      @mapset_y = y
     end
     
     #true if this field has an associated image that can be displayed. 
