@@ -90,6 +90,13 @@ module OpenRubyRMK
             @z = 0
           end
           
+          #Directly accesses a field regardless of 
+          #how @z is set. Use sparingly to avoid 
+          #confusion. 
+          def get_field(x, y, z)
+            @map[x, y, z]
+          end
+          
           #The map's height. 
           def get_number_rows
             @map.height
@@ -99,6 +106,14 @@ module OpenRubyRMK
           def get_number_cols
             @map.width
           end
+          
+          #The map's depth. This is *not* a method used 
+          #by wxRuby as #get_number_rows and #get_number_calls. 
+          #It's just here for symmetry. 
+          def get_number_depth_rows
+            @map.depth
+          end
+          alias depth get_number_depth_rows
           
           #Returns a MapField object for the given position. Please note 
           #that the position is given in row-col form, which is reversed compared 
@@ -142,9 +157,33 @@ module OpenRubyRMK
           #Displays the data for the specified cell. 
           def draw(grid, attr, dc, rect, row, col, is_selected)
             super
-            field = grid.table.get_value(row, col)
-            bmp = Wx::Bitmap.from_image(field.image)
+            #BUG: For whatever reason, sometimes grid.table.get_field 
+            #returns an empty string instead of a Wx::Image. This effect 
+            #is absolutely unreproducible and happens from time to time. 
+            #But WHEN it happens it is 100% reproducible until you close 
+            #OpenRubyRMK. I added the exception handling code to track 
+            #down the problem and got [24, 14], i.e. the last possible field 
+            #in the default map. But I still don't know what the heck is 
+            #going on here, since the table base should ALWAYS return 
+            #the "MAP_FIELD" type. That's HARDCODED in MapTableBase#get_type_name! 
+            #If I don't find a solution I'll just capture the error, emmit a 
+            #warning to the log and use MapField.null_image as the image to 
+            #draw if the obscure error happens. Any help is appreciated!!
+            lower_bmps = bmp = nil #for scope
+            begin
+              lower_bmps = grid.shown_z_layers.map{|z| Wx::Bitmap.from_image(grid.table.get_field(col, row, z).image.convert_to_greyscale)}            
+              bmp = Wx::Bitmap.from_image(grid.table.get_value(row, col).image)
+            rescue NoMethodError
+              $log.debug([row, col].inspect)
+              raise
+            end
+            
+            #First, draw the lower images. 
+            lower_bmps.each{|lower_bitmap| dc.draw_bitmap(lower_bitmap, rect.x, rect.y, true)}
+            #Above them, draw what's on the currently selected Z layer
             dc.draw_bitmap(bmp, rect.x, rect.y, true)
+            #If this cell is selected, show it by a red rectangle with 
+            #a blue hatch. 
             if is_selected
               dc.pen = Wx::Pen.new(Wx::RED, 1)
               dc.brush = Wx::Brush.new(Wx::BLUE, Wx::CROSSDIAG_HATCH)
@@ -171,6 +210,15 @@ module OpenRubyRMK
         #
         #The list of possible modes can be found in this class's documentation. 
         
+        #This is an array of integers describing the Z 
+        #layers that are shown additionally to the 
+        #active Z layer. Please only use values smaller 
+        #than the current Z, because these layers get grayed out. 
+        #If there are layers above the current Z, they will 
+        #be shown below the current Z making it look as if something 
+        #was wrong with the project. 
+        attr_accessor :shown_z_layers
+        
         #Creates a new MapGrid. Parameters are the same as for Wx::Grid. 
         def initialize(parent, hsh = {})
           super
@@ -182,6 +230,7 @@ module OpenRubyRMK
           
           @mode = :paint
           @z = 0
+          @shown_z_layers = []
           
           #TODO: Wx::Grids don't receive motion events!
           #~ evt_left_down{|event| on_left_down(event)}
