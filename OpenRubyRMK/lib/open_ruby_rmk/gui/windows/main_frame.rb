@@ -262,7 +262,9 @@ module OpenRubyRMK
         
         def on_menu_save(event)
           return show_no_project_dlg unless OpenRubyRMK.has_project?
-          
+          #Save all the maps
+          @map_hierarchy.each{|map| map.save}
+          #TODO: Save other things. 
           
         end
         
