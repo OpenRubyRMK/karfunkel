@@ -108,7 +108,7 @@ module OpenRubyRMK
           end
           
           #The map's depth. This is *not* a method used 
-          #by wxRuby as #get_number_rows and #get_number_calls. 
+          #by wxRuby as #get_number_rows and #get_number_cols. 
           #It's just here for symmetry. 
           def get_number_depth_rows
             @map.depth
