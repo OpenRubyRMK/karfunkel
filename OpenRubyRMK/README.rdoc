@@ -14,7 +14,11 @@ Just start up _bin/OpenRubyRMK.exe_.
 
 ==Other systems
 
-First, make sure you have a working Ruby 1.9 installation. We recommend 1.9.2-p0, although that might change in the future, since we try to be up to date. Additionally, you have to install these gems: +wxruby-ruby19+, +r18n-desktop+, +minitar+. Since the precompiled wxRuby gem causes problems on Ubuntu 9.10 (Karmic) and newer, the OpenRubyRMK Team provides gems specifically compiled for recent Ubuntu versions. We did not make any modifications to wxRuby, if you don't trust us you can use the compile bash script available from our {Download page}[http://github.com/Quintus/OpenRubyRMK/Downloads] as well. 
+First, make sure you have a working Ruby 1.9 installation. We recommend 1.9.2-p0, although that might change in the future, since we try to be up to date. Additionally, you have to install the +bundler+ gem. In OpenRubyRMK's directory then do a 
+  $ bundle install --without development
+which will download and install the <tt>wxruby-ruby19</tt>, <tt>r18n-desktop</tt> and +minitar+ gems plus all their dependencies. Since the precompiled wxRuby gem causes problems on Ubuntu 9.10 (Karmic) and newer, the OpenRubyRMK Team provides gems specifically compiled for recent Ubuntu versions. We did not make any modifications to wxRuby, if you don't trust us you can use the compile bash script available from our {Download page}[http://github.com/Quintus/OpenRubyRMK/Downloads] as well. Just install it via 
+  $ gem install --local <path_to_gemfile>
+*before* you instruct Bundler to install OpenRubyRMK's dependencies. Bundler will then automatically pick up your already installed wxRuby and not download the "corrupted" one available from rubygems.org. 
 
 Second, use that Ruby installation to start _bin/OpenRubyRMK.rb_. 
 

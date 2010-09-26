@@ -30,6 +30,7 @@ end
 #when loading wxRuby, so silence them by unsetting $VERBOSE 
 #and reassigning it later. 
 v, $VERBOSE = $VERBOSE, nil
+require "bundler/setup"
 require "wx"
 require "stringio"
 require "timeout"
