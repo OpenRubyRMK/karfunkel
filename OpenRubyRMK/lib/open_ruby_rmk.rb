@@ -46,7 +46,7 @@ require "pp"
 module OpenRubyRMK
   
   #The version of the OpenRubyRMK lib you're using. 
-  VERSION = "0.0.1-dev (11.9.10)".freeze  
+  VERSION = "0.0.1-dev (28.9.10)".freeze  
   #Since Ruby's Math module doesn't define INFINITY for whatever reason...
   INFINITY = 1.0/0.0
   #Negative infinity. 

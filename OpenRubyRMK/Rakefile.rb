@@ -32,21 +32,17 @@ rescue LoadError
 end
 require "rake/clean"
 
-#Remote URL for ruby sources. This is meant to be relative to "ftp://ftp.ruby-lang.org". 
-RUBY_DOWNLOAD_DIR = "pub/ruby/1.9/"
-#Remote Ruby source file. Will also be used as the local filename. 
-RUBY_DOWNLOAD_FILE = "ruby-1.9.1-p429.tar.bz2"
+#Remote Ruby source file. Basename will be used as the local filename. 
+RUBY_DOWNLOAD_FILE = "ftp://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.2-p0.tar.bz2"
 #Name of the directory contained in RUBY_DOWNLOAD_FILE. 
-RUBY_DOWNLOAD_DIRNAME = "ruby-1.9.1-p429"
-#Remote URL for Windows Ruby package. 
-RUBY_WIN32_DOWNLOAD_DIR = "http://rubyforge.org/frs/download.php/71496/"
-#Remote Ruby package file. Will also be used as the local filename. 
-RUBY_WIN32_DOWNLOAD_FILE = "ruby-1.9.1-p429-i386-mingw32.7z"
+RUBY_DOWNLOAD_DIRNAME = "ruby-1.9.2-p0"
+#Remote Ruby package file. Basename will also be used as the local filename. 
+RUBY_WIN32_DOWNLOAD_FILE = "http://rubyforge.org/frs/download.php/72160/ruby-1.9.2-p0-i386-mingw32.7z"
 #Name of the directory contained in RUBY_WIN32_DOWNLOAD_FILE. 
-RUBY_WIN32_DOWNLOAD_DIRNAME = "ruby-1.9.1-p429-i386-mingw32"
+RUBY_WIN32_DOWNLOAD_DIRNAME = "ruby-1.9.2-p0-i386-mingw32"
 
 #After removing these files the generated result is still usable. 
-CLEAN.include(RUBY_DOWNLOAD_FILE, RUBY_DOWNLOAD_DIRNAME, RUBY_WIN32_DOWNLOAD_FILE, "OpenRubyRMK", "OpenRubyRMK.rb")
+CLEAN.include(File.basename(RUBY_DOWNLOAD_FILE), RUBY_DOWNLOAD_DIRNAME, File.basename(RUBY_WIN32_DOWNLOAD_FILE), "OpenRubyRMK", "OpenRubyRMK.rb")
 #Removing these files gives us a blank environment. 
 CLOBBER.include("ruby/**/**", "OpenRubyRMK.tar.bz2", "OpenRubyRMK.zip")
 
@@ -90,12 +86,12 @@ task :get_ruby do
       puts "No need to download it."
     else
       print "Dowloading #{RUBY_WIN32_DOWNLOAD_FILE}... "
-      str = open(RUBY_WIN32_DOWNLOAD_DIR + RUBY_WIN32_DOWNLOAD_FILE, "rb"){|page| page.read} #5MB fit in RAM, don't they?
+      str = open(RUBY_WIN32_DOWNLOAD_FILE, "rb"){|page| page.read} #5MB fit in RAM, don't they?
       puts "Done."
-      open(RUBY_WIN32_DOWNLOAD_FILE, "wb"){|f| f.write(str)} #Produces RUBY_WIN32_DOWNLOAD_FILE <CLEAN>
+      open(File.basename(RUBY_WIN32_DOWNLOAD_FILE), "wb"){|f| f.write(str)} #Produces RUBY_WIN32_DOWNLOAD_FILE <CLEAN>
     end
     rm_r "ruby" if File.directory?("Ruby") #We'll replace it... 
-    sh "#{z7} x #{RUBY_WIN32_DOWNLOAD_FILE} > nul"
+    sh "#{z7} x #{File.basename(RUBY_WIN32_DOWNLOAD_FILE)} > nul"
     mv RUBY_WIN32_DOWNLOAD_DIRNAME, "ruby" #...with the extracted archive. 
   else
     puts "Other OS."
@@ -107,20 +103,22 @@ task :get_ruby do
     print "Do you want to continue? (y/n): "
     raise("Aborted by user!") if $stdin.gets =~ /^n/i
     
-    if File.file?(RUBY_DOWNLOAD_FILE)
-      puts "Found #{RUBY_DOWNLOAD_FILE}."
+    download_basename = File.basename(RUBY_DOWNLOAD_FILE)
+    
+    if File.file?(download_basename)
+      puts "Found #{download_basename}."
       puts "No need to download it."
     else
-      print "Downloading #{RUBY_DOWNLOAD_FILE}..."
+      print "Downloading #{download_basename}..."
       Net::FTP.open("ftp.ruby-lang.org") do |ftp|
-        ftp.login
-        ftp.chdir(RUBY_DOWNLOAD_DIR)
-        ftp.getbinaryfile(RUBY_DOWNLOAD_FILE) #Produces RUBY_DOWNLOAD_FILE <CLEAN>
+        ftp.login        
+        ftp.chdir(File.dirname(RUBY_DOWNLOAD_FILE).sub("ftp://ftp.ruby-lang.org/", ""))
+        ftp.getbinaryfile(download_basename) #Produces File.basename(RUBY_DOWNLOAD_FILE) <CLEAN>
       end
       puts "Done."
     end
     
-    sh "tar -xjf #{RUBY_DOWNLOAD_FILE}" #Produces RUBY_DOWNLOAD_DIRNAME <CLEAN>
+    sh "tar -xjf #{download_basename}" #Produces RUBY_DOWNLOAD_DIRNAME <CLEAN>
     goal_dir = File.join(File.expand_path(Dir.pwd), "ruby")
     cd RUBY_DOWNLOAD_DIRNAME
     sh %Q<./configure --enable-shared --prefix="#{goal_dir}">
