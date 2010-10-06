@@ -42,14 +42,14 @@ module OpenRubyRMK
         #Creates the mainwindow. +parent+ should be +nil+. 
         def initialize(parent = nil)
           style = DEFAULT_FRAME_STYLE
-          style |= MAXIMIZE if OpenRubyRMK.config["maximize"]
-          pos = OpenRubyRMK.config["startup_pos"] == "auto" ? DEFAULT_POSITION : Point.new(*OpenRubyRMK.config["startup_pos"])
-          super(parent, title: "#{t.general.application_name} - #{t.general.application_slogan}", pos: pos, size: Size.new(*OpenRubyRMK.config["startup_size"]), style: style)
+          style |= MAXIMIZE if THE_APP.config["maximize"]
+          pos = THE_APP.config["startup_pos"] == "auto" ? DEFAULT_POSITION : Point.new(*THE_APP.config["startup_pos"])
+          super(parent, title: "#{t.general.application_name} - #{t.general.application_slogan}", pos: pos, size: Size.new(*THE_APP.config["startup_size"]), style: style)
           self.background_colour = NULL_COLOUR #Ensure that we get a platform-native background color
           self.icon = Icon.new(Paths::DATA_DIR.join("ruby16x16.png").to_s, BITMAP_TYPE_PNG)
           #The MAXIMIZE flag only works on windows, so we need to maximize 
           #the window after a short waiting delay on other platforms. 
-          Timer.after(1000){self.maximize(true)} if OpenRubyRMK.config["maximize"] and RUBY_PLATFORM !~ /mingw|mswin/
+          Timer.after(1000){self.maximize(true)} if THE_APP.config["maximize"] and RUBY_PLATFORM !~ /mingw|mswin/
           
           create_menubar
           create_toolbar
@@ -224,40 +224,18 @@ module OpenRubyRMK
           return if fd.show_modal == ID_CANCEL
           #Remember the directory for convenience
           THE_APP.remembered_dir = Pathname.new(fd.directory)
+          
+          THE_APP.karfunkel.load_project(Pathname.new(fd.directory).parent)
           #Set the OpenRubyRMK project dir, from which all other dirs can be computed
-          OpenRubyRMK::Paths.project_path = Pathname.new(fd.directory).parent
-          #Clear the temporary directory for new files
-          OpenRubyRMK::Paths.clear_tempdir
+          #OpenRubyRMK::Paths.project_path = Pathname.new(fd.directory).parent
+          #Clear the remote temporary directory for new files
+          #THE_APP.karfunkel.clear_tempdir
           #Extract the projects mapsets and characters (into the temporary directory). 
           #Give visual response since this is a long-running operation. 
-          ThreadedProgressDialog.new(t.dialogs.load_project.title, t.dialogs.load_project.start_message, 100, self) do |pd| 
-            actions = 3
-            percent = 0.0          
-            
-            last_value = percent
-            pd.update(percent.round, t.dialogs.load_project.load_mapsets)
-            Mapset.extract_archives do |i, all|
-              sub_percent = (i.to_f / all.to_f) * 100
-              percent = last_value + sub_percent / actions
-              pd.update(percent.round)
-            end
-            
-            last_value = percent
-            pd.update(percent.round, t.dialogs.load_project.load_characters)
-            Character.extract_archives do |i, all|
-              sub_percent = (i.to_f / all.to_f) * 100
-              percent = last_value + sub_percent / actions
-              pd.update(percent.round)
-            end
-            
-            last_value = percent
-            pd.update(percent.round, t.dialogs.load_project.build_map_structure)
-            structure_hsh = OpenRubyRMK::Paths.project_maps_structure_file.open("rb"){|f| Marshal.load(f)}
-            @maps = buildup_hash(structure_hsh)
-            @project_name = fd.filename.match(/\.rmk$/).pre_match
-            @map_hierarchy.recreate_tree!(@project_name, @maps)
-            pd.update(100)
-          end
+          #THE_APP.karfunkel.extract_mapsets
+          #THE_APP.karfunkel.extract_chars
+          sleep 1 until THE_APP.karfunkel.project_loaded? #TODO: Show progress
+          
         end
         
         def on_menu_save(event)

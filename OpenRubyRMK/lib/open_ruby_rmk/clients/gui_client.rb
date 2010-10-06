@@ -20,6 +20,29 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
+v, $VERBOSE = $VERBOSE, nil
+require "bundler/setup"
+require "wx"
+require "drb"
+require "timeout"
+require "irb"
+$VERBOSE = v
+
+require_relative "../paths"
+#Require the GUI lib
+require_relative "../gui"
+require_relative "../gui/windows/main_frame"
+require_relative "../gui/windows/map_dialog"
+require_relative "../gui/windows/mapset_window"
+require_relative "../gui/windows/console_window"
+require_relative "../gui/windows/properties_window"
+require_relative "../gui/windows/threaded_progress_dialog"
+require_relative "../gui/controls/terminal"
+require_relative "../gui/controls/rmkonsole"
+require_relative "../gui/controls/map_hierarchy"
+require_relative "../gui/controls/map_grid"
+require_relative "../plugins" #Not sure -- belongs this to the GUI or the core lib?
+
 #I monkeypatch the Wx::Image class because the grid cell renderers of the 
 #mapset window and the map need to display Wx::Images. Because I can't 
 #derive from Wx::GridCellRenderer for whatever reason, I derived my 
@@ -40,12 +63,14 @@ end
 
 module OpenRubyRMK
   
-  module GUI
+  module Clients
     
-    class Application < Wx::App
+    class GUIClient < Wx::App
       include Wx
       include R18n::Helpers
-            
+      
+      CONFIG_FILE_NAME = "ORR-gui-client-rc.yml".freeze
+      
       #The main GUI window, an instance of class OpenRubyRMK::GUI::Windows::MainFrame. 
       attr_reader :mainwindow
       #The current project's root path. 
@@ -54,6 +79,9 @@ module OpenRubyRMK
       #This is just for convenience, so that you don't have to 
       #navigate into the same dir again and again. 
       attr_accessor :remembered_dir
+      
+      attr_reader :config
+      attr_reader :karfunkel
       
       #Returns the currently selected map or +nil+ if no map 
       #is selected (mostly the case if the root node has been selected). 
@@ -92,17 +120,20 @@ module OpenRubyRMK
       #First method called by wxRuby when initializing the Graphical 
       #User Interface. 
       def on_init
+        load_config
+        connect_to_server
+        initialize_remote_objects
         $log.info("Starting GUI.")
                 
         setup_localization
         load_plugins
         
-        Dir.chdir(OpenRubyRMK.config["startup_dir"]) unless OpenRubyRMK.config["startup_dir"] == "auto"
+        Dir.chdir(@config["startup_dir"]) unless @config["startup_dir"] == "auto"
         
         @remembered_dir = Pathname.new(".").expand_path
         
         $log.info "Creating mainwindow."
-        @mainwindow = Windows::MainFrame.new
+        @mainwindow = GUI::Windows::MainFrame.new
         $log.info "OK. Let's show the GUI now!"
         @mainwindow.show
       end
@@ -134,10 +165,10 @@ module OpenRubyRMK
         md = MessageDialog.new(@mainwindow, caption: e.class.name, message: msg, style: OK | ICON_ERROR)
         md.show_modal
         
-        #I'd like to reraise the error here, but then it get's captured by 
+        #I'd like to reraise the error here, but then it gets captured by 
         #the global rescue statement in OpenRubyRMK.rb. This is a 
         #TODO. 
-        exit 2 #In contrast to 1 for the global exception handler
+        exit 3 #In contrast to 1 for the global exception handler, 2 for connection error
       end
       
       #The last method called by wxRuby before it yields control back 
@@ -151,14 +182,42 @@ module OpenRubyRMK
       
       private
       
+      def load_config
+        @config = YAML.load_file(OpenRubyRMK::Paths::CONFIG_DIR + CONFIG_FILE_NAME)
+      end
+      
+      def connect_to_server
+        DRb.start_service #Needed to receive DRbUndumped objects (non-marshallable objects)
+        sleep 2 #Ensure Karfunkel is up and running
+        try = 1
+        
+        begin
+          @karfunkel = DRbObject.new_with_uri(@config["karfunkel_uri"])
+        rescue DRb::DRbConnError => e
+          try += 1
+          if try > @config["max_connection_tries"]
+            $stderr.puts("Failed to connect #{@config["max_connection_tries"]} times. Exiting.")
+            exit 2
+          end
+          $stderr.puts("Connection to Karfunkel failed. URI was #{@config["karfunkel_uri"]}.")
+          $stderr.puts("Retrying in 2 seconds.")
+          sleep 2
+          retry
+        end  
+      end
+      
+      def initialize_remote_objects
+        $log = @karfunkel.log
+      end
+      
       #Checks the configuration and sets the R18n localization 
       #library accordingly. 
       def setup_localization
         $log.info "Detecting locale."
-        if OpenRubyRMK.config["locale"] == "auto"
+        if @config["locale"] == "auto"
           R18n.from_env(Paths::LOCALE_DIR.to_s)
         else
-          R18n.from_env(Paths::LOCALE_DIR.to_s, OpenRubyRMK.config["locale"])
+          R18n.from_env(Paths::LOCALE_DIR.to_s, @config["locale"])
         end
         $log.info "Detected " + r18n.locale.title + "."
       end      

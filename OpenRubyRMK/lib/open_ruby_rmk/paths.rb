@@ -40,8 +40,12 @@ module OpenRubyRMK
     DATA_DIR = ROOT_DIR + "data"
     #The directory where log files are created in. 
     LOG_DIR = INSTALL_DIR + "bin" + "logs"
+    
+    BIN_CLIENT_DIR = INSTALL_DIR + "bin" + "clients"
     #This directory contains OpenRubyRMK's translation files. 
     LOCALE_DIR =  INSTALL_DIR + "locale"
+    
+    CONFIG_DIR = INSTALL_DIR + "config"
     #This is the path of OpenRubyRMK's configuration file. 
     CONFIG_FILE = INSTALL_DIR + "config" + "OpenRubyRMK-rc.yml"
     #In this directory and it's subdirectories reside plugins. 

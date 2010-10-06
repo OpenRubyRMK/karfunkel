@@ -41,19 +41,7 @@ module OpenRubyRMK
     #Number of rows in a mapset, where a row is FIELD_EDGE pixels wide. 
     attr_reader :rows
     #Number of columns in a mapset, where a column is FIELD_EDGE pixels wide. 
-    attr_reader :columns
-    
-    def self.extract_archives
-      Errors::NoProjectError.throw! unless OpenRubyRMK.has_project?
-      files = Dir.glob(OpenRubyRMK::Paths.project_mapsets_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}
-      files.each_with_index do |filename, index|
-        $log.debug("Extracting map '#{filename}'")
-        temp_filename = OpenRubyRMK::Paths.temp_mapsets_dir + filename.relative_path_from(OpenRubyRMK::Paths.project_mapsets_dir)
-        gz = Zlib::GzipReader.open(filename)
-        Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
-        yield(index + 1, files.size) if block_given? #Yield progress
-      end
-    end
+    attr_reader :columns    
     
     #Loads a mapset by reading from an image file. Just pass in the file's basename, 
     #it will be prepended by the current project's mapset search path automatically. 

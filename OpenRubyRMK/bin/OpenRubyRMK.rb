@@ -26,49 +26,40 @@ if RUBY_VERSION < "1.9.1"
   exit 1
 end
 
-#Load dependendies - we don't need all the warnings displayed 
-#when loading wxRuby, so silence them by unsetting $VERBOSE 
-#and reassigning it later. 
-v, $VERBOSE = $VERBOSE, nil
-require "bundler/setup"
-require "wx"
-require "stringio"
-require "timeout"
-require "irb"
-$VERBOSE = v
-
-#Require the lib
-require_relative "../lib/open_ruby_rmk"
-#Require the GUI lib
-require_relative "../lib/open_ruby_rmk/gui"
-require_relative "../lib/open_ruby_rmk/gui/application"
-require_relative "../lib/open_ruby_rmk/gui/windows/main_frame"
-require_relative "../lib/open_ruby_rmk/gui/windows/map_dialog"
-require_relative "../lib/open_ruby_rmk/gui/windows/mapset_window"
-require_relative "../lib/open_ruby_rmk/gui/windows/console_window"
-require_relative "../lib/open_ruby_rmk/gui/windows/properties_window"
-require_relative "../lib/open_ruby_rmk/gui/windows/threaded_progress_dialog"
-require_relative "../lib/open_ruby_rmk/gui/controls/terminal"
-require_relative "../lib/open_ruby_rmk/gui/controls/rmkonsole"
-require_relative "../lib/open_ruby_rmk/gui/controls/map_hierarchy"
-require_relative "../lib/open_ruby_rmk/gui/controls/map_grid"
-require_relative "../lib/open_ruby_rmk/plugins" #Not sure -- belongs this to the GUI or the core lib?
-
-exit if defined? Ocra #That means the script is being compiled for Windows by OCRA
-
-#Initialize OpenRubyRMK. 
-OpenRubyRMK.setup
-
-#Now start OpenRubyRMK
-begin
-  app = OpenRubyRMK::GUI::Application.new
-  app.main_loop
-rescue => e #If an error gets here, the GUI has failed at everything. 
-  $log.debug("Global exception handler triggered.")
-  $log.fatal(e.class.name + ": " + e.message)
-  $log.fatal("Backtrace:")
-  e.backtrace.each{|trace| $log.fatal(trace)}
-  
-  #Reraise
-  raise
+#Returns a truth value if OCRA is compressing 
+#this script at the moment. 
+def compressing?
+  defined? Ocra
 end
+
+require "rbconfig"
+require "pathname"
+if compressing?
+  #These requires aren't needed for the startup script, 
+  #but have to be included in the OCRA-compressed Windows 
+  #executable. 
+  v, $VERBOSE = $VERBOSE, nil #Suppresses tons of warnings we don't care about
+  require "bundler/setup"
+  require "wx"
+  require "drb"
+  require "timeout"
+  require "irb"
+  $VERBOSE = v #Ensure warnings shown hereafter get visible
+  exit
+end
+
+#If we're running on Windows, use rubyw
+windows_add = "w" if RUBY_PLATFORM =~ /mswin|mingw/
+#Get the name of the Ruby executable.
+ruby = Pathname.new(RbConfig::CONFIG["bindir"] + File::SEPARATOR + RbConfig::CONFIG["ruby_install_name"] + windows_add)
+#Get the name of the directory this script resides in
+this_dir = Pathname.new(__FILE__).dirname.expand_path
+#Get the server script's name
+karfunkel = this_dir.join("server","karfunkel.rb")
+#Get the main client's names
+clients = [this_dir + "clients" + "gui_client.rb"]
+
+#Spawn clients
+clients.each{|pathname| spawn(ruby.to_s, pathname.to_s)}
+#Start the server
+exec(ruby.to_s, karfunkel.to_s)
