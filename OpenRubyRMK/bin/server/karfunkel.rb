@@ -26,7 +26,7 @@ if RUBY_VERSION < "1.9.1"
   exit 1
 end
 
-require_relative "../../lib/karfunkel"
+require_relative "../../lib/open_ruby_rmk/karfunkel"
 
 begin
   server = OpenRubyRMK::Karfunkel.new

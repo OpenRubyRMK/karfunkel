@@ -31,48 +31,91 @@ require "irb"
 $VERBOSE = v
 
 #Require the lib
-require_relative "../lib/open_ruby_rmk"
+require_relative "../open_ruby_rmk"
 
 module OpenRubyRMK
   
   #This is OpenRubyRMK's server. 
   class Karfunkel
-    include DRbUndumped #We can't share the log's filhandle otherwise (it can't be marshalled)
     
-    URI = "druby://127.0.0.1:3141".freeze
+    class Controller
+      
+      def initialize(karfunkel)
+        @karfunkel = karfunkel
+        @loading = {:map_extraction => 0, :char_extraction => 0}
+        @allowed_pids = []
+      end
+      
+      def remote_rmk
+        OpenRubyRMK
+      end
+      
+      def inspect
+        "#<Karfunkel server controller, running with PID #$$>"
+      end
+      
+      def running?
+        @karfunkel.running?
+      end
+      alias started? running?
+      
+      def log
+        $log
+      end
+      
+      def load_project(project_dir)
+        @loading = {:map_extraction => 0, :char_extraction => 0}
+        @allowed_pids.clear
+        @allowed_pids << spawn(RUBY, OpenRubyRMK::Paths::BIN_CLIENTS_DIR + "mapset_extractor_client.rb", @uri)      
+        @allowed_pids << spawn(RUBY, OpenRubyRMK::Paths::BIN_CLIENTS_DIR + "char_extractor_client.rb", @uri)
+      end
+      
+      def project_loaded?
+        @loading.values.all?{|percent| percent >= 100}
+      end
+      
+      def update_load_process(pid, process, new_val)
+        if @allowed_pids.include?(pid)
+          @loading[process] = new_val
+        else
+          $log.warn("Unauthorized PID #{pid} tried updating #{process} process.")
+        end
+      end
+      
+    end
+    
+    URI = "druby://127.0.0.1:3141".freeze #TODO: Read this from a config file
     #If we're running on Windows, use rubyw
-    windows_add = "w" if RUBY_PLATFORM =~ /mswin|mingw/
+    windows_add = RUBY_PLATFORM =~ /mswin|mingw/ ? "w" : ""
     #Path to the Ruby executable. 
     RUBY = Pathname.new(RbConfig::CONFIG["bindir"] + File::SEPARATOR + RbConfig::CONFIG["ruby_install_name"] + windows_add)
     
     def initialize
+      #Every single class in the OpenRubyRMK module is not allowed to 
+      #be marshalled via DRb. Everything has to happen on the server side. 
+      OpenRubyRMK.constants.each do |sym|
+        obj = OpenRubyRMK.const_get(sym)
+        if obj.kind_of?(Class)
+          obj.send(:include, DRbUndumped)
+        elsif obj.kind_of?(Module)
+          obj.send(:extend, DRbUndumped)
+        end
+      end
+      OpenRubyRMK.send(:extend, DRbUndumped)
+      
       @uri = URI
       @started = false
-      @loading = {:map_extraction => 0, :char_extraction => 0}
-      
       OpenRubyRMK.setup
-      
-      @tempdirs = {
-        :tempdir => OpenRubyRMK::Paths.tempdir, 
-        :temp_mapsets_dir => OpenRubyRMK::Paths.temp_mapsets_dir, 
-        :temp_characters_dir => OpenRubyRMK::Paths.temp_characters_dir
-      }
-      
-      @project_dirs = {
-        :project_path => OpenRubyRMK::Paths.project_path, 
-        :project_mapsets_dir => OpenRubyRMK::Paths.project_mapsets_dir, 
-        :project_maps_dir => OpenRubyRMK::Paths.project_maps_dir, 
-        :project_characters_dir => OpenRubyRMK::Paths.project_chars_dir
-      }
-      @allowed_pids = []
     end
     
     def start
       raise(RuntimeError, "Karfunkel is already running.") if @started
       $log.info("Starting Karfunkel, OpenRubyRMK's server.")
       @started = true
-      DRb.start_service(@uri, self)
-      $log.info("Running on #{@uri}.")
+      @controller = Controller.new(self)
+      DRb.start_service(@uri, @controller)
+      Signal.trap("SIGTERM"){on_sigterm}
+      $log.info("Running with PID #{$$} on #{@uri}.")
       DRb.thread.join
       @started = false
       $log.info("Stopped Karfunkel.")
@@ -83,39 +126,9 @@ module OpenRubyRMK
     end
     alias started? running?
     
-    def log
-      $log
-    end
-    
-    def tempdirs
-      @tempdirs
-    end
-    
-    def clear_tempdir
-      OpenRubyRMK::Paths.clear_tempdir
-    end
-    
-    def project_dirs
-      @project_dirs
-    end
-    
-    def load_project(project_dir)
-      @loading = {:map_extraction => 0, :char_extraction => 0}
-      @allowed_pids.clear
-      @allowed_pids << spawn(RUBY, OpenRubyRMK::Paths::BIN_CLIENTS_DIR + "mapset_extractor_client.rb", @uri)      
-      @allowed_pids << spawn(RUBY, OpenRubyRMK::Paths::BIN_CLIENTS_DIR + "char_extractor_client.rb", @uri)
-    end
-    
-    def project_loaded?
-      @loading.values.all?{|percent| percent >= 100}        
-    end
-    
-    def update_load_process(pid, process, new_val)
-      if @allowed_pids.include?(pid)
-        @loading[process] = new_val
-      else
-        $log.warn("Unauthorized PID #{pid} tried updating #{process} process.")
-      end
+    def on_sigterm
+      $log.info("Cought SIGTERM, exiting...")
+      exit
     end
     
   end

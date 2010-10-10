@@ -49,7 +49,7 @@ if compressing?
 end
 
 #If we're running on Windows, use rubyw
-windows_add = "w" if RUBY_PLATFORM =~ /mswin|mingw/
+windows_add = RUBY_PLATFORM =~ /mswin|mingw/ ? "w" : ""
 #Get the name of the Ruby executable.
 ruby = Pathname.new(RbConfig::CONFIG["bindir"] + File::SEPARATOR + RbConfig::CONFIG["ruby_install_name"] + windows_add)
 #Get the name of the directory this script resides in
