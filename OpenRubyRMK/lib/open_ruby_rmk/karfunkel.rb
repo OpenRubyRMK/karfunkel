@@ -101,15 +101,14 @@ module OpenRubyRMK
     RUBY = Pathname.new(RbConfig::CONFIG["bindir"] + File::SEPARATOR + RbConfig::CONFIG["ruby_install_name"] + windows_add)
     
     def initialize
-      #Every single class in the OpenRubyRMK module is not allowed to 
-      #be marshalled via DRb. Everything has to happen on the server side. 
+      #Every single class (and it's instances, of course) in the OpenRubyRMK module 
+      #is not allowed to be marshalled via DRb. Everything has to happen on the server side. 
       OpenRubyRMK.constants.each do |sym|
         obj = OpenRubyRMK.const_get(sym)
-        if obj.kind_of?(Class)
-          obj.send(:include, DRbUndumped)
-        elsif obj.kind_of?(Module)
-          obj.send(:extend, DRbUndumped)
-        end
+        #Instances
+        obj.send(:include, DRbUndumped) if obj.kind_of?(Class)
+        #Classes (and modules) themselves
+        obj.send(:extend, DRbUndumped) if obj.kind_of?(Module)
       end
       OpenRubyRMK.send(:extend, DRbUndumped)
       
