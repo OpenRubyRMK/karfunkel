@@ -24,6 +24,7 @@ require "bundler/setup"
 require "pathname"
 require "archive/tar/minitar"
 require "zlib"
+require "drb"
 
 module OpenRubyRMK
   
@@ -34,18 +35,21 @@ module OpenRubyRMK
       def initialize(karfunkel_uri)
         @karfunkel_uri = karfunkel_uri
         DRb.start_service
-        @karfunkel = DRbObject.new_with_uri(@karfunkel_uri)
+        @connection = DRbObject.new_with_uri(@karfunkel_uri)
+        @remote_rmk = @connection.remote_rmk
       end
       
       def extract
-        files = Dir.glob(@karfunkel.project_dirs[:project_characters_dir].join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}
+        paths = @remote_rmk.const_get(:Paths)
+        
+        files = Dir.glob(paths.project_characters_dir].join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}
         num = files.length
         files.each_with_index do |filename, index|
-          @karfunkel.log.debug("Extracting character '#{filename}'")
-          temp_filename = @karfunkel.tempdirs[:temp_characters_dir] + filename.relative_path_from(@karfunkel.project_dirs[:project_characters_dir])
+          @connection.log.debug("[Char extractor (#$$)] Extracting character '#{filename}'")
+          temp_filename = paths.temp_characters_dir] + filename.relative_path_from(paths.project_characters_dir])
           gz = Zlib::GzipReader.open(filename)
           Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
-          @karfunkel.update_load_process($$, :char_extraction, (index + 1 / num).to_f)          
+          @connection.update_load_process($$, :char_extraction, (index + 1 / num).to_f)          
         end
       end
       

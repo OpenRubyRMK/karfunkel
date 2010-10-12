@@ -5,7 +5,6 @@ GEM
       gosu (>= 0.7.22)
     gosu (0.7.24)
     minitar (0.5.3)
-    ocra (1.2.0)
     r18n-core (0.4.8)
     r18n-desktop (0.4.8)
       r18n-core (= 0.4.8)

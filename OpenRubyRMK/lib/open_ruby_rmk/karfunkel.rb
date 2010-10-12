@@ -24,14 +24,24 @@ v, $VERBOSE = $VERBOSE, nil
 require "bundler/setup"
 require "pathname"
 require "rbconfig"
-require "wx"
 require "drb"
 require "timeout"
+require "tempfile"
+require "logger"
 require "irb"
+require "wx"
 $VERBOSE = v
 
 #Require the lib
 require_relative "../open_ruby_rmk"
+require_relative "./paths"
+require_relative "./errors"
+require_relative "./map"
+require_relative "./mapset"
+require_relative "./map_field"
+require_relative "./character"
+require_relative "./option_handler"
+require_relative "./open_ruby_rmkonsole"
 
 module OpenRubyRMK
   
@@ -114,7 +124,9 @@ module OpenRubyRMK
       @started = true
       @controller = Controller.new(self)
       DRb.start_service(@uri, @controller)
-      Signal.trap("SIGTERM"){on_sigterm}
+      
+      setup_signal_handlers
+      
       $log.info("Running with PID #{$$} on #{@uri}.")
       DRb.thread.join
       @started = false
@@ -125,6 +137,18 @@ module OpenRubyRMK
       @started
     end
     alias started? running?
+    
+    private
+    
+    def setup_signal_handlers
+      Signal.trap("SIGINT"){on_sigint}
+      Signal.trap("SIGTERM"){on_sigterm}
+    end
+    
+    def on_sigint
+      $log.info("Cought SIGINT, exiting...")
+      exit
+    end
     
     def on_sigterm
       $log.info("Cought SIGTERM, exiting...")

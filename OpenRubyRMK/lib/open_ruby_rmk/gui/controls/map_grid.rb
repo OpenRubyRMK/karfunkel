@@ -222,8 +222,8 @@ module OpenRubyRMK
         #Creates a new MapGrid. Parameters are the same as for Wx::Grid. 
         def initialize(parent, hsh = {})
           super
-          self.default_col_size = Mapset::FIELD_EDGE
-          self.default_row_size = Mapset::FIELD_EDGE
+          self.default_col_size = $remote_rmk.const_get(:Mapset).const_get(:FIELD_EDGE)
+          self.default_row_size = $remote_rmk.const_get(:Mapset).const_get(:FIELD_EDGE)
           self.disable_drag_col_size
           self.disable_drag_row_size
           self.register_data_type(MAP_FIELD_TYPE, MapFieldRenderer.new, GridCellTextEditor.new)

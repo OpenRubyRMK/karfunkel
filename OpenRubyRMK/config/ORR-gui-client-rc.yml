@@ -32,6 +32,7 @@ startup_dir: auto
 #  ruby: "C:\myruby\bin"
 #Default value: auto
 ruby: "/opt/rubies/ruby-1.9.2-p0/bin"
+karfunkel_address: "127.0.0.1:3141"
 #The maximum number of times the GUI client tries to 
 #connect to the Karfunkel server. 
 #Example:

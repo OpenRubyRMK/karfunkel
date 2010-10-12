@@ -225,16 +225,16 @@ module OpenRubyRMK
           #Remember the directory for convenience
           THE_APP.remembered_dir = Pathname.new(fd.directory)
           
-          THE_APP.karfunkel.load_project(Pathname.new(fd.directory).parent)
+          THE_APP.connection.load_project(Pathname.new(fd.directory).parent)
           #Set the OpenRubyRMK project dir, from which all other dirs can be computed
           #OpenRubyRMK::Paths.project_path = Pathname.new(fd.directory).parent
           #Clear the remote temporary directory for new files
-          #THE_APP.karfunkel.clear_tempdir
+          #THE_APP.connection.clear_tempdir
           #Extract the projects mapsets and characters (into the temporary directory). 
           #Give visual response since this is a long-running operation. 
-          #THE_APP.karfunkel.extract_mapsets
-          #THE_APP.karfunkel.extract_chars
-          sleep 1 until THE_APP.karfunkel.project_loaded? #TODO: Show progress
+          #THE_APP.connection.extract_mapsets
+          #THE_APP.connection.extract_chars
+          sleep 1 until THE_APP.connection.project_loaded? #TODO: Show progress
           
         end
         

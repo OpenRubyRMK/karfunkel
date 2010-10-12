@@ -26,7 +26,7 @@ if RUBY_VERSION < "1.9.1"
   exit 1
 end
 
-require_relative "../../lib/clients/gui_client"
+require_relative "../../lib/open_ruby_rmk/clients/gui_client"
 
-app = OpenRubyRMK::GUI::Client.new
+app = OpenRubyRMK::Clients::GUIClient.new
 app.main_loop

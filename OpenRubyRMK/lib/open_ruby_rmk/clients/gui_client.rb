@@ -22,12 +22,17 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 v, $VERBOSE = $VERBOSE, nil
 require "bundler/setup"
-require "wx"
+require "pathname"
+require "tempfile"
+require "logger"
 require "drb"
 require "timeout"
 require "irb"
+require "wx"
+require "r18n-desktop"
 $VERBOSE = v
 
+require_relative "../../open_ruby_rmk"
 require_relative "../paths"
 #Require the GUI lib
 require_relative "../gui"
@@ -81,7 +86,7 @@ module OpenRubyRMK
       attr_accessor :remembered_dir
       
       attr_reader :config
-      attr_reader :karfunkel
+      attr_reader :connection
       
       #Returns the currently selected map or +nil+ if no map 
       #is selected (mostly the case if the root node has been selected). 
@@ -192,18 +197,36 @@ module OpenRubyRMK
         try = 1
         
         begin
-          @karfunkel = DRbObject.new_with_uri(@config["karfunkel_uri"])
+          @connection = DRbObject.new_with_uri("druby://" + @config["karfunkel_address"])
         rescue DRb::DRbConnError => e
           try += 1
           if try > @config["max_connection_tries"]
             $stderr.puts("Failed to connect #{@config["max_connection_tries"]} times. Exiting.")
             exit 2
           end
-          $stderr.puts("Connection to Karfunkel failed. URI was #{@config["karfunkel_uri"]}.")
+          $stderr.puts("Connection to Karfunkel failed. URI was druby://#{@config["karfunkel_address"]}.")
           $stderr.puts("Retrying in 2 seconds.")
           sleep 2
           retry
-        end  
+        end
+        #Assign the remote OpenRubyRMK constant to a global variable. 
+        #This has to reasons: 
+        #1. It is easier to write $remote_rmk instead of 
+        #   Wx::THE_APP.connection.remote_rmk all the time. 
+        #2. It's faster. Without the global: 
+        #    0. We want OpenRubyRMK::Paths::INSTALL_DIR
+        #    1. Send request for OpenRubyRMK to Karfunkel
+        #    2. Get answer.
+        #    3. Send request for Paths to Karfunkel
+        #    4. Get answer
+        #    5. Send request for INSTALL_DIR to Karfunkel
+        #    6. Get the desired Pathname object. 
+        #   With the global:
+        #    1. Send request for Paths to Karfunkel
+        #    2. Get answer
+        #    3. Send request for INSTALL_DIR to Karfunkel
+        #    4. Get the desired Pathname object. 
+        $remote_rmk = @connection.remote_rmk
       end
       
       def initialize_remote_objects

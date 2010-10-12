@@ -20,25 +20,6 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
-#External requires
-if RUBY_VERSION >= "1.9.2"
-  #For whatever reasion, Psych's compatibility doesn't include YAML::PrivateType, 
-  #causing R18n to crash. A fix isn't in sight, sadly.  
-  #require "psych"
-  #YAML = Psych
-  require "yaml"
-else
-  require "yaml"
-end
-require "tempfile"
-require "logger"
-require "optparse"
-require "pathname"
-require "zlib"
-require "archive/tar/minitar"
-require "r18n-desktop"
-require "pp"
-
 #This is the namespace of the OpenRubyRMK library. 
 #Please note the word "project" always refers to games 
 #created with OpenRubyRMK. If we refer to OpenRubyRMK 
@@ -165,13 +146,3 @@ module OpenRubyRMK
   end
   
 end
-
-#Internal requires
-require_relative "open_ruby_rmk/paths"
-require_relative "open_ruby_rmk/errors"
-require_relative "open_ruby_rmk/map"
-require_relative "open_ruby_rmk/mapset"
-require_relative "open_ruby_rmk/map_field"
-require_relative "open_ruby_rmk/character"
-require_relative "open_ruby_rmk/option_handler"
-require_relative "open_ruby_rmk/open_ruby_rmkonsole"

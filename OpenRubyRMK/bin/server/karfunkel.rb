@@ -32,10 +32,10 @@ begin
   server = OpenRubyRMK::Karfunkel.new
   server.start
 rescue => e
-  $log.debug("Karfunkel's global exception handler was triggered!")
-  $log.fatal(e.class.name + ": " + e.message)
-  $log.fatal("Backtrace:")
-  e.backtrace.each{|trace| $log.fatal(trace)}
+  #$log.debug("Karfunkel's global exception handler was triggered!")
+  #$log.fatal(e.class.name + ": " + e.message)
+  #$log.fatal("Backtrace:")
+  #e.backtrace.each{|trace| $log.fatal(trace)}
   
   raise
 end
