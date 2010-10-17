@@ -51,13 +51,14 @@ module OpenRubyRMK
           #the window after a short waiting delay on other platforms. 
           Timer.after(1000){self.maximize(true)} if THE_APP.config["maximize"] and RUBY_PLATFORM !~ /mingw|mswin/
           
-          create_menubar
-          create_toolbar
+          #create_menubar
+          #create_toolbar
           create_statusbar
           create_controls
-          create_extra_windows
-          setup_event_handlers
+          #create_extra_windows
+          #setup_event_handlers
           
+          #Timer.after(3000){@map_hierarchy.add_root("Test", 0)}
           $log.info "Running plugins for :mainwindow."
           Plugins[:mainwindow].each{|block| instance_eval(&block)}
         end
@@ -160,7 +161,7 @@ module OpenRubyRMK
           left_sizer = VBoxSizer.new
           @left_panel.sizer = left_sizer
           
-          @map_hierarchy = Controls::MapHierarchy.new(@left_panel, "N/A")
+          @map_hierarchy = Controls::MapHierarchy.new(@left_panel, "N/A")          
           left_sizer.add_item(@map_hierarchy, proportion: 3, flag: EXPAND)
           
           @map_properties = TextCtrl.new(@left_panel, style: TE_MULTILINE, value: "At some time, the selected map's properties will apear here.")
@@ -181,9 +182,9 @@ module OpenRubyRMK
         end
         
         def create_extra_windows
-          @mapset_window = Windows::MapsetWindow.new(self)
-          @properties_window = Windows::PropertiesWindow.new(self)
-          @properties_window.on_change{@map_hierarchy.update_map_names}
+          #@mapset_window = Windows::MapsetWindow.new(self)
+          #@properties_window = Windows::PropertiesWindow.new(self)
+          #@properties_window.on_change{@map_hierarchy.update_map_names}
         end
         
         def setup_event_handlers
@@ -203,7 +204,7 @@ module OpenRubyRMK
           end
           
           #Other events
-          evt_tree_sel_changed(@map_hierarchy){|event| on_map_hier_clicked(event)}
+          #evt_tree_sel_changed(@map_hierarchy){|event| on_map_hier_clicked(event)}
         end
         
         #==================================
@@ -333,7 +334,7 @@ module OpenRubyRMK
           result = {}
           hsh.each_pair do |map_id, children_hsh|
             result[map_id] = {}
-            result[map_id][:map] = Map.load(map_id)
+            result[map_id][:map] = THE_APP.connection.remote_rmk.const_get(:Map).load(map_id)
             result[map_id][:children] = buildup_hash(children_hsh)
           end
           result

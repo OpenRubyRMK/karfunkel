@@ -37,7 +37,7 @@ module OpenRubyRMK
         #
         #Please also note that you have to call #on_change before you can show the window. 
         def initialize(parent)
-          super(parent, size: Size.new(300, 300), pos: Point.new(*OpenRubyRMK.config["startup_map_properties_pos"]), title: t.window_titles.properties_window)
+          super(parent, size: Size.new(300, 300), pos: Point.new(*THE_APP.config["startup_map_properties_pos"]), title: t.window_titles.properties_window)
           self.background_colour = NULL_COLOUR
           
           @map = nil
@@ -104,11 +104,11 @@ module OpenRubyRMK
           @width_spin = SpinCtrl.new(self, min: 20, max: 999)
           @height_spin = SpinCtrl.new(self, min: 15, max: 999)
           @depth_spin = SpinCtrl.new(self, min: 3, max: 999)
-          @ok_button = Button.new(self, id: ID_OK, label: "OK")
+          #@ok_button = Button.new(self, id: ID_OK, label: "OK")
           
           @parent_id_txt.disable #Neither this nor the next one...
           @map_id_txt.disable #...is editable after map creation. 
-          @ok_button.disable #Only clickable after something has changed
+          #@ok_button.disable #Only clickable after something has changed
         end
         
         def make_sizers
@@ -183,7 +183,7 @@ module OpenRubyRMK
           
           #Buttons
           sizer = StdDialogButtonSizer.new
-          sizer.add_button(@ok_button)
+          #sizer.add_button(@ok_button)
           sizer.realize
           top_sizer.add_item(sizer)
           
@@ -197,16 +197,16 @@ module OpenRubyRMK
           evt_spinctrl(@width_spin){|event| on_val_changed(event)}
           evt_spinctrl(@height_spin){|event| on_val_changed(event)}
           evt_spinctrl(@depth_spin){|event| on_val_changed(event)}
-          evt_button(@ok_button){|event| on_button_clicked(event)}
+          #evt_button(@ok_button){|event| on_button_clicked(event)}
         end
         
         def on_val_changed(event)
-          @ok_button.enable
+          #@ok_button.enable
         end
         
         def on_button_clicked(event)
           @map.name = @map_name_txt.value.to_s
-          @map.mapset = Mapset.load(@mapset_drop.string_selection)
+          @map.mapset = THE_APP.connection.remote_rmk.const_get(:Mapset).load(@mapset_drop.string_selection)
           @map.width = @width_spin.value
           @map.height = @height_spin.value
           @map.depth = @depth_spin.value

@@ -148,7 +148,7 @@ module OpenRubyRMK
       #great application this rare thing called an exception 
       #occures, this method displays it to the user in a 
       #hopefully friendly way. 
-      def on_run
+      def on_run        
         super
       rescue => e
         $log.debug("GUI exception handler triggered.")
@@ -230,7 +230,7 @@ module OpenRubyRMK
       end
       
       def initialize_remote_objects
-        $log = @karfunkel.log
+        $log = @connection.log
       end
       
       #Checks the configuration and sets the R18n localization 
