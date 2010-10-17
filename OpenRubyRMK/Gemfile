@@ -44,5 +44,5 @@ gem "minitar", ">= 0.5.3"
 group :development do
   gem "gosu"
   gem "chingu"
-  gem "ocra", :platforms => :mswin #For some obscure reason, this installs OCRA even on my Ubuntu??
+  gem "ocra", :platforms => :mswin
 end
