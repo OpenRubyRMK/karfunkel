@@ -41,7 +41,7 @@ module OpenRubyRMK
     #The directory where log files are created in. 
     LOG_DIR = INSTALL_DIR + "bin" + "logs"
     
-    BIN_CLIENT_DIR = INSTALL_DIR + "bin" + "clients"
+    BIN_CLIENTS_DIR = INSTALL_DIR + "bin" + "clients"
     #This directory contains OpenRubyRMK's translation files. 
     LOCALE_DIR =  INSTALL_DIR + "locale"
     

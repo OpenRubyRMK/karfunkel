@@ -50,10 +50,15 @@ module OpenRubyRMK
     
     class Controller
       
+      #The name of the currently loaded project or nil 
+      #if no project is loaded. 
+      attr_reader :project_name
+      
       def initialize(karfunkel)
         @karfunkel = karfunkel
         @loading = {:map_extraction => 0, :char_extraction => 0}
         @allowed_pids = []
+        @project_name = nil
       end
       
       def remote_rmk
@@ -73,15 +78,38 @@ module OpenRubyRMK
         $log
       end
       
-      def load_project(project_dir)
+      def load_project(project_file)
+        #Clear the contents of the temporary directory
+        Paths.clear_tempdir
+        #Set the new project path
+        #project_file is something like "/path/to/project/bin/project.rmk"
+        Paths.project_path = project_file.dirname.parent
+        #This is the name of the project we're now working on
+        @project_name = project_file.basename.to_s.match(/\.rmk$/).pre_match
+        #Extract mapsets and characters
         @loading = {:map_extraction => 0, :char_extraction => 0}
-        @allowed_pids.clear
-        @allowed_pids << spawn(RUBY, OpenRubyRMK::Paths::BIN_CLIENTS_DIR + "mapset_extractor_client.rb", @uri)      
-        @allowed_pids << spawn(RUBY, OpenRubyRMK::Paths::BIN_CLIENTS_DIR + "char_extractor_client.rb", @uri)
+        @allowed_pids.clear        
+        @allowed_pids << spawn(RUBY, OpenRubyRMK::Paths::BIN_CLIENTS_DIR.join("mapset_extractor_client.rb").to_s, @karfunkel.uri)      
+        @allowed_pids << spawn(RUBY, OpenRubyRMK::Paths::BIN_CLIENTS_DIR.join("char_extractor_client.rb").to_s, @karfunkel.uri)
       end
       
+      #Returns a hash of this form: 
+      #  {:name_of_what_is_loading => percent_done}
+      def project_load_status
+        if OpenRubyRMK.debug_mode?
+          @loading.each_pair do |key, value|
+            $log.debug("Loading #{key} (#{value}%)")
+          end
+        end
+        @loading
+      end
+      
+      #This method returns true when the loading process of a 
+      #project has finished. It should *not* be used for checking 
+      #wheather any project is available at the moment. That's 
+      #the purpose of the OpenRubyRMK.has_project? method. 
       def project_loaded?
-        @loading.values.all?{|percent| percent >= 100}
+        project_load_status.values.all?{|percent| percent >= 100}
       end
       
       def update_load_process(pid, process, new_val)
@@ -98,7 +126,10 @@ module OpenRubyRMK
     #If we're running on Windows, use rubyw
     windows_add = RUBY_PLATFORM =~ /mswin|mingw/ ? "w" : ""
     #Path to the Ruby executable. 
-    RUBY = Pathname.new(RbConfig::CONFIG["bindir"] + File::SEPARATOR + RbConfig::CONFIG["ruby_install_name"] + windows_add)
+    RUBY = Pathname.new(RbConfig::CONFIG["bindir"] + File::SEPARATOR + RbConfig::CONFIG["ruby_install_name"] + windows_add).to_s
+    
+    #The URI where Karfunkel's service can be found. 
+    attr_reader :uri
     
     def initialize
       #Every single class (and it's instances, of course) in the OpenRubyRMK module 

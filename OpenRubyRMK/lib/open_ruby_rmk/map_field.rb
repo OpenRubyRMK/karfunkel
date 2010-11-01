@@ -70,6 +70,7 @@ module OpenRubyRMK
     def inspect
       "<#{self.class} on map ID #{@map.id} at (#{@x}|#{@y}|#{@z})>"
     end
+    alias iinspect inspect
     
     #Sets this field's image to that one at the given coordinate on the mapset. 
     def reassign_image(x, y)

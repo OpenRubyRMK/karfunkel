@@ -51,14 +51,13 @@ module OpenRubyRMK
           #the window after a short waiting delay on other platforms. 
           Timer.after(1000){self.maximize(true)} if THE_APP.config["maximize"] and RUBY_PLATFORM !~ /mingw|mswin/
           
-          #create_menubar
-          #create_toolbar
+          create_menubar
+          create_toolbar
           create_statusbar
           create_controls
-          #create_extra_windows
-          #setup_event_handlers
-          
-          #Timer.after(3000){@map_hierarchy.add_root("Test", 0)}
+          create_extra_windows
+          setup_event_handlers
+                    
           $log.info "Running plugins for :mainwindow."
           Plugins[:mainwindow].each{|block| instance_eval(&block)}
         end
@@ -182,9 +181,9 @@ module OpenRubyRMK
         end
         
         def create_extra_windows
-          #@mapset_window = Windows::MapsetWindow.new(self)
-          #@properties_window = Windows::PropertiesWindow.new(self)
-          #@properties_window.on_change{@map_hierarchy.update_map_names}
+          @mapset_window = Windows::MapsetWindow.new(self)
+          @properties_window = Windows::PropertiesWindow.new(self)
+          @properties_window.on_change{@map_hierarchy.update_map_names}
         end
         
         def setup_event_handlers
@@ -204,7 +203,7 @@ module OpenRubyRMK
           end
           
           #Other events
-          #evt_tree_sel_changed(@map_hierarchy){|event| on_map_hier_clicked(event)}
+          evt_tree_sel_changed(@map_hierarchy){|event| on_map_hier_clicked(event)}
         end
         
         #==================================
@@ -226,7 +225,7 @@ module OpenRubyRMK
           #Remember the directory for convenience
           THE_APP.remembered_dir = Pathname.new(fd.directory)
           
-          THE_APP.connection.load_project(Pathname.new(fd.directory).parent)
+          THE_APP.connection.load_project(Pathname.new(fd.path))
           #Set the OpenRubyRMK project dir, from which all other dirs can be computed
           #OpenRubyRMK::Paths.project_path = Pathname.new(fd.directory).parent
           #Clear the remote temporary directory for new files
@@ -237,6 +236,9 @@ module OpenRubyRMK
           #THE_APP.connection.extract_chars
           sleep 1 until THE_APP.connection.project_loaded? #TODO: Show progress
           
+          structure_hsh = THE_APP.connection.remote_rmk.const_get(:Paths).project_maps_structure_file.open("rb"){|f| Marshal.load(f)}
+          @maps = buildup_hash(structure_hsh)
+          @map_hierarchy.recreate_tree!(THE_APP.connection.project_name, @maps)
         end
         
         def on_menu_save(event)
@@ -307,8 +309,8 @@ module OpenRubyRMK
           Wx.about_box(i)
         end
         
-        def on_map_hier_clicked(event)
-          return unless OpenRubyRMK.has_project? #This method gets triggered on Windows when loading
+        def on_map_hier_clicked(event)          
+          return unless THE_APP.connection.remote_rmk.has_project? #This method gets triggered on Windows when loading          
           if event.item.nonzero?
             #~ @dummy_ctrl.label = @map_hierarchy.get_item_data(event.item).inspect
             if @map_hierarchy.selected_map.nil?
@@ -319,7 +321,7 @@ module OpenRubyRMK
             end
             @map_grid.refresh #The grid doesn't get updated otherwise
             @mapset_window.reload(@map_hierarchy.selected_map.nil? ? nil : @map_hierarchy.selected_map.mapset)
-            @properties_window.reload(@map_hierarchy.selected_map, [Mapset.load("test1.png")]) #DEBUG Mapsets?
+            @properties_window.reload(@map_hierarchy.selected_map, [THE_APP.connection.remote_rmk.const_get(:Mapset).load("test1.png")]) #DEBUG Mapsets?
           end
           event.skip
         end

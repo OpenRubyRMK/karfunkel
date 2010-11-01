@@ -20,5 +20,7 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
+require_relative "../../lib/open_ruby_rmk/clients/char_extractor_client"
+
 extractor = OpenRubyRMK::Clients::CharExtractorClient.new(ARGV[0])
 extractor.extract

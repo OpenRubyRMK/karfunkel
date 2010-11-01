@@ -42,14 +42,14 @@ module OpenRubyRMK
       def extract
         paths = @remote_rmk.const_get(:Paths)
         
-        files = Dir.glob(paths.project_characters_dir].join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}
+        files = Dir.glob(paths.project_characters_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}
         num = files.length
         files.each_with_index do |filename, index|
           @connection.log.debug("[Char extractor (#$$)] Extracting character '#{filename}'")
-          temp_filename = paths.temp_characters_dir] + filename.relative_path_from(paths.project_characters_dir])
+          temp_filename = paths.temp_characters_dir + filename.relative_path_from(paths.project_characters_dir)
           gz = Zlib::GzipReader.open(filename)
           Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
-          @connection.update_load_process($$, :char_extraction, (index + 1 / num).to_f)          
+          @connection.update_load_process($$, :char_extraction, (index + 1 / num).to_f * 100)          
         end
       end
       
