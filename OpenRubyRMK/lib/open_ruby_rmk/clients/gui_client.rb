@@ -29,6 +29,7 @@ require "drb"
 require "timeout"
 require "irb"
 require "wx"
+require "pp"
 require "r18n-desktop"
 $VERBOSE = v
 

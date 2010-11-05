@@ -172,7 +172,12 @@ module OpenRubyRMK
             lower_bmps = bmp = nil #for scope
             begin
               lower_bmps = grid.shown_z_layers.map{|z| Wx::Bitmap.from_image(grid.table.get_field(col, row, z).image.convert_to_greyscale)}            
-              bmp = Wx::Bitmap.from_image(grid.table.get_value(row, col).image)
+              i = grid.table.get_value(row, col).image
+              p i
+              bmp = Wx::Bitmap.from_image(i) #HIER! i ist ein DrbObject, das kann nicht funktionieren!
+              #Der Server braucht Bildbearbeitungsmethoden zum Aufrufen von hier, z.B. 
+              #die greyscale-Verarbeitung!
+              #bmp = Wx::Bitmap.from_image(grid.table.get_value(row, col).image) #HIER! Wieso ist das nil?
             rescue NoMethodError
               $log.debug([row, col].inspect)
               raise
