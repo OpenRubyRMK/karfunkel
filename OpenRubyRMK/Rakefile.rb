@@ -179,6 +179,18 @@ EOF
   end
 end
 
+desc "Remove trailing whitespace"
+task :rstrip do
+  puts "Really, sometimes Redcar sucks. Removing unnecessary whitespace..."
+  Dir.glob("**/**.rb").each do |filename|
+    print "Processing '#{filename}'... "
+    str = File.read(filename)
+    str = str.lines.map(&:rstrip).join("\n")
+    File.open(filename, "w"){|file| file.write(str)}
+    puts "Done."
+  end
+end
+
 desc "Displays a help message"
 task :help do
   puts(<<HELP)
