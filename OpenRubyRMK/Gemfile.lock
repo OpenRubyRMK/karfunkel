@@ -3,7 +3,7 @@ GEM
   specs:
     chingu (0.7.7.5)
       gosu (>= 0.7.22)
-    gosu (0.7.24)
+    gosu (0.7.25)
     minitar (0.5.3)
     r18n-core (0.4.8)
     r18n-desktop (0.4.8)

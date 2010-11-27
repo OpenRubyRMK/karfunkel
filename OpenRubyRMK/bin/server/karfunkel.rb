@@ -29,7 +29,7 @@ end
 require_relative "../../lib/open_ruby_rmk/karfunkel"
 
 begin
-  server = OpenRubyRMK::Karfunkel.new
+  server = OpenRubyRMK::Karfunkel::Karfunkel.instance(OpenRubyRMK::Karfunkel::Karfunkel::URI)
   server.start
 rescue => e
   #$log.debug("Karfunkel's global exception handler was triggered!")

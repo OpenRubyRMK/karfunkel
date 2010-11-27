@@ -35,6 +35,8 @@ module OpenRubyRMK
     class << self
       
       #Parses the given array as a list of command-line options. 
+      #Returns a hash that states how the passed options have been understood. 
+      #This is the same hash as returned by ::options. 
       def parse(args)
         #Default values
         @options = {
@@ -48,7 +50,6 @@ module OpenRubyRMK
           opts.banner = banner
           
           opts.on("-d", "--[no-]debug", "Show debugging information on run."){|bool| on_debug(bool)}
-          opts.on("-D", "--ruby-debug", "Same as passing the -d option to Ruby. Implies --debug."){on_ruby_debug}
           opts.on("-h", "--help", "Display this help message and exit."){on_help(opts)}
           opts.on("-l", "--logfile [FILE]", "Log messages to FILE or $stdout if ommited."){|file| on_logfile(file)}
           opts.on("-L", "--loglevel LEVEL", Integer, "Set the logging level to LEVEL."){|level| on_loglevel(level)}
@@ -57,6 +58,7 @@ module OpenRubyRMK
         end
         
         options.parse!(args)
+        @options
       end
       
       #A hash containing all parsed command-line options in this form: 
@@ -75,13 +77,13 @@ module OpenRubyRMK
       def banner
         <<-EOF
 USAGE: 
-OpenRubyRMK.rb [-V] [-d|-D] [-l [FILE]] [-L LEVEL]
+OpenRubyRMK.rb [-V] [-d] [-l [FILE]] [-L LEVEL]
 
 DESCRIPTION
 OpenRubyRMK is a free and open-source RPG creation program. If you find any 
 bugs, please let us know via the mail address openrubyrmk@googlemail.com. 
 Below is a summary of possible command-line options, but please note that 
-the -l and -L options don't have any effect when -d or -D is passed. It is 
+the -l and -L options don't have any effect when -d is passed. It is 
 not possible to combine the short options into someting like -lV as the 
 tar command allows. You have to pass them separately, for instance as -l -V.
 
@@ -114,13 +116,7 @@ OPTIONS
       end
       
       def on_debug(bool)
-        Thread.abort_on_exception = true
         @options[:debug] = bool
-      end
-      
-      def on_ruby_debug
-        $DEBUG = true
-        @options[:debug] = true
       end
       
       def on_version
