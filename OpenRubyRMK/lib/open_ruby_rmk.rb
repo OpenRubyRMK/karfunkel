@@ -20,6 +20,12 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
+require "bundler/setup"
+require "pathname"
+require "rbconfig"
+require "tempfile"
+require "chunky_png" #Chunky bacon?!
+
 #This is the namespace of the OpenRubyRMK library.
 #Please note the word "project" always refers to games
 #created with OpenRubyRMK. If we refer to OpenRubyRMK
