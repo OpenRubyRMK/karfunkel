@@ -3,6 +3,13 @@
 
 module OpenRubyRMK
   
+  #An object of this class represents a single opened or loading project.
+  #When loading a project, the ::load method will spawn to subprocesses that
+  #do the actual work of extracting the compressed files. You may always check
+  #how for the already got by querying the loading attribute which gives you
+  #a detailed view about which client has done how much.
+  #Alternatively, you may just call #loaded? or #loading? if you're interested
+  #wheather or not a project is fully loaded.
   class Project
     
     #ProjectPaths are pure informational objects. You can't do anything
@@ -11,23 +18,19 @@ module OpenRubyRMK
     class ProjectPaths
       
       #A projcet's toplevel directory (i.e. the directory containing <b>bin/</b>).
-      attr_reader :toplevel
+      attr_reader :toplevel_dir
       #A project's temporary directory (i.e. where extracted mapsets and other things are stored).
       attr_reader :temp_dir
       
       #Creates a new ProjectPaths object. This is called internally by
       #Project.new. You won't have to use it.
       def initialize(toplevel_dir, temp_dir)
-        @toplevel = toplevel_dir
+        @toplevel_dir = toplevel_dir
         @temp_dir = temp_dir
       end
       
-      def toplevel_dir
-        @toplevel
-      end
-      
       def maps_dir
-        @toplevel + "data" + "maps"
+        @toplevel_dir + "data" + "maps"
       end
       
       def maps_structure_file
@@ -35,11 +38,11 @@ module OpenRubyRMK
       end
       
       def mapsets_dir
-        @toplevel + "data" + "graphics" + "mapsets"
+        @toplevel_dir + "data" + "graphics" + "mapsets"
       end
       
       def characters_dir
-        @toplevel + "data" + "graphics" + "characters"
+        @toplevel_dir + "data" + "graphics" + "characters"
       end
       
       def temp_mapsets_dir
@@ -55,31 +58,65 @@ module OpenRubyRMK
     #This is an object of class Project::Paths which holds
     #information about the path a single project uses.
     attr_reader :paths
+    #The state of a loading project. A hash of form
+    #  {:map_extraction => percent_done, :char_extraction => percent_done}
+    attr_reader :loading
     
     #Loads an existing project. Pass in the path to the project file,
     #i.e. the file ending in <tt>.rmk</tt>.
+    #This method immediately returns, to check wheather the project is
+    #already in a usable state, use #loaded?.
     def self.load(project_file)
-      @temp_dir = Pathname.new(Dir.mktmpdir("OpenRubyRMK"))
-      Karfunkel.instance.log("Created temporary directory '#{@temp_dir}'.")
-      at_exit do
-        Karfunkel.instance.log.debug("Removing temporary directory '#{@temp_dir}'.")
-        @temp_dir.rmtree
-      end
-              
-      #Set the new project path
-      #project_file is something like "/path/to/project/bin/project.rmk"
-      @paths = ProjectPaths.new(project_file.dirname.parent, @temp_dir)
-      #This is the name of the project we're now working on
-      @name = project_file.basename.to_s.match(/\.rmk$/).pre_match
-      #Extract mapsets and characters
-      @loading = {:map_extraction => 0, :char_extraction => 0}
-      @allowed_pids.clear
-      @allowed_pids << spawn(RUBY, OpenRubyRMK::Paths::BIN_CLIENTS_DIR.join("mapset_extractor_client.rb").to_s, Karfunkel.instance.uri)
-      @allowed_pids << spawn(RUBY, OpenRubyRMK::Paths::BIN_CLIENTS_DIR.join("char_extractor_client.rb").to_s, Karfunkel.instance.uri)
-      
-      #Notify the server we have a new project now (even if it's not fully loaded it's there)
-      Karfunkel.instance.register_project(self)
-    end
+      obj = allocate
+      obj.instance_eval do
+        @temp_dir = Pathname.new(Dir.mktmpdir("OpenRubyRMK"))
+        at_exit do
+          @temp_dir.rmtree
+        end
+        
+        #Set the new project path
+        #project_file is something like "/path/to/project/bin/project.rmk"
+        @paths = ProjectPaths.new(project_file.dirname.parent, @temp_dir)
+        #This is the name of the project we're now working on
+        @name = project_file.basename.to_s.match(/\.rmk$/).pre_match
+        
+        #Extract mapsets and characters
+        @loading = {:map_extraction => 0, :char_extraction => 0}
+        #Spawn two processes for extracting and monitor what they're doing.
+        #The treads are here, because I need to access the @loading hash
+        #during load time without the need of a server.
+        #And Ruby 1.9's threads rock! Not as good as processes, but we're
+        #getting closer!
+        Thread.new do
+          r, w = IO.pipe #Works also on Windows ;-)
+          spawn(
+          Paths::RUBY,
+          Paths::EXTRA_PROCESSES_DIR.join("mapset_extractor_client.rb").to_s,
+          @paths.mapsets_dir,
+          @paths.temp_mapsets_dir,
+          out: w.fileno
+          )
+          while i = r.readline.chomp.to_i
+            @loading[:map_extraction] = i
+            break if i >= 100
+          end
+        end
+        Thread.new do
+          r, w = IO.pipe
+          spawn(
+          Paths::RUBY,
+          Paths::EXTRA_PROCESSES_DIR.join("char_extractor_client.rb").to_s,
+          @paths.characters_dir,
+          @paths.temp_characters_dir,
+          out: w.fileno
+          )
+          while i = r.readline.chomp.to_i
+            @loading[:char_extraction] = i
+            break if i >= 100
+          end #while
+        end #Thread.new
+      end #instance_eval
+    end #self.load
     
     #True if the project is fully loaded.
     def loaded?

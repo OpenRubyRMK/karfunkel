@@ -2,7 +2,7 @@
 #Encoding: UTF-8
 
 =begin
-This file is part of OpenRubyRMK. 
+This file is part of OpenRubyRMK.
 
 Copyright © 2010 OpenRubyRMK Team
 
@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
-require_relative "../../lib/open_ruby_rmk/clients/mapset_extractor_client"
+require_relative "../../lib/open_ruby_rmk/extra_processes/char_extractor_client"
 
-extractor = OpenRubyRMK::Clients::MapsetExtractorClient.new(ARGV[0])
+extractor = OpenRubyRMK::CharExtractor.new(ARGV[0])
 extractor.extract

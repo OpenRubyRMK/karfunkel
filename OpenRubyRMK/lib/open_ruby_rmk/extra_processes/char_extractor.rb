@@ -2,7 +2,7 @@
 #Encoding: UTF-8
 
 =begin
-This file is part of OpenRubyRMK. 
+This file is part of OpenRubyRMK.
 
 Copyright © 2010 OpenRubyRMK Team
 
@@ -24,32 +24,27 @@ require "bundler/setup"
 require "pathname"
 require "archive/tar/minitar"
 require "zlib"
-require "drb"
 
 module OpenRubyRMK
   
   module Clients
     
-    class CharExtractorClient
+    class CharExtractor
       
-      def initialize(karfunkel_uri)
-        @karfunkel_uri = karfunkel_uri
-        DRb.start_service
-        @connection = DRbObject.new_with_uri(@karfunkel_uri)
-        @remote_rmk = @connection.remote_rmk
+      def initialize(characters_dir, temp_characters_dir)
+        @characters_dir = Pathname.new(characters_dir)
+        @temp_characters_dir = Pathname.new(temp_characters_dir)
       end
       
       def extract
-        paths = @remote_rmk.const_get(:Paths)
-        
-        files = Dir.glob(paths.project_characters_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}
+        files = Dir.glob(@characters_dir.join("**", "*.tgz").to_s).map{|f| Pathname.new(f)}
         num = files.length
         files.each_with_index do |filename, index|
-          @connection.log.debug("[Char extractor (#$$)] Extracting character '#{filename}'")
-          temp_filename = paths.temp_characters_dir + filename.relative_path_from(paths.project_characters_dir)
+          temp_filename =@temp_characters_dir + filename.relative_path_from(@characters_dir)
           gz = Zlib::GzipReader.open(filename)
           Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
-          @connection.update_load_process($$, :char_extraction, (index + 1 / num).to_f * 100)          
+          #Output the current load status in percent.
+          puts((index + 1 / num).to_f * 100)
         end
       end
       
