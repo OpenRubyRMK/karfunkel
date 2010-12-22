@@ -93,7 +93,7 @@ module OpenRubyRMK
     #Returns the next available map ID.
     def self.next_free_id
       ids = @maps.map(&:id)
-      1.upto(INFINITY) do |n|
+      1.upto(Float::INFINITY) do |n|
         break(n) unless ids.include?(n)
       end
     end
