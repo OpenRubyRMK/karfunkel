@@ -1,13 +1,20 @@
 GEM
   remote: http://rubygems.org/
   specs:
-    chingu (0.7.7.5)
-      gosu (>= 0.7.22)
+    chingu (0.8.0.3)
+      crack
+      gosu (>= 0.7.25)
+      rest-client
+    chunky_png (0.12.0)
+    crack (0.1.8)
     gosu (0.7.25)
+    mime-types (1.16)
     minitar (0.5.3)
     r18n-core (0.4.8)
     r18n-desktop (0.4.8)
       r18n-core (= 0.4.8)
+    rest-client (1.6.1)
+      mime-types (>= 1.16)
     wxruby-ruby19 (2.0.1)
 
 PLATFORMS
@@ -15,6 +22,7 @@ PLATFORMS
 
 DEPENDENCIES
   chingu
+  chunky_png
   gosu
   minitar (>= 0.5.3)
   ocra

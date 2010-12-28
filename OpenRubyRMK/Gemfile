@@ -40,6 +40,7 @@ source "http://rubygems.org"
 gem "wxruby-ruby19", ">= 2.0.0"
 gem "r18n-desktop"
 gem "minitar", ">= 0.5.3"
+gem "chunky_png"
 
 group :development do
   gem "gosu"
