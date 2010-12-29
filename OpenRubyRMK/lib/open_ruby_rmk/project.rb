@@ -62,6 +62,10 @@ module OpenRubyRMK
     #  {:map_extraction => percent_done, :char_extraction => percent_done}
     attr_reader :loading
     
+    def initialize
+      #TODO
+    end
+    
     #Loads an existing project. Pass in the path to the project file,
     #i.e. the file ending in <tt>.rmk</tt>.
     #This method immediately returns, to check wheather the project is

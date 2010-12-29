@@ -2,7 +2,7 @@
 #Encoding: UTF-8
 
 =begin
-This file is part of OpenRubyRMK. 
+This file is part of OpenRubyRMK.
 
 Copyright © 2010 OpenRubyRMK Team
 
@@ -20,19 +20,6 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
-v, $VERBOSE = $VERBOSE, nil
-require "bundler/setup"
-require "pathname"
-require "rbconfig"
-require "drb"
-require "timeout"
-require "tempfile"
-require "logger"
-require "irb"
-require "singleton"
-require "wx"
-$VERBOSE = v
-
 #Require the lib
 require_relative "./karfunkel/project"
 require_relative "../open_ruby_rmk"
@@ -46,59 +33,29 @@ require_relative "./option_handler"
 
 module OpenRubyRMK
   
-  #Namespace for Karfunkel, OpenRubyRMK's server. 
+  #Namespace for Karfunkel, OpenRubyRMK's server.
   module Karfunkel
    
-    #This is OpenRubyRMK's server. Every GUI is just a client to his majesty Karfunkel. 
+    #This is OpenRubyRMK's server. Every GUI is just a client to his majesty Karfunkel.
     class Karfunkel
       include Singleton #There's only ONE to rule 'em all
-      include DRbUndumped
-      extend DRbUndumped
       
       URI = "druby://127.0.0.1:3141".freeze #TODO: Read this from a config file
-      #If we're running on Windows, use rubyw
-      windows_add = RUBY_PLATFORM =~ /mswin|mingw/ ? "w" : ""
-      #Path to the Ruby executable. 
-      RUBY = Pathname.new(RbConfig::CONFIG["bindir"] + File::SEPARATOR + RbConfig::CONFIG["ruby_install_name"] + windows_add).to_s
       
-      #OpenRubyRMK's root dir. This is *not* the root dir of a game 
-      #created with OpenRubyRMK, but refers to OpenRubyRMK's 
-      #installation directory. On Windows, it's the temporary directory 
-      #created by OCRA. 
-      ROOT_DIR = Pathname.new(__FILE__).dirname.parent.parent.expand_path
-      #OpenRubyRMK's real installation directory. On Windows, this is the 
-      #directory where OpenRubyRMK was installed to (in contrast to ROOT_DIR). 
-      #On other systems, this is the same as ROOT_DIR. 
-      INSTALL_DIR = ENV.has_key?("OCRA_EXECUTABLE") ? Pathname.new(ENV["OCRA_EXECUTABLE"].tr("\\", "/")).parent.parent : ROOT_DIR #OCRA_EXECUTABLE is defined for Windows *.exe files
-      #Directory where GUI icons etc. are found. 
-      DATA_DIR = ROOT_DIR + "data"
-      #The directory where log files are created in. 
-      LOG_DIR = INSTALL_DIR + "bin" + "logs"
-      #Directory in which the client's executables reside. 
-      BIN_CLIENTS_DIR = INSTALL_DIR + "bin" + "clients"
-      #This directory contains OpenRubyRMK's translation files. 
-      LOCALE_DIR =  INSTALL_DIR + "locale"
-      #Directory where configuration files are stored. 
-      CONFIG_DIR = INSTALL_DIR + "config"
-      #This is the path of OpenRubyRMK's configuration file. 
-      CONFIG_FILE = INSTALL_DIR + "config" + "OpenRubyRMK-rc.yml"
-      #In this directory and it's subdirectories reside plugins. 
-      PLUGINS_DIR = INSTALL_DIR + "plugins"   
-      
-      #The URI Karfunkel listens for connections. 
+      #The URI Karfunkel listens for connections.
       attr_reader :uri
-      #An array of Karfunkel::Project objects, each representing a project. 
+      #An array of Karfunkel::Project objects, each representing a project.
       attr_reader :projects
       attr_reader :cmd_args
-      #The logfile. If a client logs to this Logger object, it should begin 
-      #it's message with something like <tt>[CLIENTNAME]</tt>, because the client's 
-      #log messages are easier to distinguish from Karfunkel's then. 
+      #The logfile. If a client logs to this Logger object, it should begin
+      #it's message with something like <tt>[CLIENTNAME]</tt>, because the client's
+      #log messages are easier to distinguish from Karfunkel's then.
       attr_reader :log
       attr_reader :config
       
-      #The following is a hack. Ruby's singleton.rb doesn't honour arguments 
-      #passed to initialize, but I do need this. So I just override the 
-      #default #instance method here. 
+      #The following is a hack. Ruby's singleton.rb doesn't honour arguments
+      #passed to initialize, but I do need this. So I just override the
+      #default #instance method here.
       class << self # :nodoc:
         alias _old_instance instance
         
@@ -115,27 +72,15 @@ module OpenRubyRMK
         
       end
       
-      #Initializes Karfunkel. Pass in the URI where you want Karfunkel 
-      #to listen at. 
+      #Initializes Karfunkel. Pass in the URI where you want Karfunkel
+      #to listen at.
       #
-      #This <b>does not</b> start Karfunkel. See #start for this. 
+      #This <b>does not</b> start Karfunkel. See #start for this.
       #
-      #It's named _initialize, because it is called by a hacked version of 
-      #Singleton.instance. See above code for explanation (not visible in RDoc, 
-      #you have to look into the sourcecode). 
+      #It's named _initialize, because it is called by a hacked version of
+      #Singleton.instance. See above code for explanation (not visible in RDoc,
+      #you have to look into the sourcecode).
       def _initialize(uri) # :new:
-        #Every single class (and it's instances, of course) in the OpenRubyRMK module 
-        #is not allowed to be marshalled via DRb. Everything has to happen on the server side. 
-        OpenRubyRMK.constants.each do |sym|
-          obj = OpenRubyRMK.const_get(sym)
-          #Instances
-          obj.send(:include, DRbUndumped) if obj.kind_of?(Class)
-          #Classes (and modules) themselves
-          obj.send(:extend, DRbUndumped) if obj.kind_of?(Module)
-        end
-        OpenRubyRMK::Karfunkel::Project.send(:include, DRbUndumped)
-        OpenRubyRMK::Karfunkel::Project.send(:extend, DRbUndumped)
-        OpenRubyRMK.send(:extend, DRbUndumped)
         @uri = uri
         @started = false
         @projects = []
@@ -149,46 +94,45 @@ module OpenRubyRMK
       end
       private :_initialize
       
-      #Human-raedable description of form 
+      #Human-readable description of form
       #  #<OpenRubyRMK::Karfunkel, the OpenRubyRMK server, running with PID <PID here> at <URI here>.>
       def inspect
         "#<#{self.class} Karfunkel, the OpenRubyRMK server, running with PID #{$$} at #{@uri}.>"
       end
       
-      #true if Karfunkel is running in debug mode. 
+      #true if Karfunkel is running in debug mode.
       def debug_mode?
         @debug_mode
       end
       
-      #true if any project is currently loaded. 
+      #true if any project is currently loaded.
       def has_project?
         !@projects.empty?
       end
       
-      #true if the server has already been started. 
+      #true if the server has already been started.
       def running?
         @started
       end
       alias started? running?
       
-      #Starts Karfunkel. If called after Karfunkel has already been started, raises 
-      #a RuntimeError. 
+      #Starts Karfunkel. If called after Karfunkel has already been started, raises
+      #a RuntimeError.
       def start
         raise(RuntimeError, "Karfunkel is already running.") if @started
         @log.info("Starting Karfunkel, OpenRubyRMK's server.")
         @started = true
         
-        DRb.start_service(@uri, self)
-        @log.info("Running with PID #{$$} on #{uri}.")
-        DRb.thread.join
+        #TODO: Implement network service here
+        #@log.info("Running with PID #{$$} on #{uri}.")
         
         @started = false
         @log.info("Stopped Karfunkel.")
       end
       
-      #This is called by Karfunkel::Project.new whenever a new project 
-      #has been created. It registers the project with Karfunkel so that 
-      #it can be used by other clients. 
+      #This is called by Karfunkel::Project.new whenever a new project
+      #has been created. It registers the project with Karfunkel so that
+      #it can be used by other clients.
       def register_project(project)
         @projects << project
       end
