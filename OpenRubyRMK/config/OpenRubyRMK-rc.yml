@@ -3,7 +3,8 @@
 ###########################################
 #Configuration file for OpenRubyRMK 0.0.1-dev
 #
-#This is the main configuration file for the OpenRubyRMK. 
+#This is the main configuration file for the OpenRubyRMK. It 
+#controls how Karfunkel, OpenRubyRMK's server, behaves. 
 #Most options are pretty self-explaining, but some maybe aren't. 
 #Just for clarity, a Boolean option such as "maximize" only 
 #takes accepts "true" or "false" (without the quotes) as valid. 
@@ -11,11 +12,6 @@
 ###########################################
 
 --- 
-#The locale you want the GUI to be displayed in. 
-#If this is set to "auto" (without the quotes), the language 
-#will be detected automatically from your OS setup. 
-#Default value: auto
-locale: en
 #The working directory OpenRubyRMK switches into 
 #at the beginning. If set to "auto" (without the quotes), 
 #it doesn't switch. 
@@ -31,27 +27,13 @@ startup_dir: auto
 #  ruby: "/home/freak/myruby/bin"
 #  ruby: "C:\myruby\bin"
 #Default value: auto
-ruby: "/opt/rubies/ruby-1.9.2-p0/bin"
-#If this is true, OpenRubyRMK starts maximized. 
-#Default value: true
-maximize: true
-#This is the size OpenRubyRMK has at startup 
-#time, unless the "maximize" option above is set to true. 
-#Default value: [600, 400]
-startup_size: [600, 400]
-#This is the position the OpenRubyRMK window opens at 
-#unless the "maximize" option is set to true. 
-#If set to "auto" (without the quotes), the position is set 
-#by the active window manager or the operating system. 
-#Example: 
-#  startup_pos: [123, 321]
-#Default value: auto
-startup_pos: auto
-#This is the position the mapset window is opened at 
-#when opened for the first time. 
-#Default value: [40, 40]
-startup_mapset_pos: [40, 40]
-#This is the position the map properties window is opened at 
-#when opened for the first time. 
-#Default value: [50, 50]
-startup_map_properties_pos: [50, 50]
+ruby: "/opt/rubies/ruby-1.9.2-p136/bin"
+#This sets the port where Karfunkel listens for connections. 
+#Note that for port numbers < 1024 you have to run Karfunkel 
+#as root on *nix machines. 
+#Examples: 
+#  port: 1111
+#  port: 5678
+#  port: 80
+#Default value: 3141
+port: 3141

@@ -1,5 +1,5 @@
 =begin
-This file is part of OpenRubyRMK. 
+This file is part of OpenRubyRMK.
 
 Copyright © 2010 OpenRubyRMK Team
 
@@ -17,22 +17,22 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
-#This is the gemfile used by bundler to determine 
-#which gems should be installed. 
-#For a normal *nix user you have to run 
+#This is the gemfile used by bundler to determine
+#which gems should be installed.
+#For a normal *nix user you have to run
 #  $ bundle install --without development
-#to make your Ruby ready to run OpenRubyRMK. 
-#Windows users shouldn't even see this file, as they 
-#get a *.exe. 
-#For those who want to develop OpenRubyRMK or just 
-#want the very latest OpenRubyRMK freshly compressed 
-#from the git sources, do 
+#to make your Ruby ready to run OpenRubyRMK.
+#Windows users shouldn't even see this file, as they
+#get a *.exe.
+#For those who want to develop OpenRubyRMK or just
+#want the very latest OpenRubyRMK freshly compressed
+#from the git sources, do
 #  $ bundle install
-#Note that this will install gosu which is a C extension; 
-#visit the gosu website at http://libgosu.org to 
-#see what dependencies you need in order to compile 
-#correctly. For Windows users a pre-build binary of 
-#gosu exists. 
+#Note that this will install gosu which is a C extension;
+#visit the gosu website at http://libgosu.org to
+#see what dependencies you need in order to compile
+#correctly. For Windows users a pre-build binary of
+#gosu exists.
 
 #The source where we download gems from
 source "http://rubygems.org"
@@ -41,6 +41,7 @@ gem "wxruby-ruby19", ">= 2.0.0"
 gem "r18n-desktop"
 gem "minitar", ">= 0.5.3"
 gem "chunky_png"
+gem "nokogiri"
 
 group :development do
   gem "gosu"

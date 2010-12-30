@@ -38,9 +38,10 @@ module OpenRubyRMK
    
     #This is OpenRubyRMK's server. Every GUI is just a client to his majesty Karfunkel.
     class Karfunkel
-      include Singleton #There's only ONE to rule 'em all
       
-      URI = "druby://127.0.0.1:3141".freeze #TODO: Read this from a config file
+      #Number of seconds in which a client has to sent the greet
+      #message.
+      GREET_TIMEOUT = 5
       
       #The URI Karfunkel listens for connections.
       attr_reader :uri
@@ -51,38 +52,20 @@ module OpenRubyRMK
       #it's message with something like <tt>[CLIENTNAME]</tt>, because the client's
       #log messages are easier to distinguish from Karfunkel's then.
       attr_reader :log
+      #The parsed content of the configuration file.
       attr_reader :config
+      #The port Karfunkel listens at. Can be set via the config file.
+      attr_reader :port
       
-      #The following is a hack. Ruby's singleton.rb doesn't honour arguments
-      #passed to initialize, but I do need this. So I just override the
-      #default #instance method here.
-      class << self # :nodoc:
-        alias _old_instance instance
-        
-        def instance(uri = nil)
-          inst = _old_instance
-          if inst.uri.nil? #If no URI has been set yet, this ought to call #_initialize (with arguments!)
-            raise(ArgumentError, "You didn't specify the URI to start at!") if uri.nil?
-            inst.send(:_initialize, uri)
-          else #If an URI has already been set, we don't want a second one!
-            raise(ArgumentError, "Karfunkel is already initialized, you don't have to specify a URI!") unless uri.nil?
-          end
-          inst
-        end
-        
-      end
-      
-      #Initializes Karfunkel. Pass in the URI where you want Karfunkel
-      #to listen at.
+      #Initializes Karfunkel, i.e. does command-line argument parsing, config
+      #file reading, logger creation and signal setup.
       #
       #This <b>does not</b> start Karfunkel. See #start for this.
-      #
-      #It's named _initialize, because it is called by a hacked version of
-      #Singleton.instance. See above code for explanation (not visible in RDoc,
-      #you have to look into the sourcecode).
-      def _initialize(uri) # :new:
-        @uri = uri
-        @started = false
+      def initialize
+        @controller = Controller.new(self)
+        @running = false
+        @do_stop = false
+        @clients = []
         @projects = []
         
         parse_argv
@@ -91,6 +74,7 @@ module OpenRubyRMK
         setup_signal_handlers
         
         Thread.abort_on_exception = true if debug_mode?
+        @port = @config["port"]
       end
       private :_initialize
       
@@ -112,7 +96,7 @@ module OpenRubyRMK
       
       #true if the server has already been started.
       def running?
-        @started
+        @running
       end
       alias started? running?
       
@@ -121,13 +105,34 @@ module OpenRubyRMK
       def start
         raise(RuntimeError, "Karfunkel is already running.") if @started
         @log.info("Starting Karfunkel, OpenRubyRMK's server.")
-        @started = true
+        @running = true
+                
+        @server = TCPServer.open(@port)
+        @log.info("Running with PID #{$$} on port #{@port}.")
+        loop do
+          Thread.new(@server.accept) do |client_sock|
+            addr = client_sock.peeraddr
+            @log.info("Received a connection try from #{addr[2]} (#{addr[3]}).")
+            begin
+              client = Client.new(client_sock)
+              @clients << client
+              @controller.handle_connection(client)
+            ensure
+              @log.info("Client #{client} disconnected.")
+              client.socket.close
+              @clients.delete(client)
+            end
+          end
+          break if @do_stop
+        end
         
-        #TODO: Implement network service here
-        #@log.info("Running with PID #{$$} on #{uri}.")
-        
-        @started = false
+        @running = false
         @log.info("Stopped Karfunkel.")
+      end
+      
+      def stop
+        return false if @do_stop
+        @do_stop = true
       end
       
       #This is called by Karfunkel::Project.new whenever a new project
