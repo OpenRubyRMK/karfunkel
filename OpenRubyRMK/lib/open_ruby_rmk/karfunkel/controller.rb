@@ -23,7 +23,6 @@ module OpenRubyRMK
       #Creates a new Controller for the given Karfunkel instance.
       def initialize(karfunkel)
         @karfunkel = karfunkel
-        @log = @karfunkel.log
       end
       
       #Main method to handle a client. This method loops and calls
@@ -64,19 +63,19 @@ module OpenRubyRMK
       def establish_connection(client)
         #Wait for the client to greet
         unless select([client.socket], nil, nil, GREET_TIMEOUT)
-          raise(ConnectionFailed, "No greeting from client.")
+          raise(Errors::ConnectionFailed, "No greeting from client.")
         end
         #OK, the client has sent some data. Check it.
         begin
           xml = parse_command(client.socket.gets("\0").strip, true)
         rescue => e #The first command MUST be completely valid - nuke otherwise.
-          raise(ConnectionFailed, "Error while parsing command: #{e.message}")
+          raise(Errors::ConnectionFailed, "Error while parsing command: #{e.message}")
         end
         #Get the first request--the greeting should contain just this single request
         request = xml.root.children[0]
         #This must be a HELLO request
         unless request["type"] == "Hello"
-          raise(ConnectionFailed, "Request was not a HELLO request.")
+          raise(Errors::ConnectionFailed, "Request was not a HELLO request.")
         end
         #If we get here, the command is a valid greeting.
         #Here one could add authentication, but for now we accept the
@@ -122,12 +121,14 @@ module OpenRubyRMK
       #and raises a MalformedCommand error otherwise. If all went well,
       #a Nokogiri::XML::Document is returned.
       def parse_command(str, dont_check_id = false)
-        xml = Nokogiri::XML(str, nil, nil, 0) #Raise an error on invalid document
-        raise(MalformedCommand, "Root node is not 'Karfunkel'.") unless xml.root.name == "Karfunkel"
-        raise(MalformedCommand, "No or invalid client ID given.") if !dont_check_id and xml.root["id"] != "0"
+        #Make Nokogiri only parsing valid XML and removing blank nodes, i.e.
+        #text nodes with whitespace only.
+        xml = Nokogiri::XML(str, nil, nil, Nokogiri::XML::ParseOptions::STRICT | Nokogiri::XML::ParseOptions::NOBLANKS)
+        raise(Errors::MalformedCommand, "Root node is not 'Karfunkel'.") unless xml.root.name == "Karfunkel"
+        raise(Errors::MalformedCommand, "No or invalid client ID given.") if !dont_check_id and xml.root["id"] != "0"
         return xml
       rescue Nokogiri::XML::SyntaxError
-        raise(MalformedCommand, "Malformed XML document.")
+        raise(Errors::MalformedCommand, "Malformed XML document.")
       end
       
     end

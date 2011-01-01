@@ -21,15 +21,17 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
 #Require the lib
-require_relative "./karfunkel/project"
-require_relative "../open_ruby_rmk"
-require_relative "./paths"
-require_relative "./errors"
-require_relative "./map"
-require_relative "./mapset"
-require_relative "./map_field"
-require_relative "./character"
-require_relative "./option_handler"
+#require_relative "./karfunkel/project"
+require_relative "../../open_ruby_rmk"
+require_relative "../paths"
+require_relative "../errors"
+#require_relative "../map"
+#require_relative "../mapset"
+#require_relative "../map_field"
+#require_relative "../character"
+require_relative "../gui/option_handler"
+require_relative "./client"
+require_relative "./controller"
 
 module OpenRubyRMK
   
@@ -38,10 +40,6 @@ module OpenRubyRMK
    
     #This is OpenRubyRMK's server. Every GUI is just a client to his majesty Karfunkel.
     class Karfunkel
-      
-      #Number of seconds in which a client has to sent the greet
-      #message.
-      GREET_TIMEOUT = 5
       
       #The URI Karfunkel listens for connections.
       attr_reader :uri
@@ -56,6 +54,8 @@ module OpenRubyRMK
       attr_reader :config
       #The port Karfunkel listens at. Can be set via the config file.
       attr_reader :port
+      #The list of clients.
+      attr_reader :clients
       
       #Initializes Karfunkel, i.e. does command-line argument parsing, config
       #file reading, logger creation and signal setup.
@@ -76,7 +76,6 @@ module OpenRubyRMK
         Thread.abort_on_exception = true if debug_mode?
         @port = @config["port"]
       end
-      private :_initialize
       
       #Human-readable description of form
       #  #<OpenRubyRMK::Karfunkel, the OpenRubyRMK server, running with PID <PID here> at <URI here>.>
@@ -123,18 +122,19 @@ module OpenRubyRMK
             rescue => e
               @log.error("Connection error on greeting: #{e.class.name}: #{e.message}")
               client.socket.close
-              raise #Re-raise for killing the thread
+              next #Kill this thread--break is not allowed in procs for whatever reason
             end
+            @log.info("Client #{client} connected.")
             
             #Loop the connection now and await commands.
             begin
               @controller.handle_connection(client)
-            rescue ConnectionFailed => e #This error is not recoverable
+            rescue Errors::ConnectionFailed => e #This error is not recoverable
               @log.error("Fatal connection error on with client #{client}: ")
               @log.error("#{e.class.name}: #{e.message}")
-            rescue #Recoverable errors
-              @log.warning("Ignoring connection error with client #{client}: ")
-              @log.warning("#{e.class.name}: #{e.message}")
+            rescue => e #Recoverable errors
+              @log.warn("Ignoring connection error with client #{client}: ")
+              @log.warn("#{e.class.name}: #{e.message}")
               retry #This does not trigger the ensure clause
             ensure
               @log.info("Client #{client} disconnected.")
@@ -174,12 +174,12 @@ module OpenRubyRMK
           @log = Logger.new($stdout)
           @log.level = Logger::DEBUG
         elsif @cmd_args[:logfile].nil?
-          LOG_DIR.mkpath unless LOG_DIR.directory?
-          @log = Logger.new(LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
-          @log.level = options[:loglevel] #returns WARN if -L is not set
+          Paths::LOG_DIR.mkpath unless Paths::LOG_DIR.directory?
+          @log = Logger.new(Paths::LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
+          @log.level = @cmd_args[:loglevel] #returns WARN if -L is not set
         else
           @log = Logger.new(options[:logfile])
-          @log.level = options[:loglevel] #returns WARN if -L is not set
+          @log.level = @cmd_args[:loglevel] #returns WARN if -L is not set
         end
         @log.datetime_format =  "%d.%m.%Y, %H:%M:%S Uhr "
         @log.info("Started.") #OK, not 100% correct, but how to log this before the logger was created?
@@ -187,7 +187,7 @@ module OpenRubyRMK
       
       def load_config
         @log.info "Loading configuration file."
-        @config = YAML.load_file(CONFIG_FILE)
+        @config = YAML.load_file(Paths::CONFIG_FILE)
       end
       
       def setup_signal_handlers

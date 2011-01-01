@@ -12,11 +12,15 @@ module OpenRubyRMK
       
       #Actual TCP socket of the client.
       attr_reader :socket
+      #The operating system the client uses. This can be
+      #used for some compatibility operations.
+      attr_accessor :os
       
       #Creates a new Client. Pass in the TCP socket object that
       #tries to make a connection to Karfunkel.
       def initialize(tcp_client)
         @socket = tcp_client
+        @os = nil
       end
       
       #Human-readable description of form

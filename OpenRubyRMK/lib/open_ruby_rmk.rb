@@ -24,6 +24,7 @@ require "bundler/setup"
 require "pathname"
 require "rbconfig"
 require "tempfile"
+require "logger"
 require "nokogiri"
 require "chunky_png" #Chunky bacon?!
 

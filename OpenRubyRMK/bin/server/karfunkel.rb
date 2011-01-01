@@ -2,7 +2,7 @@
 #Encoding: UTF-8
 
 =begin
-This file is part of OpenRubyRMK. 
+This file is part of OpenRubyRMK.
 
 Copyright © 2010 OpenRubyRMK Team
 
@@ -26,10 +26,10 @@ if RUBY_VERSION < "1.9.1"
   exit 1
 end
 
-require_relative "../../lib/open_ruby_rmk/karfunkel"
+require_relative "../../lib/open_ruby_rmk/karfunkel/karfunkel"
 
 begin
-  server = OpenRubyRMK::Karfunkel::Karfunkel.instance(OpenRubyRMK::Karfunkel::Karfunkel::URI)
+  server = OpenRubyRMK::Karfunkel::Karfunkel.new
   server.start
 rescue => e
   #$log.debug("Karfunkel's global exception handler was triggered!")
