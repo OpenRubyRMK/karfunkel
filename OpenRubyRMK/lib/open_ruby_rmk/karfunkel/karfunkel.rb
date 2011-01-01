@@ -41,6 +41,9 @@ module OpenRubyRMK
     #This is OpenRubyRMK's server. Every GUI is just a client to his majesty Karfunkel.
     class Karfunkel
       
+      #The version of OpenRubyRMK, read from the version file.
+      VERSION = Paths::VERSION_FILE.read.chomp.freeze
+      
       #The URI Karfunkel listens for connections.
       attr_reader :uri
       #An array of Karfunkel::Project objects, each representing a project.

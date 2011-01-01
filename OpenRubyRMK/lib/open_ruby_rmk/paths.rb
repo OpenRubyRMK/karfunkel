@@ -58,6 +58,8 @@ module OpenRubyRMK
     CONFIG_FILE = INSTALL_DIR + "config" + "OpenRubyRMK-rc.yml"
     #In this directory and it's subdirectories reside plugins.
     PLUGINS_DIR = INSTALL_DIR + "plugins"
+    #The file that contains the version of OpenRubyRMK
+    VERSION_FILE = ROOT_DIR + "VERSION.txt"
     
   end
   
