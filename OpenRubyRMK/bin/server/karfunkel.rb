@@ -26,16 +26,17 @@ if RUBY_VERSION < "1.9.1"
   exit 1
 end
 
+#Require Karfunkel's dependencies
+require "bundler/setup"
+require "pathname"
+require "rbconfig"
+require "tempfile"
+require "logger"
+require "nokogiri"
+require "chunky_png" #Chunky bacon?!
+
+#Now require Karfunkel himself
 require_relative "../../lib/open_ruby_rmk/karfunkel/karfunkel"
 
-begin
-  server = OpenRubyRMK::Karfunkel::Karfunkel.new
-  server.start
-rescue => e
-  #$log.debug("Karfunkel's global exception handler was triggered!")
-  #$log.fatal(e.class.name + ": " + e.message)
-  #$log.fatal("Backtrace:")
-  #e.backtrace.each{|trace| $log.fatal(trace)}
-  
-  raise
-end
+server = OpenRubyRMK::Karfunkel::Karfunkel.new
+server.start
