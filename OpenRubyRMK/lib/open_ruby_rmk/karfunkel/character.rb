@@ -22,17 +22,21 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 module OpenRubyRMK
   
-  class Character
-    
-    attr_accessor :code
-    attr_reader :graphic_filename
-    attr_reader :x
-    attr_reader :y
-    
-    def initialize(x, y, graphic_filename)
-      @x, @y = x, y
-      @graphic_filename = Pathname.new(graphic_filename)
-      @code = ""
+  module Karfunkel
+  
+    class Character
+      
+      attr_accessor :code
+      attr_reader :graphic_filename
+      attr_reader :x
+      attr_reader :y
+      
+      def initialize(x, y, graphic_filename)
+        @x, @y = x, y
+        @graphic_filename = Pathname.new(graphic_filename)
+        @code = ""
+      end
+      
     end
     
   end

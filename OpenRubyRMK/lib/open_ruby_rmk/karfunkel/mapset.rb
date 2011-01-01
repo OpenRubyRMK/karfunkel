@@ -22,70 +22,74 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 module OpenRubyRMK
   
-  #A Mapset is directly tied to a file containing every field you can use
-  #for map creation.
-  #
-  #TODO: This class is dependant of wxRuby (for the image manipulation), although
-  #it doesn't reside in the GUI namespace. This class actually *isn't* GUI-related, but
-  #since wxRuby supplies the image manipulation methods needed for this class (image resizing,
-  #cutting, etc.) and I didn't find a small graphics library that could be used as an extra
-  #dependency of OpenRubyRMK (RMagick is way to big and complicated on Windows)...
-  #Proposals?
-  class Mapset
+  module Karfunkel
     
-    #The edge size of a single field, in pixels.
-    FIELD_EDGE = 32
-    
-    #The name of the file the image data is read from.
-    attr_reader :filename
-    #Number of rows in a mapset, where a row is FIELD_EDGE pixels wide.
-    attr_reader :rows
-    #Number of columns in a mapset, where a column is FIELD_EDGE pixels wide.
-    attr_reader :columns
-    #The image of the whole mapset. A ChunkyPNG::Image object.
-    attr_reader :image
-    
-    #Loads a mapset by reading from an image file. Just pass in the file's basename,
-    #it will be prepended by the current project's mapset search path automatically.
-    def self.load(filename)
-      obj = allocate
-      obj.instance_eval do
-        @filename = OpenRubyRMK::Paths.temp_mapsets_dir + filename.match(/\..*?$/).pre_match + filename #Each map has it's own directory
-        raise(Errno::ENOENT, "Mapset not found: #{filename}!") unless @filename.file?
-        @image = ChunkyPNG::Image.from_file(@filename.to_s)
-        split_into_tiles
-        @columns = @data.size
-        @rows = @data.transpose.size
-      end
-      obj
-    end
-    
-    #Grabs the ChunkyPNG::Image at the specified position.
-    def [](x, y)
-      @data[x][y]
-    end
-    
-    #true if +self+ and +other+ refer to the same filename.
-    def ==(other)
-      @filename == other.filename
-    end
-    
-    private
-    
-    #Splits a mapset file into smaller images of size FIELD_EDGE x FIELD_EDGE and assigns
-    #the subimages to the @data instance variable.
-    def split_into_tiles
-      raise(Errors::InvalidMapsetError, "Invalid mapset dimensions #{img.width} x #{img.height}!") unless @image.width % FIELD_EDGE == 0 and @image.height % FIELD_EDGE == 0
-      cols = img.width / FIELD_EDGE
-      rows = img.height / FIELD_EDGE
+    #A Mapset is directly tied to a file containing every field you can use
+    #for map creation.
+    #
+    #TODO: This class is dependant of wxRuby (for the image manipulation), although
+    #it doesn't reside in the GUI namespace. This class actually *isn't* GUI-related, but
+    #since wxRuby supplies the image manipulation methods needed for this class (image resizing,
+    #cutting, etc.) and I didn't find a small graphics library that could be used as an extra
+    #dependency of OpenRubyRMK (RMagick is way to big and complicated on Windows)...
+    #Proposals?
+    class Mapset
       
-      @data = Array.new(cols){Array.new(rows)}
-      0.upto(cols - 1) do |col|
-        0.upto(rows - 1) do |field|
-          subimg = @image.crop(col * FIELD_EDGE, field * FIELD_EDGE, FIELD_EDGE, FIELD_EDGE)
-          @data[col][field] = subimg
+      #The edge size of a single field, in pixels.
+      FIELD_EDGE = 32
+      
+      #The name of the file the image data is read from.
+      attr_reader :filename
+      #Number of rows in a mapset, where a row is FIELD_EDGE pixels wide.
+      attr_reader :rows
+      #Number of columns in a mapset, where a column is FIELD_EDGE pixels wide.
+      attr_reader :columns
+      #The image of the whole mapset. A ChunkyPNG::Image object.
+      attr_reader :image
+      
+      #Loads a mapset by reading from an image file. Just pass in the file's basename,
+      #it will be prepended by the current project's mapset search path automatically.
+      def self.load(filename)
+        obj = allocate
+        obj.instance_eval do
+          @filename = OpenRubyRMK::Paths.temp_mapsets_dir + filename.match(/\..*?$/).pre_match + filename #Each map has it's own directory
+          raise(Errno::ENOENT, "Mapset not found: #{filename}!") unless @filename.file?
+          @image = ChunkyPNG::Image.from_file(@filename.to_s)
+          split_into_tiles
+          @columns = @data.size
+          @rows = @data.transpose.size
+        end
+        obj
+      end
+      
+      #Grabs the ChunkyPNG::Image at the specified position.
+      def [](x, y)
+        @data[x][y]
+      end
+      
+      #true if +self+ and +other+ refer to the same filename.
+      def ==(other)
+        @filename == other.filename
+      end
+      
+      private
+      
+      #Splits a mapset file into smaller images of size FIELD_EDGE x FIELD_EDGE and assigns
+      #the subimages to the @data instance variable.
+      def split_into_tiles
+        raise(Errors::InvalidMapsetError, "Invalid mapset dimensions #{img.width} x #{img.height}!") unless @image.width % FIELD_EDGE == 0 and @image.height % FIELD_EDGE == 0
+        cols = img.width / FIELD_EDGE
+        rows = img.height / FIELD_EDGE
+        
+        @data = Array.new(cols){Array.new(rows)}
+        0.upto(cols - 1) do |col|
+          0.upto(rows - 1) do |field|
+            subimg = @image.crop(col * FIELD_EDGE, field * FIELD_EDGE, FIELD_EDGE, FIELD_EDGE)
+            @data[col][field] = subimg
+          end
         end
       end
+      
     end
     
   end
