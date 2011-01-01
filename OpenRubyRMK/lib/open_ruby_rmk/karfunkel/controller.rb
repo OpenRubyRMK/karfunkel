@@ -10,30 +10,32 @@ module OpenRubyRMK
     #is represanted as a method implemented for this class.
     class Controller
       
+      KARFUNKEL_ID = 0
       GREET_TIMEOUT = 5
       ID_GENERATOR = (1..Float::INFINITY).enum_for(:each)
+      
+      OK = "OK".freeze
+      FINISHED = "Finished".freeze
+      FAILED = "Failed".freeze
+      PROCESSING = "Processing".freeze
+      REJECTED = "Rejected".freeze
       
       #Creates a new Controller for the given Karfunkel instance.
       def initialize(karfunkel)
         @karfunkel = karfunkel
         @log = @karfunkel.log
-        @next_id
       end
       
+      #Main method to handle a client. This method loops and calls
+      #the different request handling methods depending on what the
+      #client sends. It ends when the client sends EOF or an error occurs.
       def handle_connection(client)
-        #Execute the obligatory greeting code
-        return false unless establish_connection
-        
-        #Now loop and execute a client's requests.
+        #Loop and execute a client's requests.
         #Each command is separated by the NULL character.
         while str = client.socket.gets("\0")
           #Check wheather it conforms to Karfunkel's command standards.
           #If so, get the XML object.
-          xml = check_syntax(str)
-          unless xml
-            @log.error("Connection error with client #{client}: Malformed command. Ignoring the issue.")
-            next
-          end
+          xml = parse_command(str)
           #Now process each request in the command.
           xml.root.children.each do |request_node|
             #Get command type and ID
@@ -57,6 +59,32 @@ module OpenRubyRMK
         end #while requests are in the command
       end #handle_connection
       
+      #This method tries to establish a connection between Karfunkel
+      #and a possible client.
+      def establish_connection(client)
+        #Wait for the client to greet
+        unless select([client.socket], nil, nil, GREET_TIMEOUT)
+          raise(ConnectionFailed, "No greeting from client.")
+        end
+        #OK, the client has sent some data. Check it.
+        begin
+          xml = parse_command(client.socket.gets("\0").strip, true)
+        rescue => e #The first command MUST be completely valid - nuke otherwise.
+          raise(ConnectionFailed, "Error while parsing command: #{e.message}")
+        end
+        #Get the first request--the greeting should contain just this single request
+        request = xml.root.children[0]
+        #This must be a HELLO request
+        unless request["type"] == "Hello"
+          raise(ConnectionFailed, "Request was not a HELLO request.")
+        end
+        #If we get here, the command is a valid greeting.
+        #Here one could add authentication, but for now we accept the
+        #request as OK.
+        client.os = request.children.at_xpath("os")
+        greet_back(client)
+      end
+      
       private
       
       #Sends a response of type +Rejected+.
@@ -74,41 +102,32 @@ module OpenRubyRMK
       #===============================================
       #Some helper methods follow.
       
-      def greeting(client)
-        str = client.socket.gets("\0").strip
-        
-        if !syntax_check(str, true)
-          @log.error("Connection with client #{client} failed: Malformed command.")
-          return false
-        elsif request["type"] != "Hello"
-          @log.error("Connection with client #{client} failed: Not a HELLO request.")
-          return false
+      #Karfunkel's positive answer to a HELLO request.
+      def greet_back(client)
+        builder = Nokogiri::XML::Builder.new do |xml|
+          xml.Karfunkel(:id => KARFUNKEL_ID) do
+            xml.response(:type => "Hello", :id => 0) do
+              xml.status OK
+              xml.id_ ID_GENERATOR.next
+              xml.my_version VERSION
+              #xml.my_project ...
+              xml.my_clients_num @karfunkel.clients.size
+            end
+          end
         end
-        
-        xml = Nokogiri::XML(str)
-        request = xml.root.children[0]
-        client.os = request.children.at_xpath("os")
-        true
+        client.socket.write(builder.to_xml + "\0")
       end
       
-      #This method tries to establish a connection between Karfunkel
-      #and a possible client.
-      def establish_connection(client)
-        unless select([client.socket], nil, nil, GREET_TIMEOUT)
-          @log.error("Connection with client #{client} failed: No greeting from client.")
-          return false
-        end
-        return false unless greeting(client)
-        true
-      end
-      
-      def syntax_check(str, dont_check_id = false)
-        xml = Nokogiri::XML(str)
-        return false unless xml.root.name == "Karfunkel"
-        return false if !dont_check_id and xml.root["id"] != "0"
+      #Checks wheather or not +str+ is a valid Karfunkel command
+      #and raises a MalformedCommand error otherwise. If all went well,
+      #a Nokogiri::XML::Document is returned.
+      def parse_command(str, dont_check_id = false)
+        xml = Nokogiri::XML(str, nil, nil, 0) #Raise an error on invalid document
+        raise(MalformedCommand, "Root node is not 'Karfunkel'.") unless xml.root.name == "Karfunkel"
+        raise(MalformedCommand, "No or invalid client ID given.") if !dont_check_id and xml.root["id"] != "0"
         return xml
-      rescue #Most likely, the XML document was invalid if an exception occures.
-        return false
+      rescue Nokogiri::XML::SyntaxError
+        raise(MalformedCommand, "Malformed XML document.")
       end
       
     end

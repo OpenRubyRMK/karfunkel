@@ -2,7 +2,7 @@
 #Encoding: UTF-8
 
 =begin
-This file is part of OpenRubyRMK. 
+This file is part of OpenRubyRMK.
 
 Copyright © 2010 OpenRubyRMK Team
 
@@ -22,33 +22,39 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 module OpenRubyRMK
   
-  #This module contains various OpenRubyRMK-related error classes. 
-  #Errors which always cause the same message to be emmited, support a 
-  #<tt>throw!</tt> class method. 
+  #This module contains various OpenRubyRMK-related error classes.
+  #Errors which always cause the same message to be emmited, support a
+  #<tt>throw!</tt> class method.
   module Errors
     
-    #Superclass of every error specific to OpenRubyRMK. 
+    #Superclass of every error specific to OpenRubyRMK.
     class OpenRubyRMKError < StandardError
     end
     
-    #User tried action that requires an open project. 
+    #User tried action that requires an open project.
     class NoProjectError < OpenRubyRMKError
       
-      #Throws a NoProjectError with message 
+      #Throws a NoProjectError with message
       #  No project opened!
-      #. 
+      #.
       def self.throw!
         Kernel.raise(self, "No project opened!", caller)
       end
       
     end
     
-    #Failed to load a plugin. 
+    #Failed to load a plugin.
     class PluginError < OpenRubyRMKError
     end
     
-    #Something was wrong with a mapset file. 
+    #Something was wrong with a mapset file.
     class InvalidMapsetError < OpenRubyRMKError
+    end
+    
+    class MalformedCommand < OpenRubyRMKError
+    end
+    
+    class ConnectionFailed < OpenRubyRMKError
     end
     
   end

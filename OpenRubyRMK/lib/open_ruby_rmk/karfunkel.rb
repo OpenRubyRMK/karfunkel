@@ -113,10 +113,29 @@ module OpenRubyRMK
           Thread.new(@server.accept) do |client_sock|
             addr = client_sock.peeraddr
             @log.info("Received a connection try from #{addr[2]} (#{addr[3]}).")
+            
+            client = Client.new(client_sock)
+            @clients << client
+            
+            #Greeting
             begin
-              client = Client.new(client_sock)
-              @clients << client
+              @controller.establish_connection(client)
+            rescue => e
+              @log.error("Connection error on greeting: #{e.class.name}: #{e.message}")
+              client.socket.close
+              raise #Re-raise for killing the thread
+            end
+            
+            #Loop the connection now and await commands.
+            begin
               @controller.handle_connection(client)
+            rescue ConnectionFailed => e #This error is not recoverable
+              @log.error("Fatal connection error on with client #{client}: ")
+              @log.error("#{e.class.name}: #{e.message}")
+            rescue #Recoverable errors
+              @log.warning("Ignoring connection error with client #{client}: ")
+              @log.warning("#{e.class.name}: #{e.message}")
+              retry #This does not trigger the ensure clause
             ensure
               @log.info("Client #{client} disconnected.")
               client.socket.close
