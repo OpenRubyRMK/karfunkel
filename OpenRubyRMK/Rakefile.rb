@@ -61,7 +61,8 @@ def z7_path
 end
 
 Rake::RDocTask.new do |rt|
-  rt.rdoc_files.include("lib/**/*.rb", "README.rdoc", "AUTHORS.rdoc", "COPYING.txt")
+  rt.rdoc_dir = "doc"
+  rt.rdoc_files.include("lib/**/*.rb", "README.rdoc", "commands_and_responses.rdoc", "AUTHORS.rdoc", "COPYING.txt")
   rt.title = "OpenRubyRMK RDocs"
   rt.main = "README.rdoc"
 end
