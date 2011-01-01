@@ -103,7 +103,7 @@ module OpenRubyRMK
       
       #Karfunkel's positive answer to a HELLO request.
       def greet_back(client)
-        builder = Nokogiri::XML::Builder.new do |xml|
+        builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
           xml.Karfunkel(:id => KARFUNKEL_ID) do
             xml.response(:type => "Hello", :id => 0) do
               xml.status OK
