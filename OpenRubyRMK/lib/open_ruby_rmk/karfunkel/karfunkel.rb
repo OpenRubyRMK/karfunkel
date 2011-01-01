@@ -123,6 +123,7 @@ module OpenRubyRMK
               @controller.establish_connection(client)
             rescue => e
               @log.error("Connection error on greeting: #{e.class.name}: #{e.message}")
+              e.backtrace.each{|trace| @log.error(trace)}
               client.socket.close
               next #Kill this thread--break is not allowed in procs for whatever reason
             end
@@ -134,6 +135,7 @@ module OpenRubyRMK
             rescue Errors::ConnectionFailed => e #This error is not recoverable
               @log.error("Fatal connection error on with client #{client}: ")
               @log.error("#{e.class.name}: #{e.message}")
+              e.backtrace.each{|trace| @log.error(trace)}
             rescue => e #Recoverable errors
               @log.warn("Ignoring connection error with client #{client}: ")
               @log.warn("#{e.class.name}: #{e.message}")
