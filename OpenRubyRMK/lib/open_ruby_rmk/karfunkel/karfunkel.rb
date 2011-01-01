@@ -22,14 +22,13 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 #Require the lib
 #require_relative "./karfunkel/project"
-require_relative "../../open_ruby_rmk"
 require_relative "../paths"
-require_relative "../errors"
-#require_relative "../map"
-#require_relative "../mapset"
-#require_relative "../map_field"
-#require_relative "../character"
-require_relative "../gui/option_handler"
+require_relative "./errors"
+#require_relative "./map"
+#require_relative "./mapset"
+#require_relative "./map_field"
+#require_relative "./character"
+require_relative "./option_handler"
 require_relative "./client"
 require_relative "./controller"
 
@@ -38,11 +37,11 @@ module OpenRubyRMK
   #Namespace for Karfunkel, OpenRubyRMK's server.
   module Karfunkel
    
+    #The version of OpenRubyRMK, read from the version file.
+    VERSION = Paths::VERSION_FILE.read.chomp.freeze
+    
     #This is OpenRubyRMK's server. Every GUI is just a client to his majesty Karfunkel.
     class Karfunkel
-      
-      #The version of OpenRubyRMK, read from the version file.
-      VERSION = Paths::VERSION_FILE.read.chomp.freeze
       
       #The URI Karfunkel listens for connections.
       attr_reader :uri
