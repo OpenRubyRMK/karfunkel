@@ -31,22 +31,6 @@ module OpenRubyRMK
     class OpenRubyRMKError < StandardError
     end
     
-    #User tried action that requires an open project.
-    class NoProjectError < OpenRubyRMKError
-      
-      #Throws a NoProjectError with message
-      #  No project opened!
-      #.
-      def self.throw!
-        Kernel.raise(self, "No project opened!", caller)
-      end
-      
-    end
-    
-    #Failed to load a plugin.
-    class PluginError < OpenRubyRMKError
-    end
-    
     #Something was wrong with a mapset file.
     class InvalidMapsetError < OpenRubyRMKError
     end
