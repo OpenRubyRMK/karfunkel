@@ -12,7 +12,6 @@ module OpenRubyRMK
       
       KARFUNKEL_ID = 0
       GREET_TIMEOUT = 5
-      ID_GENERATOR = (1..Float::INFINITY).enum_for(:each)
       
       OK = "OK".freeze
       FINISHED = "Finished".freeze
@@ -23,6 +22,8 @@ module OpenRubyRMK
       #Creates a new Controller for the given Karfunkel instance.
       def initialize(karfunkel)
         @karfunkel = karfunkel
+        @last_id = 0
+        @id_generator_mutex = Mutex.new
       end
       
       #Main method to handle a client. This method loops and calls
@@ -80,8 +81,10 @@ module OpenRubyRMK
         #If we get here, the command is a valid greeting.
         #Here one could add authentication, but for now we accept the
         #request as OK.
+        new_id = generate_id
+        client.id = new_id
         client.os = request.children.at_xpath("os")
-        greet_back(client)
+        greet_back(client, new_id)
       end
       
       private
@@ -102,12 +105,12 @@ module OpenRubyRMK
       #Some helper methods follow.
       
       #Karfunkel's positive answer to a HELLO request.
-      def greet_back(client)
+      def greet_back(client, new_id)
         builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
           xml.Karfunkel(:id => KARFUNKEL_ID) do
             xml.response(:type => "Hello", :id => 0) do
               xml.status OK
-              xml.id_ ID_GENERATOR.next
+              xml.id_ new_id
               xml.my_version VERSION
               #xml.my_project ...
               xml.my_clients_num @karfunkel.clients.size
@@ -129,6 +132,12 @@ module OpenRubyRMK
         return xml
       rescue Nokogiri::XML::SyntaxError
         raise(Errors::MalformedCommand, "Malformed XML document.")
+      end
+      
+      def generate_id
+        @id_generator_mutex.synchronize do
+          @last_id += 1 #Returned
+        end
       end
       
     end

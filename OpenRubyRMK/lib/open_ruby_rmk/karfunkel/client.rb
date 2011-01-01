@@ -15,12 +15,15 @@ module OpenRubyRMK
       #The operating system the client uses. This can be
       #used for some compatibility operations.
       attr_accessor :os
+      #The ID of the client.
+      attr_accessor :id
       
       #Creates a new Client. Pass in the TCP socket object that
       #tries to make a connection to Karfunkel.
       def initialize(tcp_client)
         @socket = tcp_client
         @os = nil
+        @id = -1
       end
       
       #Human-readable description of form
