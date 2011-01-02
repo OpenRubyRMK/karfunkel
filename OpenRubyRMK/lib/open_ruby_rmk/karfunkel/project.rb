@@ -19,15 +19,18 @@ module OpenRubyRMK
       #project uses. All paths are returned as Pathname instances.
       class ProjectPaths
         
-        #A projcet's toplevel directory (i.e. the directory containing <b>bin/</b>).
+        #A project's toplevel directory (i.e. the directory containing <b>bin/</b>).
         attr_reader :toplevel_dir
         #A project's temporary directory (i.e. where extracted mapsets and other things are stored).
         attr_reader :temp_dir
+        #A project's main file.
+        attr_reader :project_file
         
         #Creates a new ProjectPaths object. This is called internally by
         #Project.new. You won't have to use it.
-        def initialize(toplevel_dir, temp_dir)
-          @toplevel_dir = toplevel_dir
+        def initialize(project_file, temp_dir)
+          @project_file = project_file
+          @toplevel_dir = project_file.dirname.parent
           @temp_dir = temp_dir
         end
         
@@ -82,7 +85,7 @@ module OpenRubyRMK
           
           #Set the new project path
           #project_file is something like "/path/to/project/bin/project.rmk"
-          @paths = ProjectPaths.new(project_file.dirname.parent, @temp_dir)
+          @paths = ProjectPaths.new(project_file, @temp_dir)
           #This is the name of the project we're now working on
           @name = project_file.basename.to_s.match(/\.rmk$/).pre_match
           
@@ -122,6 +125,7 @@ module OpenRubyRMK
             end #while
           end #Thread.new
         end #instance_eval
+        obj
       end #self.load
       
       #True if the project is fully loaded.
@@ -133,6 +137,15 @@ module OpenRubyRMK
       def loading?
         !loaded?
       end
+      
+      #Two projects are considered equal when they refer to the
+      #same project file.
+      def ==(other)
+        return false unless other.respond_to? :paths
+        return false unless other.paths.respond_to? :project_file
+        @paths.project_file == other.paths.project_file
+      end
+      alias eql? ==
       
     end
     
