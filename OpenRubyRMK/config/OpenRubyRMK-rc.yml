@@ -37,3 +37,9 @@ ruby: "/opt/rubies/ruby-1.9.2-p136/bin"
 #  port: 80
 #Default value: 3141
 port: 3141
+#Number of seconds Karfunkel waits for a client to 
+#greet him before he closes the connection. 
+#Example: 
+#  greet_timeout: 10
+#Default value: 5
+greet_timeout: 5

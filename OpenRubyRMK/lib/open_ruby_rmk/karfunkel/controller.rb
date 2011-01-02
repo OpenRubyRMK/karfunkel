@@ -11,7 +11,6 @@ module OpenRubyRMK
     class Controller
       
       KARFUNKEL_ID = 0
-      GREET_TIMEOUT = 5
       
       OK = "OK".freeze
       FINISHED = "Finished".freeze
@@ -63,7 +62,7 @@ module OpenRubyRMK
       #and a possible client.
       def establish_connection(client)
         #Wait for the client to greet
-        unless select([client.socket], nil, nil, GREET_TIMEOUT)
+        unless select([client.socket], nil, nil, @karfunkel.config["greet_timeout"])
           raise(Errors::ConnectionFailed, "No greeting from client.")
         end
         #OK, the client has sent some data. Check it.
