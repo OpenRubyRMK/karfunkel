@@ -53,6 +53,8 @@ These are the possible stati your request can get assigned:
 
 Especially in the case of long-running operations, a request can cause multiple responses from Karfunkel. For example, opening a project causes Karfunkel to immediately send a +Processing+ response with the ID of your request. After some time, when the project has fully been loaded, he will contact you again, sending you the +Finished+ response with the same ID as the previous +Processing+ response (which is in turn the same ID you assigned to your request).
 
+There's one special response that you can get: The +Error+ response. This is sent by Karfunkel if he didn't unterstand anything of what you said, i.e. your command contained massive syntactical errors or the like. As Karfunkel wasn't able to detect command type and ID, he puts +unknown+ for the command type and -1 for the ID. If you send proper commands over a proper network connection, you shouldn't get this response.
+
 ==Commands that can be sent
 
 Following is a list of commands that can be sent to Karfunkel after the connection has been established (except of the +Hello+ command, which establishes the connection).

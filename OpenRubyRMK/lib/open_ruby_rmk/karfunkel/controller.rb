@@ -17,6 +17,7 @@ module OpenRubyRMK
       FAILED = "Failed".freeze
       PROCESSING = "Processing".freeze
       REJECTED = "Rejected".freeze
+      ERROR = "Error".freeze
       
       #Creates a new Controller for the given Karfunkel instance.
       def initialize(karfunkel)
@@ -56,6 +57,15 @@ module OpenRubyRMK
             end #if
           end #each child
         end #while requests are in the command
+      rescue Errors::ConnectionFailed => e #Non-Recoverable--connectio immediately cut.
+        @karfunkel.log.error("Fatal connection error on with client #{client}: ")
+        @karfunkel.log.error("#{e.class.name}: #{e.message}")
+        e.backtrace.each{|trace| @log.error(trace)}
+      rescue => e
+        @karfunkel.log.warn("Ignoring connection error with client #{client}: ")
+        @karfunkel.log.warn("#{e.class.name}: #{e.message}")
+        error(client, "Unable to process request: #{e.class.name}: #{e.message}")
+        retry
       end #handle_connection
       
       #This method tries to establish a connection between Karfunkel
@@ -90,7 +100,28 @@ module OpenRubyRMK
       
       #Sends a response of type +Rejected+.
       def reject(client, command_type, command_id, reason)
-        
+        builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
+          xml.Karfunkel(:id => KARFUNKEL_ID) do
+            xml.response(:type => command_type, :id => command_id) do
+              xml.status REJECTED
+              xml.reason reason
+            end
+          end
+        end
+        client.socket.write(builder.to_xml + "\0")
+      end
+      
+      #Sends an error response.
+      def error(client, str)
+        builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
+          xml.Karfunkel(:id => KARFUNKEL_ID) do
+            xml.response(:type => "Unknown", :id => -1) do
+              xml.status ERROR
+              xml.message str
+            end
+          end
+        end
+        client.socket.write(builder.to_xml + "\0")
       end
       
       #===============================================

@@ -132,14 +132,6 @@ module OpenRubyRMK
             #Loop the connection now and await commands.
             begin
               @controller.handle_connection(client)
-            rescue Errors::ConnectionFailed => e #This error is not recoverable
-              @log.error("Fatal connection error on with client #{client}: ")
-              @log.error("#{e.class.name}: #{e.message}")
-              e.backtrace.each{|trace| @log.error(trace)}
-            rescue => e #Recoverable errors
-              @log.warn("Ignoring connection error with client #{client}: ")
-              @log.warn("#{e.class.name}: #{e.message}")
-              retry #This does not trigger the ensure clause
             ensure
               @log.info("Client #{client} disconnected.")
               client.socket.close
