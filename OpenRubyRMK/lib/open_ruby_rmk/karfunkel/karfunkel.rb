@@ -125,6 +125,7 @@ module OpenRubyRMK
               @log.error("Connection error on greeting: #{e.class.name}: #{e.message}")
               e.backtrace.each{|trace| @log.error(trace)}
               client.socket.close
+              @clients.delete(client)
               next #Kill this thread--break is not allowed in procs for whatever reason
             end
             @log.info("Client #{client} connected.")
