@@ -34,9 +34,11 @@ require "tempfile"
 require "logger"
 require "nokogiri"
 require "chunky_png" #Chunky bacon?!
+require "eventmachine"
 
 #Now require Karfunkel himself
 require_relative "../../lib/open_ruby_rmk/karfunkel/karfunkel"
 
-server = OpenRubyRMK::Karfunkel::Karfunkel.new
-server.start
+EventMachine.run do
+  OpenRubyRMK::Karfunkel::Karfunkel.start
+end

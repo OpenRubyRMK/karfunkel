@@ -7,6 +7,7 @@ GEM
       rest-client
     chunky_png (0.12.0)
     crack (0.1.8)
+    eventmachine (0.12.10)
     gosu (0.7.25)
     mime-types (1.16)
     minitar (0.5.3)
@@ -24,6 +25,7 @@ PLATFORMS
 DEPENDENCIES
   chingu
   chunky_png
+  eventmachine
   gosu
   minitar (>= 0.5.3)
   nokogiri

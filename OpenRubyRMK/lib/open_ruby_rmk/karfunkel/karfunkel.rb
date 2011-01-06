@@ -30,176 +30,234 @@ require_relative "./errors"
 #require_relative "./character"
 require_relative "./option_handler"
 require_relative "./client"
-require_relative "./controller"
+require_relative "./protocol"
 
 module OpenRubyRMK
   
-  #Namespace for Karfunkel, OpenRubyRMK's server.
+  #Namespace of Karfunkel.
   module Karfunkel
-   
+    
     #The version of OpenRubyRMK, read from the version file.
     VERSION = Paths::VERSION_FILE.read.chomp.freeze
     
     #This is OpenRubyRMK's server. Every GUI is just a client to his majesty Karfunkel.
-    class Karfunkel
+    #The whole server-client architecture Karfunkel deals with works as follows:
+    #
+    #The main component is the server. It's called Karfunkel and it's represented
+    #by the OpenRubyRMK::Karfunkel::Karfunkel module. For each Ruby process
+    #there can only be one server running. Here all the information shared by all
+    #clients is stored (e.g. the project list).
+    #
+    #Karfunkel listens on a port specified in the config file (port 3141 by default)
+    #for connections. If he detects a connection try, he waits for the potential
+    #client to send im the HELLO request (see the commands_and_responses.rdoc file)
+    #and if the client does so, Karfunkel assignes a free ID at him at sends it
+    #to the client. If not, the connection is closed. Clients are represented by
+    #the OpenRubyRMK::Karfunkel::Client class and they store the information specific
+    #to a single client, for instance the client's ID.
+    #
+    #The third and most important component is OpenRubyRMK::Karfunkel::Protcol. This
+    #is a mixin module that is automatically mixed into the connections
+    #(EventMachine::Connection derivatives, anonymous classes) made. Each connection
+    #has it's own instance and runs in it's own thread which means that you can
+    #think of the Protocol module as the main component of a connection and
+    #to make life easier and make the whole process easier to understand, think
+    #of it as the representation of the connection between Karfunkel and a client.
+    #It stores that only that information that is important for the connection,
+    #which does not have any semantical relation to what Karfunkel or a Client object
+    #stores. For example it stores a data buffer to allow commands to be send
+    #as parts instead of a whole.
+    #
+    #So the whole process is like follows:
+    #1. Karfunkel starts and listens on a port.
+    #2. A connection is made to that port. EventMachine instanciates an
+    #  anonymous class and mixes in the Protocol module. All events that
+    #  occur on the connection are handled by that anonymous class.
+    #3. The Protocol#post_init method instanciates a Client object and
+    #  makes Karfunkel reference it. This allows Karfunkel to keep track
+    #  of which clients do what.
+    #4. When a client sends a request, the connection's anonymous class
+    #  handles it. It will query Karfunkel or the client object as
+    #  the request requires. One or more responses are sent back over the wire.
+    #5. If a client closes the connection, the anonymous connection class
+    #  removes the references Client object from Karfunkel's list of clients.
+    #  The now unreferenced connection and it's client get eventually GC'ed.
+    #6. Karfunkel shuts down, diconnecting all remaining clients.
+    module Karfunkel
       
-      #The URI Karfunkel listens for connections.
-      attr_reader :uri
-      #An array of Karfunkel::Project objects, each representing a project.
-      attr_reader :projects
-      attr_reader :cmd_args
-      #The logfile. If a client logs to this Logger object, it should begin
-      #it's message with something like <tt>[CLIENTNAME]</tt>, because the client's
-      #log messages are easier to distinguish from Karfunkel's then.
-      attr_reader :log
-      #The parsed content of the configuration file.
-      attr_reader :config
-      #The port Karfunkel listens at. Can be set via the config file.
-      attr_reader :port
-      #The list of clients.
-      attr_reader :clients
-      
-      #Initializes Karfunkel, i.e. does command-line argument parsing, config
-      #file reading, logger creation and signal setup.
-      #
-      #This <b>does not</b> start Karfunkel. See #start for this.
-      def initialize
-        @controller = Controller.new(self)
-        @running = false
-        @do_stop = false
-        @clients = []
-        @projects = []
+      class << self
         
-        parse_argv
-        create_logger
-        load_config
-        setup_signal_handlers
+        #An array containing all clients to whom Karfunkel holds
+        #connections. Karfunkel::Client objects.
+        attr_reader :clients
+        #An array of all currently loaded projects.
+        attr_reader :projects
+        attr_reader :cmd_args
+        #The parsed content of the configuration file.
+        attr_reader :config
+        #The port Karfunkel listens at.
+        attr_reader :port
         
-        Thread.abort_on_exception = true if debug_mode?
-        @port = @config["port"]
-      end
-      
-      #Human-readable description of form
-      #  #<OpenRubyRMK::Karfunkel, the OpenRubyRMK server, running with PID <PID here> at <URI here>.>
-      def inspect
-        "#<#{self.class} Karfunkel, the OpenRubyRMK server, running with PID #{$$} at #{@uri}.>"
-      end
-      
-      #true if Karfunkel is running in debug mode.
-      def debug_mode?
-        @debug_mode
-      end
-      
-      #true if any project is currently loaded.
-      def has_project?
-        !@projects.empty?
-      end
-      
-      #true if the server has already been started.
-      def running?
-        @running
-      end
-      alias started? running?
-      
-      #Starts Karfunkel. If called after Karfunkel has already been started, raises
-      #a RuntimeError.
-      def start
-        raise(RuntimeError, "Karfunkel is already running.") if @started
-        @log.info("Starting Karfunkel, OpenRubyRMK's server.")
-        @running = true
+        ##
+        #document-method: log_debug
+        #call-seq:
+        #  log_debug(msg) ==> true
+        #
+        #Logs a DEBUG level message.
+        
+        ##
+        #document-method: log_info
+        #call-seq:
+        #  log_info(msg) ==> true
+        #
+        #Logs an INFO level message.
+        
+        ##
+        #document-method: log_warn
+        #call-seq:
+        #  log_warn(msg) ==> true
+        #
+        #Logs a WARN level message.
+        
+        ##
+        #document-method: log_error
+        #call-seq:
+        #  log_error(msg) ==> true
+        #
+        #Logs an ERROR level message.
+        
+        ##
+        #document-method: log_fatal
+        #call-seq:
+        #  log_fatal(msg) ==> true
+        #
+        #Logs a FATAL level message. Do not use this, it's for internal use.
+        
+        #Starts Karfunkel.
+        def start
+          raise(RuntimError, "Karfunkel is already running!") if @running
+          @clients = []
+          @projects = []
+          @last_id = 0
+          @log_mutex = Mutex.new #The log is a shared resource.
+          @id_generator_mutex = Mutex.new #The ID generator as well.
+          
+          parse_argv
+          create_logger
+          load_config
+          setup_signal_handlers
+          
+          @port = @config["port"]
+          
+          @log.info("A new story may begin now. Karfunkel waits with PID #{$$} on port #{@port} for you...")
+          EventMachine.start_server("localhost", @port, Protocol)
+          @running = true
+        end
+        
+        #Stops Karfunkel and disconnects all clients.
+        def stop
+          #TODO: Clients benachrichtigen
+          EventMachine.stop_event_loop
+          @running = false
+        end
+        
+        #Human-readable description of form
+        #  #<OpenRubyRMK::Karfunkel::Karfunkel Karfunkel listeing with PID <pid here> at Port <port here>.>
+        def inspect
+          "#<#{self.class} Karfunkel listening with PID #{$$} at Port #{@port}.>"
+        end
+        
+        #true if Karfunkel is running in debug mode.
+        def debug_mode?
+          @debug_mode
+        end
+        
+        #true if any project is currently loaded.
+        def has_project?
+          !@projects.empty?
+        end
+        
+        #true if the server has already been started.
+        def running?
+          @running
+        end
+        alias started? running?
                 
-        @server = TCPServer.open(@port)
-        @log.info("Running with PID #{$$} on port #{@port}.")
-        loop do
-          Thread.new(@server.accept) do |client_sock|
-            addr = client_sock.peeraddr
-            @log.info("Received a connection try from #{addr[2]} (#{addr[3]}).")
-            
-            client = Client.new(client_sock)
-            @clients << client
-            
-            #Greeting
-            begin
-              @controller.establish_connection(client)
-            rescue => e
-              @log.error("Connection error on greeting: #{e.class.name}: #{e.message}")
-              e.backtrace.each{|trace| @log.error(trace)}
-              client.socket.close
-              @clients.delete(client)
-              next #Kill this thread--break is not allowed in procs for whatever reason
-            end
-            @log.info("Client #{client} connected.")
-            
-            #Loop the connection now and await commands.
-            begin
-              @controller.handle_connection(client)
-            ensure
-              @log.info("Client #{client} disconnected.")
-              client.socket.close
-              @clients.delete(client)
+        %w[debug info warn error fatal unknown].each do |str|
+          define_method(:"log_#{str}") do |msg|
+            @log_mutex.synchronize do
+              @log.send(str, msg)
             end
           end
-          break if @do_stop
         end
         
-        @running = false
-        @log.info("Stopped Karfunkel.")
-      end
-      
-      def stop
-        return false if @do_stop
-        @do_stop = true
-      end
-      
-      #This is called by Karfunkel::Project.new whenever a new project
-      #has been created. It registers the project with Karfunkel so that
-      #it can be used by other clients.
-      def register_project(project)
-        @projects << project
-      end
-      
-      private
-      
-      def parse_argv
-        @cmd_args = OptionHandler.parse(ARGV)
-        @debug_mode = @cmd_args[:debug]
-      end
-      
-      def create_logger
-        if debug_mode?
-          $stdout.sync = $stderr.sync = true
-          @log = Logger.new($stdout)
-          @log.level = Logger::DEBUG
-        elsif @cmd_args[:logfile].nil?
-          Paths::LOG_DIR.mkpath unless Paths::LOG_DIR.directory?
-          @log = Logger.new(Paths::LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
-          @log.level = @cmd_args[:loglevel] #returns WARN if -L is not set
-        else
-          @log = Logger.new(options[:logfile])
-          @log.level = @cmd_args[:loglevel] #returns WARN if -L is not set
+        #Logs a message of type +level+. The message will be formatted
+        #according to the exception's information and if the log
+        #level has been set to DEBUG, a backtrace will be logged.
+        #Possible log levels include :debug, :info, :warn, :error, :fatal.
+        #Do not use :fatal, it's for internal use.
+        def log_exception(exception, level = :error)
+          @log_mutex.synchronize do
+            @log.send(level, "#{exception.class.name}: #{exception.message}")
+            exception.backtrace.each do |trace|
+              @log.debug(trace)
+            end
+          end
         end
-        @log.datetime_format =  "%d.%m.%Y, %H:%M:%S Uhr "
-        @log.info("Started.") #OK, not 100% correct, but how to log this before the logger was created?
-      end
-      
-      def load_config
-        @log.info "Loading configuration file."
-        @config = YAML.load_file(Paths::CONFIG_FILE)
-      end
-      
-      def setup_signal_handlers
-        Signal.trap("SIGINT"){on_sigint}
-        Signal.trap("SIGTERM"){on_sigterm}
-      end
-      
-      def on_sigint
-        @log.info("Cought SIGINT, exiting...")
-        exit
-      end
-      
-      def on_sigterm
-        @log.info("Cought SIGTERM, exiting...")
-        exit
+        
+        #Generates a new and unused ID.
+        def generate_id
+          @id_generator_mutex.synchronize do
+            @last_id += 1
+          end
+        end
+        
+        private
+        
+        def parse_argv
+          @cmd_args = OptionHandler.parse(ARGV)
+          @debug_mode = @cmd_args[:debug]
+        end
+        
+        def create_logger
+          if debug_mode?
+            $stdout.sync = $stderr.sync = true
+            @log = Logger.new($stdout)
+            @log.level = Logger::DEBUG
+          elsif @cmd_args[:logfile].nil?
+            Paths::LOG_DIR.mkpath unless Paths::LOG_DIR.directory?
+            @log = Logger.new(Paths::LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
+            @log.level = @cmd_args[:loglevel] #returns WARN if -L is not set
+          else
+            @log = Logger.new(options[:logfile])
+            @log.level = @cmd_args[:loglevel] #returns WARN if -L is not set
+          end
+          @log.datetime_format =  "%d.%m.%Y %H:%M:%S "
+          @log.info("Started.") #OK, not 100% correct, but how to log this before the logger was created?
+        end
+        
+        def load_config
+          @log.info "Loading configuration file."
+          @config = YAML.load_file(Paths::CONFIG_FILE)
+        end
+        
+        def setup_signal_handlers
+          Signal.trap("SIGINT"){on_sigint}
+          Signal.trap("SIGTERM"){on_sigterm}
+        end
+        
+        def on_sigint
+          @log.info("Cought SIGINT, exiting...")
+          stop
+          exit
+        end
+        
+        def on_sigterm
+          @log.info("Cought SIGTERM, exiting...")
+          stop
+          exit
+        end
+        
       end
       
     end

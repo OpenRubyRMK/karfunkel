@@ -42,6 +42,7 @@ gem "r18n-desktop"
 gem "minitar", ">= 0.5.3"
 gem "chunky_png"
 gem "nokogiri"
+gem "eventmachine"
 
 group :development do
   gem "gosu"
