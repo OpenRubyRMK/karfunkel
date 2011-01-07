@@ -50,8 +50,8 @@ module OpenRubyRMK
     #
     #Karfunkel listens on a port specified in the config file (port 3141 by default)
     #for connections. If he detects a connection try, he waits for the potential
-    #client to send im the HELLO request (see the commands_and_responses.rdoc file)
-    #and if the client does so, Karfunkel assignes a free ID at him at sends it
+    #client to send him the +hello+ request (see the commands_and_responses.rdoc file)
+    #and if the client does so, Karfunkel assignes a free ID at him and sends it
     #to the client. If not, the connection is closed. Clients are represented by
     #the OpenRubyRMK::Karfunkel::Client class and they store the information specific
     #to a single client, for instance the client's ID.
@@ -70,19 +70,22 @@ module OpenRubyRMK
     #
     #So the whole process is like follows:
     #1. Karfunkel starts and listens on a port.
-    #2. A connection is made to that port. EventMachine instanciates an
-    #  anonymous class and mixes in the Protocol module. All events that
-    #  occur on the connection are handled by that anonymous class.
-    #3. The Protocol#post_init method instanciates a Client object and
-    #  makes Karfunkel reference it. This allows Karfunkel to keep track
-    #  of which clients do what.
-    #4. When a client sends a request, the connection's anonymous class
-    #  handles it. It will query Karfunkel or the client object as
-    #  the request requires. One or more responses are sent back over the wire.
-    #5. If a client closes the connection, the anonymous connection class
-    #  removes the references Client object from Karfunkel's list of clients.
-    #  The now unreferenced connection and it's client get eventually GC'ed.
+    #2. A connection is made to that port. EventMachine instanciates an \
+    #anonymous class and mixes in the Protocol module. All events that \
+    #occur on the connection are handled by that anonymous class.
+    #3. The Protocol#post_init method instanciates a Client object and \
+    #makes Karfunkel reference it. This allows Karfunkel to keep track \
+    #of which clients do what.
+    #4. When a client sends a request, the connection's anonymous class \
+    #handles it. It will query Karfunkel or the client object as \
+    #the request requires. One or more responses are sent back over the wire.
+    #5. If a client closes the connection, the anonymous connection class \
+    #removes the references Client object from Karfunkel's list of clients. \
+    #The now unreferenced connection and it's client get eventually GC'ed.
     #6. Karfunkel shuts down, diconnecting all remaining clients.
+    #
+    #For a reason I don't know RDoc documents the log_* methods as instance
+    #methods. Nevermind, they are module methods of the Karfunkel module.
     module Karfunkel
       
       class << self
@@ -99,35 +102,35 @@ module OpenRubyRMK
         attr_reader :port
         
         ##
-        #document-method: log_debug
+        # :method: log_debug
         #call-seq:
         #  log_debug(msg) ==> true
         #
         #Logs a DEBUG level message.
         
         ##
-        #document-method: log_info
+        # :method: log_info
         #call-seq:
         #  log_info(msg) ==> true
         #
         #Logs an INFO level message.
         
         ##
-        #document-method: log_warn
+        # :method: log_warn
         #call-seq:
         #  log_warn(msg) ==> true
         #
         #Logs a WARN level message.
         
         ##
-        #document-method: log_error
+        # :method: log_error
         #call-seq:
         #  log_error(msg) ==> true
         #
         #Logs an ERROR level message.
         
         ##
-        #document-method: log_fatal
+        # :method: log_fatal
         #call-seq:
         #  log_fatal(msg) ==> true
         #
