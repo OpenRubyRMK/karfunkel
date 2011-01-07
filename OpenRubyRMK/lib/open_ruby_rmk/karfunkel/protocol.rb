@@ -19,12 +19,12 @@ module OpenRubyRMK
       #This is the ID Karfunkel himself uses.
       KARFUNKEL_ID = 0
       
-      OK = "OK".freeze
-      FINISHED = "Finished".freeze
-      FAILED = "Failed".freeze
-      PROCESSING = "Processing".freeze
-      REJECTED = "Rejected".freeze
-      ERROR = "Error".freeze
+      OK = "ok".freeze
+      FINISHED = "finished".freeze
+      FAILED = "failed".freeze
+      PROCESSING = "processing".freeze
+      REJECTED = "rejected".freeze
+      ERROR = "error".freeze
       
       #The client that sits on the other end of the connection.
       attr_reader :client
@@ -135,7 +135,7 @@ module OpenRubyRMK
         xml = parse_command(request, true)
         request = xml.root.children[0]
         #This must be a HELLO request
-        unless request["type"] == "Hello"
+        unless request["type"] == "hello"
           raise(Errors::ConnectionFailed, "Request was not a HELLO request.")
         end
         #If we get here, the command is a valid greeting.
@@ -155,7 +155,7 @@ module OpenRubyRMK
       def greet_back
         builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
           xml.Karfunkel(:id => KARFUNKEL_ID) do
-            xml.response(:type => "Hello", :id => 0) do
+            xml.response(:type => "hello", :id => 0) do
               xml.status OK
               xml.id_ @client.id
               xml.my_version VERSION
@@ -184,7 +184,7 @@ module OpenRubyRMK
       def error(client, str)
         builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
           xml.Karfunkel(:id => KARFUNKEL_ID) do
-            xml.response(:type => "Unknown", :id => -1) do
+            xml.response(:type => "unknown", :id => -1) do
               xml.status ERROR
               xml.message str
             end
