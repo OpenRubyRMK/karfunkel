@@ -20,27 +20,17 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
+require "bundler/setup"
 require "open-uri"
 require "net/ftp"
 
-begin
-  #Try loading hanna first, it's nicer. If you don't have hanna installed,
-  #you should probably have a look at it: http://rubygems.org/gems/hanna.
-  require "hanna/rdoctask"
-rescue LoadError
-  puts "Warning: RDOc >= 2.4 may get some directives wrong!"
-  puts "I recommand hanna for documenting, everyhting's correct"
-  puts "there. For the interested: I'm talking about the :method:"
-  puts "directive in combination with :call-seq: and multiline "
-  puts "numbered lists."
-  require "rake/rdoctask"
-end
+require "rdoc/task"
 require "rake/clean"
 
 #Remote Ruby source file. Basename will be used as the local filename.
-RUBY_DOWNLOAD_FILE = "ftp://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.2-p0.tar.bz2"
+RUBY_DOWNLOAD_FILE = "ftp://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.2-p136.tar.bz2"
 #Name of the directory contained in RUBY_DOWNLOAD_FILE.
-RUBY_DOWNLOAD_DIRNAME = "ruby-1.9.2-p0"
+RUBY_DOWNLOAD_DIRNAME = "ruby-1.9.2-p136"
 #Remote Ruby package file. Basename will also be used as the local filename.
 RUBY_WIN32_DOWNLOAD_FILE = "http://rubyforge.org/frs/download.php/72160/ruby-1.9.2-p0-i386-mingw32.7z"
 #Name of the directory contained in RUBY_WIN32_DOWNLOAD_FILE.
@@ -68,10 +58,22 @@ end
 Rake::RDocTask.new do |rt|
   rt.rdoc_dir = "doc"
   rt.rdoc_files.include("lib/**/*.rb", "README.rdoc", "commands_and_responses.rdoc", "AUTHORS.rdoc", "COPYING.rdoc")
+  rt.generator = "hanna" #Ignored if not there
   rt.title = "OpenRubyRMK RDocs"
   rt.main = "README.rdoc"
 end
 
+task :rdoc do
+  print "Adding style for definition lists... "
+  File.open("doc/css/style.css", "a") do |file|
+    file.puts(<<CSS)
+dl dt {
+	font-weight: bold;
+}
+CSS
+  end
+  puts "Done."
+end
 
 desc "Creates (with download) a suitable Ruby in ruby/."
 task :get_ruby do

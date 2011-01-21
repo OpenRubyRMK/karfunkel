@@ -45,6 +45,8 @@ gem "nokogiri"
 gem "eventmachine"
 
 group :development do
+  gem "rdoc", ">= 3.4"
+  gem "hanna-nouveau"
   gem "gosu"
   gem "chingu"
   gem "ocra", :platforms => :mswin

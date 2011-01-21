@@ -70,22 +70,19 @@ module OpenRubyRMK
     #
     #So the whole process is like follows:
     #1. Karfunkel starts and listens on a port.
-    #2. A connection is made to that port. EventMachine instanciates an \
-    #anonymous class and mixes in the Protocol module. All events that \
-    #occur on the connection are handled by that anonymous class.
-    #3. The Protocol#post_init method instanciates a Client object and \
-    #makes Karfunkel reference it. This allows Karfunkel to keep track \
-    #of which clients do what.
-    #4. When a client sends a request, the connection's anonymous class \
-    #handles it. It will query Karfunkel or the client object as \
-    #the request requires. One or more responses are sent back over the wire.
-    #5. If a client closes the connection, the anonymous connection class \
-    #removes the references Client object from Karfunkel's list of clients. \
-    #The now unreferenced connection and it's client get eventually GC'ed.
+    #2. A connection is made to that port. EventMachine instanciates an
+    #   anonymous class and mixes in the Protocol module. All events that
+    #   occur on the connection are handled by that anonymous class.
+    #3. The Protocol#post_init method instanciates a Client object and
+    #   makes Karfunkel reference it. This allows Karfunkel to keep track
+    #   of which clients do what.
+    #4. When a client sends a request, the connection's anonymous class
+    #   handles it. It will query Karfunkel or the client object as
+    #   the request requires. One or more responses are sent back over the wire.
+    #5. If a client closes the connection, the anonymous connection class
+    #   removes the references Client object from Karfunkel's list of clients.
+    #   The now unreferenced connection and it's client get eventually GC'ed.
     #6. Karfunkel shuts down, diconnecting all remaining clients.
-    #
-    #For a reason I don't know RDoc documents the log_* methods as instance
-    #methods. Nevermind, they are module methods of the Karfunkel module.
     module Karfunkel
       
       class << self
@@ -102,35 +99,35 @@ module OpenRubyRMK
         attr_reader :port
         
         ##
-        # :method: log_debug
+        # :singleton-method: log_debug
         #call-seq:
         #  log_debug(msg) ==> true
         #
         #Logs a DEBUG level message.
         
         ##
-        # :method: log_info
+        # :singleton-method: log_info
         #call-seq:
         #  log_info(msg) ==> true
         #
         #Logs an INFO level message.
         
         ##
-        # :method: log_warn
+        # :singleton-method: log_warn
         #call-seq:
         #  log_warn(msg) ==> true
         #
         #Logs a WARN level message.
         
         ##
-        # :method: log_error
+        # :singleton-method: log_error
         #call-seq:
         #  log_error(msg) ==> true
         #
         #Logs an ERROR level message.
         
         ##
-        # :method: log_fatal
+        # :singleton-method: log_fatal
         #call-seq:
         #  log_fatal(msg) ==> true
         #

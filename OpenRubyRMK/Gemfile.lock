@@ -1,20 +1,25 @@
 GEM
   remote: http://rubygems.org/
   specs:
-    chingu (0.8.0.3)
+    chingu (0.8.1)
       crack
       gosu (>= 0.7.25)
       rest-client
     chunky_png (0.12.0)
     crack (0.1.8)
     eventmachine (0.12.10)
-    gosu (0.7.25)
+    gosu (0.7.26.1)
+    haml (3.0.25)
+    hanna-nouveau (0.2.2)
+      haml
+      rdoc
     mime-types (1.16)
     minitar (0.5.3)
     nokogiri (1.4.4)
     r18n-core (0.4.8)
     r18n-desktop (0.4.8)
       r18n-core (= 0.4.8)
+    rdoc (3.4)
     rest-client (1.6.1)
       mime-types (>= 1.16)
     wxruby-ruby19 (2.0.1)
@@ -27,8 +32,10 @@ DEPENDENCIES
   chunky_png
   eventmachine
   gosu
+  hanna-nouveau
   minitar (>= 0.5.3)
   nokogiri
   ocra
   r18n-desktop
+  rdoc (>= 3.4)
   wxruby-ruby19 (>= 2.0.0)
