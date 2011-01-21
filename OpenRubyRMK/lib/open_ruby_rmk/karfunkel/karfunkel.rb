@@ -92,8 +92,9 @@ module OpenRubyRMK
         attr_reader :clients
         #An array of all currently loaded projects.
         attr_reader :projects
-        attr_reader :cmd_args
-        #The parsed content of the configuration file.
+        #The overall options affecting Karfunkel's behaviour. This is a
+        #hash merged from the configuration file and the command-line
+        #arguments, where the latter override the former.
         attr_reader :config
         #The port Karfunkel listens at.
         attr_reader :port
@@ -142,12 +143,13 @@ module OpenRubyRMK
           @log_mutex = Mutex.new #The log is a shared resource.
           @id_generator_mutex = Mutex.new #The ID generator as well.
           
+          @config = {}
           parse_argv
-          create_logger
           load_config
+          create_logger
           setup_signal_handlers
           
-          @port = @config["port"]
+          @port = @config[:port]
           
           @log.info("A new story may begin now. Karfunkel waits with PID #{$$} on port #{@port} for you...")
           EventMachine.start_server("localhost", @port, Protocol)
@@ -169,7 +171,7 @@ module OpenRubyRMK
         
         #true if Karfunkel is running in debug mode.
         def debug_mode?
-          @debug_mode
+          @config[:debug]
         end
         
         #true if any project is currently loaded.
@@ -215,8 +217,7 @@ module OpenRubyRMK
         private
         
         def parse_argv
-          @cmd_args = OptionHandler.parse(ARGV)
-          @debug_mode = @cmd_args[:debug]
+          @config = OptionHandler.parse(ARGV)
         end
         
         def create_logger
@@ -224,21 +225,38 @@ module OpenRubyRMK
             $stdout.sync = $stderr.sync = true
             @log = Logger.new($stdout)
             @log.level = Logger::DEBUG
-          elsif @cmd_args[:logfile].nil?
+            @config[:logdir] = nil #Makes no sense otherwise
+          elsif @config[:stdout]
+            @log = Logger.new($stdout)
+            @config[:logdir] = nil #Makes no sense otherwise
+          elsif @config[:logdir] == "auto"
             Paths::LOG_DIR.mkpath unless Paths::LOG_DIR.directory?
+            @config[:logdir] = Paths::LOG_DIR
             @log = Logger.new(Paths::LOG_DIR + "OpenRubyRMK.log", 5, 1048576) #1 MiB
-            @log.level = @cmd_args[:loglevel] #returns WARN if -L is not set
+            @log.level = @config[:loglevel]
           else
-            @log = Logger.new(options[:logfile])
-            @log.level = @cmd_args[:loglevel] #returns WARN if -L is not set
+            @config[:logdir] = Pathname.new(@config[:logdir])
+            @config[:logdir].mkpath unless @config[:logdir]
+            @log = Logger.new(@config[:logdir] + "OpenRubyRMK.log", 5, 1048576) #1 MiB
+            @log.level = @config[:loglevel]
           end
           @log.datetime_format =  "%d.%m.%Y %H:%M:%S "
           @log.info("Started.") #OK, not 100% correct, but how to log this before the logger was created?
+          if debug_mode?
+            @log.warn("Running in DEBUG mode!")
+            sleep 1 #Give time to read the above
+            @log.debug("The configuration is as follows:")
+            @config.each_pair{|k, v| @log.debug("#{k} => #{v}")}
+          end
         end
         
         def load_config
-          @log.info "Loading configuration file."
-          @config = YAML.load_file(Paths::CONFIG_FILE)
+          cfg = @config[:configfile] ? YAML.load_file(@config[:configfile]) : YAML.load_file(Paths::CONFIG_FILE)
+          #Turn the keys to symbols
+          cfg = Hash[cfg.map{|k, v| [k.to_sym, v]}]
+          #Merge the config file's options into those given via the command-line,
+          #but ensure that the command-line options are always preferred.
+          @config.merge!(cfg){|key, old_val, new_val| old_val}
         end
         
         def setup_signal_handlers

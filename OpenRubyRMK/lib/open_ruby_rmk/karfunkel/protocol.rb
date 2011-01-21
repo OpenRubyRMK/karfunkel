@@ -43,7 +43,7 @@ module OpenRubyRMK
         @received_data = ""
         #If the client doesn't authenticate within 5 seconds, disband
         #him.
-        EventMachine.add_timer(5) do
+        EventMachine.add_timer(Karfunkel.config[:greet_timeout]) do
           if @client.available? and !@client.authenticated?
             Karfunkel.log_warn("Connection timeout for #{@client}.")
             terminate!

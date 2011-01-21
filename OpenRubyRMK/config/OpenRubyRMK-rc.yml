@@ -9,6 +9,10 @@
 #Just for clarity, a Boolean option such as "maximize" only 
 #takes accepts "true" or "false" (without the quotes) as valid. 
 #Other values may cause unexpected behaviour. 
+#
+#Some of the values specified here can be overriden using 
+#command-line arguments. See `karfunkel --help` for a summary 
+#of what can be passed as command-line arguments. 
 ###########################################
 
 --- 
@@ -43,3 +47,24 @@ port: 3141
 #  greet_timeout: 10
 #Default value: 5
 greet_timeout: 5
+#This is the directory where Karfunkel puts it's logfiles into. 
+#It defaults to a log/ subdirectory in the OpenRubyRMK's bin/ 
+#directory. The logfile name is always OpenRubyRMK.log or 
+#something similar as logfiles are rotated on 1 MiB. 
+#Examples: 
+#  logdir: /home/freak/logs/
+#  logdir: C:\logs\
+#Default value: auto
+logdir: auto
+#Here you can adjust how verbose Karfunkel is. The possible 
+#logging levels are: 
+#0 - Debug. Do not use.
+#1 - Info. Logs much information on what's going on.
+#2 - Warn. This is the default; logs only warnings and errors.
+#3 - Error. Log only errors.
+#4 - Fatal. Log only errors that cause OpenRubyRMK to crash.
+#5 - Unknown. Suppresses any logging. Shouldn't be used.
+#Example:
+#  loglevel: 3
+#Default value: 2
+loglevel: 2

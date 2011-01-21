@@ -40,23 +40,24 @@ module OpenRubyRMK
         #Returns a hash that states how the passed options have been understood.
         #This is the same hash as returned by ::options.
         def parse(args)
-          #Default values
+          #Default values for those options that can be
+          #specified SOLELY through command-line arguments and
+          #CANNOT be changed via the configuration file.
           @options = {
-            :debug => false,
-            :verbose => false,
-            :logfile => nil,
-            :loglevel => 2 #WARN
+            :debug => false
           }
           
           options = OptionParser.new do |opts|
             opts.banner = banner
             
+            opts.on("-c", "--configfile FILE", "Uses FILE as the configuration file."){|file| on_configfile(file)}
             opts.on("-d", "--[no-]debug", "Show debugging information on run."){|bool| on_debug(bool)}
             opts.on("-h", "--help", "Display this help message and exit."){on_help(opts)}
-            opts.on("-l", "--logfile [FILE]", "Log messages to FILE or $stdout if ommited."){|file| on_logfile(file)}
+            opts.on("-l", "--logdir DIR", "Log messages to files in DIR."){|dir| on_logdir(dir)}
             opts.on("-L", "--loglevel LEVEL", Integer, "Set the logging level to LEVEL."){|level| on_loglevel(level)}
+            opts.on("-s", "--stdout", "Logs to STDOUT. Cannot be used with -l."){on_stdout}
             opts.on("-v", "--version", "Print version and exit."){on_version}
-            opts.on("-V", "--[no-]verbose", "Show additional information on run."){|bool| on_verbose(bool)}
+            opts.on("-V", "--[no-]verbose", "Show additional information on run.", "  Shortcut for -L1."){|bool| on_verbose(bool)}
           end
           
           options.parse!(args)
@@ -85,9 +86,16 @@ module OpenRubyRMK
           OpenRubyRMK is a free and open-source RPG creation program. If you find any
           bugs, please let us know via the mail address openrubyrmk@googlemail.com.
           Below is a summary of possible command-line options, but please note that
-          the -l and -L options don't have any effect when -d is passed. It is
-          not possible to combine the short options into someting like -lV as the
-          tar command allows. You have to pass them separately, for instance as -l -V.
+          the -s, -l, and -L options don't have any effect when -d is passed. It is
+          not possible to combine the short options into someting like -sV as the
+          tar command allows. You have to pass them separately, for instance as -s -V.
+          
+          Note there is also a configuration file where you can put most of the
+          things you can specify via the command-line into to make them persistent.
+          The default config file for Karfunkel is
+          <OpenRubyRMKDir>/config/OpenRubyRMK-rc.yml
+          and if the values set in it conflicht with what you specify on the
+          command-line, the command-line arguments are preferred.
   
           The possible logging levels for the -L option are:
           0 - Debug. Do not use.
@@ -99,18 +107,28 @@ module OpenRubyRMK
   
           EXAMPLES
           Show additional information on the console while running
-          OpenRubyRMK.rb -l -V
+          OpenRubyRMK.rb -s -V
           Same as above
-          OpenRubyRMK.rb -l -L1
+          OpenRubyRMK.rb -s -L1
           Log only fatal errors
           OpenRubyRMK.rb --loglevel=4
-          Log only fatal errors, change the log file
-          OpenRubyRMK.rb -l /home/freak/mylog.log -L4
+          Log only fatal errors, change the log dir
+          OpenRubyRMK.rb -l /home/freak/logs/ -L4
           Same as above
-          OpenRubyRMK.rb --logfile=/home/freak/mylog.log --loglevel=4
+          OpenRubyRMK.rb --logdir=/home/freak/logs/ --loglevel=4
+          Use another configuration file
+          OpenRubyRMK.rb -c /home/freak/myconfig.yml
   
           OPTIONS
           EOF
+        end
+        
+        def on_stdout
+          @options[:stdout] = true
+        end
+        
+        def on_configfile(file)
+          @options[:configfile] = file
         end
         
         def on_verbose(bool)
@@ -126,8 +144,8 @@ module OpenRubyRMK
           exit
         end
         
-        def on_logfile(file)
-          @options[:logfile] = file.nil? ? $stdout : file
+        def on_logdir(dir)
+          @options[:logdir] = dir
         end
         
         def on_loglevel(level)
