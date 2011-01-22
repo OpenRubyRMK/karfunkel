@@ -20,10 +20,14 @@ module OpenRubyRMK
       #This is set *manually* and does *not* check the
       #actual state of the connection.
       attr_accessor :available
+      #The requests that are outstanding for this client.
+      attr_accessor :requests
       #The client's IP address.
       attr_reader :ip
       #The port the client uses for the connection.
       attr_reader :port
+      #The connection this client is tied to.
+      attr_reader :connection
       
       #Creates a new Client instance. Pass in the connection the
       #client uses.
@@ -31,6 +35,7 @@ module OpenRubyRMK
         @connection = connection
         @authenticated = false
         @available = true
+        @requests = []
         if peer = @connection.get_peername
           @port, @ip = Socket.unpack_sockaddr_in(peer)
         else

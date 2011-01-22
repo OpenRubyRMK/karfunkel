@@ -2,7 +2,7 @@
 
 This file describes the (XML) commands that can be send to an OpenRubyRMK server and how Karfunkel, the server, responds to them. As a general convention throughout this file, I use the hash sign # to denote comments. These are *not* valid XML, so do not use them inside your requests. If you want to embed a comment into your request (for whatever reason), use the normal XML comment syntax <tt><!-- YOUR_COMMENT_HERE --></tt>.
 
-Please also note that Karfunkel acts case-sensitive, i.e. a "HELLO" request is not the same as a "hello" request, Karfunkel will only accept the latter one. For use in text the uppercase variant to distinguish it from a normal words is not a problem, but if possible you should use teletyped notation for that purpose, i.e. +hello+.
+Please also note that Karfunkel acts case-sensitive, i.e. a "HELLO" request is not the same as a "Hello" request, Karfunkel will only accept the latter one. For use in text the uppercase variant to distinguish it from a normal words is not a problem, but if possible you should use teletyped notation for that purpose, i.e. +hello+.
 
 ==Vocabulary
 

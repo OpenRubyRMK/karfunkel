@@ -16,8 +16,6 @@ module OpenRubyRMK
       
       #This is the byte that terminates each request.
       END_OF_COMMAND = "\0".freeze
-      #This is the ID Karfunkel himself uses.
-      KARFUNKEL_ID = 0
       
       OK = "ok".freeze
       FINISHED = "finished".freeze
@@ -101,17 +99,19 @@ module OpenRubyRMK
             type = request_node['type']
             id = request_node["id"]
             
-            #The requests are assumed to be methods of this module.
+            #The requests are assumed to be classes of the Requests module.
             #In a specific format of course, otherwise somebody could
-            #try to send an instance_eval request or something bad like that.
-            sym = :"process_#{type}_request"
-            if respond_to?(sym, true) #The request methods are private
+            #try to send a Kernel request or something bad like that.
+            sym = :"#{type}Request"
+            if Requests.const_defined?(sym)
               Karfunkel.log_debug("[#{@client}] Request: #{type}")
               #Transform the XML request into a parameters hash, i.e. each
               #child node is interpreted as a hash key and the node's text is
               #assigned as the value.
-              hsh = request_node.children.inject({}){|h, node| h[node.name] = node.text}
-              send(sym, id, hsh)
+              hsh = request_node.children.inject({}){|h, node| h[node.name] = node.text; h}
+              
+              @client.requests << Requests.const_get(sym).new(@client, id, hsh)
+              @client.requests.last.start
             else
               Karfunkel.log_warn("[#{@client}] Invalid request #{type}")
               reject(client, type, id, "Unknown request type.")
@@ -135,7 +135,7 @@ module OpenRubyRMK
         xml = parse_command(request, true)
         request = xml.root.children[0]
         #This must be a HELLO request
-        unless request["type"] == "hello"
+        unless request["type"] == "Hello"
           raise(Errors::ConnectionFailed, "Request was not a HELLO request.")
         end
         #If we get here, the command is a valid greeting.
@@ -154,8 +154,8 @@ module OpenRubyRMK
       #Karfunkel's positive answer to a HELLO request.
       def greet_back
         builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-          xml.Karfunkel(:id => KARFUNKEL_ID) do
-            xml.response(:type => "hello", :id => 0) do
+          xml.Karfunkel(:id => Karfunkel::ID) do
+            xml.response(:type => "Hello", :id => 0) do
               xml.status OK
               xml.id_ @client.id
               xml.my_version VERSION
@@ -170,7 +170,7 @@ module OpenRubyRMK
       #Sends a response of type +Rejected+.
       def reject(client, command_type, command_id, reason)
         builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-          xml.Karfunkel(:id => KARFUNKEL_ID) do
+          xml.Karfunkel(:id => Karfunkel::ID) do
             xml.response(:type => command_type, :id => command_id) do
               xml.status REJECTED
               xml.reason reason
@@ -183,7 +183,7 @@ module OpenRubyRMK
       #Sends an error response.
       def error(client, str)
         builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-          xml.Karfunkel(:id => KARFUNKEL_ID) do
+          xml.Karfunkel(:id => Karfunkel::ID) do
             xml.response(:type => "unknown", :id => -1) do
               xml.status ERROR
               xml.message str
@@ -201,7 +201,7 @@ module OpenRubyRMK
         #text nodes with whitespace only.
         xml = Nokogiri::XML(str, nil, nil, Nokogiri::XML::ParseOptions::STRICT | Nokogiri::XML::ParseOptions::NOBLANKS)
         raise(Errors::MalformedCommand, "Root node is not 'Karfunkel'.") unless xml.root.name == "Karfunkel"
-        raise(Errors::MalformedCommand, "No or invalid client ID given.") if !dont_check_id and xml.root["id"] == KARFUNKEL_ID.to_s
+        raise(Errors::MalformedCommand, "No or invalid client ID given.") if !dont_check_id and xml.root["id"] == Karfunkel::ID.to_s
         return xml
       rescue Nokogiri::XML::SyntaxError
         raise(Errors::MalformedCommand, "Malformed XML document.")

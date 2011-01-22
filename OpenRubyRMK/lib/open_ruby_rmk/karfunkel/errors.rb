@@ -38,6 +38,9 @@ module OpenRubyRMK
     class MalformedCommand < OpenRubyRMKError
     end
     
+    class InvalidParameter < MalformedCommand
+    end
+    
     class ConnectionFailed < OpenRubyRMKError
     end
     

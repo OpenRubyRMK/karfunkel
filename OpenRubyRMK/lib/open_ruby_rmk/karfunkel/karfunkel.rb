@@ -42,6 +42,8 @@ require_relative "./errors"
 require_relative "./option_handler"
 require_relative "./client"
 require_relative "./protocol"
+require_relative "./requests/request"
+require_relative "./requests/open_project_request"
 
 module OpenRubyRMK
   
@@ -95,6 +97,9 @@ module OpenRubyRMK
     #   The now unreferenced connection and it's client get eventually GC'ed.
     #6. Karfunkel shuts down, diconnecting all remaining clients.
     module Karfunkel
+      
+      #This is the ID Karfunkel himself uses.
+      ID = 0
       
       class << self
         
