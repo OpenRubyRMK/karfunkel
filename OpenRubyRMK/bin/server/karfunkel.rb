@@ -32,9 +32,11 @@ require "pathname"
 require "rbconfig"
 require "tempfile"
 require "logger"
+require "zlib"
 require "nokogiri"
 require "chunky_png" #Chunky bacon?!
 require "eventmachine"
+require "archive/tar/minitar"
 
 #Now require Karfunkel himself
 require_relative "../../lib/open_ruby_rmk/karfunkel/karfunkel"

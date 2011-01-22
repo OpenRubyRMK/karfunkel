@@ -64,7 +64,7 @@ module OpenRubyRMK
       #information about the path a single project uses.
       attr_reader :paths
       #The state of a loading project. A hash of form
-      #  {:map_extraction => percent_done, :char_extraction => percent_done}
+      #  {:mapset_extraction => percent_done, :char_extraction => percent_done}
       attr_reader :loading
       
       def initialize
@@ -83,47 +83,43 @@ module OpenRubyRMK
             @temp_dir.rmtree
           end
           
-          #Set the new project path
+          #Set the new project path.
           #project_file is something like "/path/to/project/bin/project.rmk"
           @paths = ProjectPaths.new(project_file, @temp_dir)
           #This is the name of the project we're now working on
           @name = project_file.basename.to_s.match(/\.rmk$/).pre_match
           
-          #Extract mapsets and characters
-          @loading = {:map_extraction => 0, :char_extraction => 0}
-          #Spawn two processes for extracting and monitor what they're doing.
-          #The treads are here, because I need to access the @loading hash
-          #during load time without the need of a server.
-          #And Ruby 1.9's threads rock! Not as good as processes, but we're
-          #getting closer!
+          #Extract mapsets and characters. This hash is a shared
+          #resource, but since every thread updates another part of
+          #it, there's no mutex needed.
+          @loading = {:mapset_extraction => 0, :char_extraction => 0}
+          
+          #Extract the mapsets.
           Thread.new do
-            r, w = IO.pipe #Works also on Windows ;-)
-            spawn(
-            Paths::RUBY,
-            Paths::EXTRA_PROCESSES_DIR.join("mapset_extractor_client.rb").to_s,
-            @paths.mapsets_dir,
-            @paths.temp_mapsets_dir,
-            out: w.fileno
-            )
-            while i = r.readline.chomp.to_i
-              @loading[:map_extraction] = i
-              break if i >= 100
+            files = @paths.mapset_dir.glob("**/*.tgz")
+            num = files.count
+            files.each_with_index do |filename, index|
+              temp_filename = @paths.temp_mapsets_dir + filename.relative_path_from(@paths.mapsets_dir)
+              gz = Zlib::GzipReader.open(filename)
+              Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
+              #Show the % done
+              @loading[:mapset_extraction] = (index + 1 / num).to_f * 100
             end
           end
+          
+          #Extract the characters.
           Thread.new do
-            r, w = IO.pipe
-            spawn(
-            Paths::RUBY,
-            Paths::EXTRA_PROCESSES_DIR.join("char_extractor_client.rb").to_s,
-            @paths.characters_dir,
-            @paths.temp_characters_dir,
-            out: w.fileno
-            )
-            while i = r.readline.chomp.to_i
-              @loading[:char_extraction] = i
-              break if i >= 100
-            end #while
-          end #Thread.new
+            files = @paths.characters_dir.glob("**/*.tgz")
+            num = files.count
+            files.each_with_index do |filename, index|
+              temp_filename = @paths.temp_characters_dir + filename.relative_path_from(@paths.characters_dir)
+              gz = Zlib::GzipReader.open(filename)
+              Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
+              #Show % done
+              @loading[:char_extraction] = (index + 1 / num).to_f * 100
+            end
+          end
+                    
         end #instance_eval
         obj
       end #self.load

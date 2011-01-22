@@ -20,6 +20,17 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
+#Additions to Ruby's Pathname class.
+class Pathname
+  
+  #Dir.glob with Pathname objects. +str+ can be a Pathname,
+  #but needs not to.
+  def glob(str)
+    Dir.glob(self.join(*str.to_s.split(/\/\\/))).map{|g| Pathname.new(g)}
+  end
+  
+end
+
 #Require the lib
 #require_relative "./karfunkel/project"
 require_relative "../paths"
