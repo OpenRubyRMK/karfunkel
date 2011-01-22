@@ -28,8 +28,11 @@ module OpenRubyRMK
       #
       #Those requests that take long to complete should notify the client
       #from time to time via a +processing+ response and finally with a
-      #+finished+ response when completed. Use threads and/or processes to
-      #achieve parallel exution of your code.
+      #+finished+ response when completed. Use EventMachine's +add_timer+ and
+      #+add_periodic_timer+ methods in combination with EventMachine.defer to
+      #make your processing executing in parallel. If you do not want to use
+      #EventMachine.defer for some reason (e.g. you already create threads
+      #inside a library method), use normal threads or processes. This is fine.
       class Request
         
         #Creates a new Request object for the specified Client with the given
