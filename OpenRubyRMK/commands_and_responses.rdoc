@@ -1,26 +1,45 @@
 =Commands and responses
 
-This file describes the (XML) commands that can be send to an OpenRubyRMK server and how Karfunkel, the server, responds to them. As a general convention throughout this file, I use the hash sign # to denote comments. These are *not* valid XML, so do not use them inside your requests. If you want to embed a comment into your request (for whatever reason), use the normal XML comment syntax <tt><!-- YOUR_COMMENT_HERE --></tt>.
+This file describes the (XML) commands that can be send to an OpenRubyRMK
+server and how Karfunkel, the server, responds to them. As a general convention
+throughout this file, I use the hash sign # to denote comments. These are *not*
+valid XML, so do not use them inside your requests. If you want to embed a
+comment into your request (for whatever reason), use the normal XML comment
+syntax <tt><!-- YOUR_COMMENT_HERE --></tt>.
 
-Please also note that Karfunkel acts case-sensitive, i.e. a "HELLO" request is not the same as a "Hello" request, Karfunkel will only accept the latter one. For use in text the uppercase variant to distinguish it from a normal words is not a problem, but if possible you should use teletyped notation for that purpose, i.e. +hello+.
+Please also note that Karfunkel acts case-sensitive, i.e. a "HELLO" request is
+not the same as a "Hello" request, Karfunkel will only accept the latter one.
+For use in text the uppercase variant to distinguish it from a normal words is
+not a problem, but if possible you should use teletyped notation for that
+purpose, i.e. +Hello+.
 
 ==Vocabulary
 
 [Karfunkel] OpenRubyRMK's server.
-[Command] The whole bunch of XML sent and received to, by and from Karfunkel at one time.
-[Request] The part of a command that indicates what you want Karfunkel to do.
-[Response] Karfunkel's opinion and reports about your requests. This is also part of a command.
+[Command]   The whole bunch of XML sent and received to, by and from Karfunkel
+            at one time.
+[Request]   The part of a command that indicates what you want Karfunkel to do.
+[Response]  Karfunkel's opinion and reports about your requests. This is also
+            part of a command.
 
 ==How to connect
 
-1. First, you need to have a connection to Karfunkel, which shouldn't be that hard to get, just connect to the port where you run Karfunkel (it's port 3141 by default).
-2. When this is done, Karfunkel waits for your application to greet him and wont respond until you did (he's quite perticular about this). Send him the <tt>hello</tt> command (described below) and wait. If you don't greet him within a few seconds, he'll just cut your connection and go away.
-3. If Karfunkel hadn't had a bad day, he will notice your efforts and respond accordingly. Gather the important things from the response and you're done.
+1. First, you need to have a connection to Karfunkel, which shouldn't be that
+   hard to get, just connect to the port where you run Karfunkel (it's port
+   3141 by default).
+2. When this is done, Karfunkel waits for your application to greet him and
+   wont respond until you did (he's quite perticular about this). Send him the
+   <tt>hello</tt> command (described below) and wait. If you don't greet him
+   within a few seconds, he'll just cut your connection and go away.
+3. If Karfunkel hadn't had a bad day, he will notice your efforts and respond
+   accordingly. Gather the important things from the response and you're done.
 4. Send whatever command you want.
 
 ==Basic structure of a command
 
-This is the basic structure of a request you send to Karfunkel (exception is the +hello+ request which misses the <id> tag at the toplevel as you don't have an ID at that moment):
+This is the basic structure of a request you send to Karfunkel (exception is
+the +hello+ request which misses the <id> tag at the toplevel as you don't
+have an ID at that moment):
 
   <?xml version="1.0" encoding="UTF-8"?> #XML definition
   <Karfunkel id="6"> #This is the root. It's ALWAYS <Karfunkel>. Capitalized. ID is the ID you get from Karfunkel via a HELLO request.
@@ -36,11 +55,12 @@ This is the basic structure of a request you send to Karfunkel (exception is the
     #use a request ID multiple times.
   </Karfunkel>
 
-Whenever you send a request to Karfunkel, he responds in some way. His responses always have the following structure:
+Whenever you send a request to Karfunkel, he responds in some way. His responses
+always have the following structure:
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="0"> #As always. This is the root. 0 is Karfunkel's own ID.
-    <response type="open_project" id="12"> #The request type you wanted Karfunkel to process and the command ID you sent along with your request.
+    <response type="OpenProject" id="12"> #The request type you wanted Karfunkel to process and the command ID you sent along with your request.
       <status>Finished</status> #The status of your request. Further down you'll find a list of possible stati.
       #A response's body differs from response to response. Look into each
       #response's documentation
@@ -50,27 +70,46 @@ Whenever you send a request to Karfunkel, he responds in some way. His responses
 
 These are the possible stati your request can get assigned:
 
-[ok] Generic respone for requests that don't need much processing, notably informational ones.
-[finished] Your request has been executed and finished sucessfully.
-[failed] For whatever reason, Karfunkel was willing, but not able to process your request.
-[processing] The request is being processed at the moment. Stay tuned, you may get a +finished+ response soon!
-[rejected] No good. Whatever you wanted Karfunkel to do, he won't do it. Normally he's smart enough to tell you why he didn't like your request.
+[ok]         Generic respone for requests that don't need much processing,
+             notably informational ones.
+[finished]   Your request has been executed and finished sucessfully.
+[failed]     For whatever reason, Karfunkel was willing, but not able to
+             process your request.
+[processing] The request is being processed at the moment. Stay tuned, you may
+             get a +finished+ response soon!
+[rejected]   No good. Whatever you wanted Karfunkel to do, he won't do it.
+             Normally he's smart enough to tell you why he didn't like your
+             request.
 
-Especially in the case of long-running operations, a request can cause multiple responses from Karfunkel. For example, opening a project causes Karfunkel to immediately send a +processing+ response with the ID of your request. After some time, when the project has fully been loaded, he will contact you again, sending you the +finished+ response with the same ID as the previous +processing+ response (which is in turn the same ID you assigned to your request).
+Especially in the case of long-running operations, a request can cause multiple
+responses from Karfunkel. For example, opening a project causes Karfunkel to
+immediately send a +processing+ response with the ID of your request. After
+some time, when the project has fully been loaded, he will contact you again,
+sending you the +finished+ response with the same ID as the previous
++processing+ response (which is in turn the same ID you assigned to your
+request).
 
-There's one special response that you can get: The +error+ response. This is sent by Karfunkel if he didn't unterstand anything of what you said, i.e. your command contained massive syntactical errors or the like. As Karfunkel wasn't able to detect command type and ID, he puts +unknown+ for the command type and -1 for the ID. If you send proper commands over a proper network connection, you shouldn't get this response.
+There's one special response that you can get: The +error+ response. This is
+sent by Karfunkel if he didn't unterstand anything of what you said, i.e. your
+command contained massive syntactical errors or the like. As Karfunkel wasn't
+able to detect command type and ID, he puts +unknown+ for the command type and
+-1 for the ID. If you send proper commands over a proper network connection,
+you shouldn't get this response.
 
 ==Commands that can be sent
 
-Following is a list of commands that can be sent to Karfunkel after the connection has been established (except of the +hello+ command, which establishes the connection).
+Following is a list of commands that can be sent to Karfunkel after the
+connection has been established (except of the +hello+ command, which
+establishes the connection).
 
 ===Hello
 
-Establishes a connection. Send this command immediately after you have connected to Karfunkel.
+Establishes a connection. Send this command immediately after you have
+connected to Karfunkel.
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel> #Don't put the ID attribute here--you don't have an ID yet!
-    <request type="hello" id="0"> #The HELLO request always has the ID 0.
+    <request type="Hello" id="0"> #The HELLO request always has the ID 0.
       <os>YOUR_OPERTING_SYSTEM_HERE</os>  #Karfunkel wants to know this for compatibility reasons
     </request>
   </Karfunkel>
@@ -81,7 +120,7 @@ Establishes a connection. Send this command immediately after you have connected
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="0">
-    <response type="hello" id="0"> #The request ID is still 0
+    <response type="Hello" id="0"> #The request ID is still 0
       <status>OK</status>
       <id>YOUR_CLIENT_ID</id> #Your client's ID from now on.
       <my_version>KARFUNKEL'S_VERSION</my_version> #Version number of Karfunkel
@@ -94,7 +133,7 @@ Establishes a connection. Send this command immediately after you have connected
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="0">
-    <response type="hello" id="0">
+    <response type="Hello" id="0">
       <status>Rejected</status>
       <reason>REASON_WHY_YOU_WERE_REJECTED</reason>
     </response>
