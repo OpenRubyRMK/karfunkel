@@ -66,6 +66,8 @@ module OpenRubyRMK
       #The state of a loading project. A hash of form
       #  {:mapset_extraction => percent_done, :char_extraction => percent_done}
       attr_reader :loading
+      #The name of the project, obtained from the project file's name.
+      attr_reader :name
       
       def initialize
         #TODO
@@ -76,6 +78,7 @@ module OpenRubyRMK
       #This method immediately returns, to check wheather the project is
       #already in a usable state, use #loaded?.
       def self.load(project_file)
+        project_file = Pathname.new(project_file)
         obj = allocate
         obj.instance_eval do
           @temp_dir = Pathname.new(Dir.mktmpdir("OpenRubyRMK"))
@@ -96,7 +99,7 @@ module OpenRubyRMK
           
           #Extract the mapsets.
           Thread.new do
-            files = @paths.mapset_dir.glob("**/*.tgz")
+            files = @paths.mapsets_dir.glob("**/*.tgz")
             num = files.count
             files.each_with_index do |filename, index|
               temp_filename = @paths.temp_mapsets_dir + filename.relative_path_from(@paths.mapsets_dir)

@@ -32,7 +32,7 @@ class Pathname
 end
 
 #Require the lib
-#require_relative "./karfunkel/project"
+require_relative "./project"
 require_relative "../paths"
 require_relative "./errors"
 #require_relative "./map"
@@ -166,6 +166,7 @@ module OpenRubyRMK
           setup_signal_handlers
           
           @port = @config[:port]
+          Thread.abort_on_exception = true if debug_mode?
           
           @log.info("A new story may begin now. Karfunkel waits with PID #{$$} on port #{@port} for you...")
           EventMachine.start_server("localhost", @port, Protocol)
@@ -241,10 +242,11 @@ module OpenRubyRMK
             $stdout.sync = $stderr.sync = true
             @log = Logger.new($stdout)
             @log.level = Logger::DEBUG
-            @config[:logdir] = nil #Makes no sense otherwise
+            @config[:logdir] = "(none)" #Makes no sense otherwise
+            @config[:loglevel] = 0 #Makes no sense otherwise
           elsif @config[:stdout]
             @log = Logger.new($stdout)
-            @config[:logdir] = nil #Makes no sense otherwise
+            @config[:logdir] = "(none)" #Makes no sense otherwise
           elsif @config[:logdir] == "auto"
             Paths::LOG_DIR.mkpath unless Paths::LOG_DIR.directory?
             @config[:logdir] = Paths::LOG_DIR
@@ -262,7 +264,7 @@ module OpenRubyRMK
             @log.warn("Running in DEBUG mode!")
             sleep 1 #Give time to read the above
             @log.debug("The configuration is as follows:")
-            @config.each_pair{|k, v| @log.debug("#{k} => #{v}")}
+            @config.each_pair{|k, v| @log.debug("-| #{k} => #{v}")}
           end
         end
         
