@@ -10,7 +10,22 @@ module OpenRubyRMK
       class OpenProjectRequest < Request
         
         def start
-          send_data("Du bist doof.\0")
+          @project = Project.load(@parameters["file"])
+          Karfunkel.log_info("Loading project '#{@project.name}'.")
+          Karfunkel.projects << @project
+          processing(mapset_extraction: 0, charset_extraction: 0)
+          
+          timer = EventMachine.add_periodic_timer(2) do
+            unless @project.loaded?
+              processing(@project.loading)
+            else
+              Karfunkel.log_info("Finished loading project '#{@project.name}'.")
+              finished
+              #Cleanup
+              @client.requests.delete(self)
+              timer.cancel
+            end
+          end
         end
         
         private
