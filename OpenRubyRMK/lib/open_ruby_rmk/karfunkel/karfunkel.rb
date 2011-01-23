@@ -35,15 +35,16 @@ end
 require_relative "./project"
 require_relative "../paths"
 require_relative "./errors"
-#require_relative "./map"
-#require_relative "./mapset"
-#require_relative "./map_field"
-#require_relative "./character"
+require_relative "./map"
+require_relative "./mapset"
+require_relative "./map_field"
+require_relative "./character"
 require_relative "./option_handler"
 require_relative "./client"
 require_relative "./protocol"
 require_relative "./requests/request"
 require_relative "./requests/open_project_request"
+require_relative "./requests/eval_request"
 
 module OpenRubyRMK
   
@@ -114,7 +115,9 @@ module OpenRubyRMK
         attr_reader :config
         #The port Karfunkel listens at.
         attr_reader :port
-        
+        #The currently selected project or +nil+ if no project has been
+        #selected yet.
+        attr_reader :selected_project
         ##
         # :singleton-method: log_debug
         #call-seq:
@@ -155,6 +158,7 @@ module OpenRubyRMK
           raise(RuntimError, "Karfunkel is already running!") if @running
           @clients = []
           @projects = []
+          @selected_project = nil
           @last_id = 0
           @log_mutex = Mutex.new #The log is a shared resource.
           @id_generator_mutex = Mutex.new #The ID generator as well.

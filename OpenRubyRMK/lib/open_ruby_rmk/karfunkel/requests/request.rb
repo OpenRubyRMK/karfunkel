@@ -138,6 +138,20 @@ module OpenRubyRMK
           send_data(builder.to_xml + Protocol::END_OF_COMMAND)
         end
         
+        #Shortcut for sending an +ok+ response. Pass in a hash of
+        #key-value pairs that shall be presented to the client.
+        def ok(hsh)
+          builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
+            xml.Karfunkel(:id => Karfunkel::ID) do
+              xml.response(:type => self.to_s, :id => @request_id) do
+                xml.status Protocol::OK
+                hsh.each_pair{|k, v| xml.send(k, v)}
+              end
+            end
+          end
+          send_data(builder.to_xml + Protocol::END_OF_COMMAND)
+        end
+        
         #Sends data to the client that made the request. +str+ should be a
         #valid command. You can use Nokogiri::Builder to make up your commands.
         #Also have a look at the #reject method's sourcecode to learn how to

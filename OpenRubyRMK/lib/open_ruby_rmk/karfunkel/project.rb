@@ -69,6 +69,9 @@ module OpenRubyRMK
       #The name of the project, obtained from the project file's name.
       attr_reader :name
       
+      attr_reader :maps
+      attr_reader :mapsets
+      
       def initialize
         #TODO
       end
@@ -91,6 +94,11 @@ module OpenRubyRMK
           @paths = ProjectPaths.new(project_file, @temp_dir)
           #This is the name of the project we're now working on
           @name = project_file.basename.to_s.match(/\.rmk$/).pre_match
+          #This is a list of all mapsets available in this project.
+          @mapsets = []
+          #This is a list of all maps that have already been built with this
+          #project.
+          @maps = []
           
           #Extract mapsets and characters. This hash is a shared
           #resource, but since every thread updates another part of
@@ -105,6 +113,7 @@ module OpenRubyRMK
               temp_filename = @paths.temp_mapsets_dir + filename.relative_path_from(@paths.mapsets_dir)
               gz = Zlib::GzipReader.open(filename)
               Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
+              @mapsets << Mapset.load(self, filename.basename.to_s.sub(/\.tgz$/, ".png"))
               #Show the % done
               @loading[:mapset_extraction] = (index + 1 / num).to_f * 100
             end
@@ -118,6 +127,7 @@ module OpenRubyRMK
               temp_filename = @paths.temp_characters_dir + filename.relative_path_from(@paths.characters_dir)
               gz = Zlib::GzipReader.open(filename)
               Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
+              
               #Show % done
               @loading[:char_extraction] = (index + 1 / num).to_f * 100
             end

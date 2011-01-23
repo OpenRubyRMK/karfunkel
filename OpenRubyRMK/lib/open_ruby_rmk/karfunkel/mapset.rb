@@ -38,6 +38,8 @@ module OpenRubyRMK
       #The edge size of a single field, in pixels.
       FIELD_EDGE = 32
       
+      #The project this mapsets belongs to.
+      attr_reader :project
       #The name of the file the image data is read from.
       attr_reader :filename
       #Number of rows in a mapset, where a row is FIELD_EDGE pixels wide.
@@ -48,11 +50,12 @@ module OpenRubyRMK
       attr_reader :image
       
       #Loads a mapset by reading from an image file. Just pass in the file's basename,
-      #it will be prepended by the current project's mapset search path automatically.
-      def self.load(filename)
+      #it will be prepended by the project's mapset search path automatically.
+      def self.load(project, filename)
         obj = allocate
         obj.instance_eval do
-          @filename = OpenRubyRMK::Paths.temp_mapsets_dir + filename.match(/\..*?$/).pre_match + filename #Each map has it's own directory
+          @project = project
+          @filename = @project.paths.temp_mapsets_dir + filename.match(/\..*?$/).pre_match + filename #Each map has it's own directory
           raise(Errno::ENOENT, "Mapset not found: #{filename}!") unless @filename.file?
           @image = ChunkyPNG::Image.from_file(@filename.to_s)
           split_into_tiles
@@ -78,8 +81,8 @@ module OpenRubyRMK
       #the subimages to the @data instance variable.
       def split_into_tiles
         raise(Errors::InvalidMapsetError, "Invalid mapset dimensions #{img.width} x #{img.height}!") unless @image.width % FIELD_EDGE == 0 and @image.height % FIELD_EDGE == 0
-        cols = img.width / FIELD_EDGE
-        rows = img.height / FIELD_EDGE
+        cols = @image.width / FIELD_EDGE
+        rows = @image.height / FIELD_EDGE
         
         @data = Array.new(cols){Array.new(rows)}
         0.upto(cols - 1) do |col|

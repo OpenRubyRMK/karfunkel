@@ -61,7 +61,6 @@ module OpenRubyRMK
     #builds the map hierarchy!). If there was a nice way to get the relationship resolved, I'd
     #go it, especially because a Map object already knows about it's parent and children IDs.
     class Map
-      include Wx
       
       #The unique ID of a map. Cannot be changed.
       attr_reader :id
@@ -116,17 +115,18 @@ module OpenRubyRMK
       end
       
       #Loads a map object from a file. The filename is detected by
-      #using OpenRubyRMK.project_maps_dir and the given ID. Raises an ArgumentError
+      #using +project+.paths.project_maps_dir and the given ID. Raises an ArgumentError
       #if no file is found.
       #See this class's documentation for a description of the file format.
-      def self.load(id)
-        filename = Pathname.new(OpenRubyRMK::Paths.project_maps_dir + "#{id}.bin")
+      def self.load(project, id)
+        filename = project.paths.project_maps_dir + "#{id}.bin"
         raise(ArgumentError, "Map not found: #{id}!") unless filename.file?
         hsh = filename.open("rb"){|f| Marshal.load(f)}
         id = filename.basename.to_s.to_i #Filenames are of form "3.bin" and #to_i stops at the ".".
         
         obj = allocate
         obj.instance_eval do
+          @project = project
           @id = id
           @name = hsh[:name]
           @mapset = Mapset.load(hsh[:mapset])
@@ -193,9 +193,10 @@ module OpenRubyRMK
       #This method remembers the maps you create in a class instance variable @maps,
       #allowing you to reconstruct a map object just by it's ID without struggling around
       #with ObjectSpace.
-      def initialize(id, name, mapset, width, height, depth, parent = 0) #0 is no valid map ID, i.e. it's the root element
+      def initialize(project, id, name, mapset, width, height, depth, parent = 0) #0 is no valid map ID, i.e. it's the root element
         raise(ArgumentError, "Parent ID #{parent} doesn't exist!") if parent.nonzero? and !self.class.id_in_use?(parent)
         raise(ArgumentError, "The ID #{id} is already in use!") if self.class.id_in_use?(id)
+        @project = project
         @id = id
         @name = name.to_str
         @mapset = mapset
@@ -235,7 +236,7 @@ module OpenRubyRMK
       #See accessor.
       def width=(val) # :nodoc:
         #Handle smaller and equal widths
-        @table = @table[0...val] #excusive, b/c index is 0-based
+        @table = @table[0...val] #exclusive, b/c index is 0-based
         #If the map is enlarged, we need to append extra columns
         @table.size.upto(val - 1){@table << Array.new(height){Array.new(depth)}} #-1, b/c index is 0-based
       end
@@ -244,7 +245,7 @@ module OpenRubyRMK
       def height=(val) # :nodoc:
         @table.map! do |col|
           #Handle smaller and equal heights
-          col = col[0...val] #excusive, b/c index is 0-based
+          col = col[0...val] #exclusive, b/c index is 0-based
           #Handle greater heights
           col.size.upto(val - 1){col << Array.new(depth)} #-1, b/c index is 0-based
           col
@@ -256,7 +257,7 @@ module OpenRubyRMK
         @table.each do |col|
           col.map! do |depth_row|
             #Handle smaller and equal dephts
-            depth_row = depth_row[0...val] #excusive, b/c index is 0-based
+            depth_row = depth_row[0...val] #exclusive, b/c index is 0-based
             #Handle greater depths
             depth_row.size.upto(val - 1){depth_row << nil} #-1, b/c index is 0-based
             depth_row
