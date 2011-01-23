@@ -13,7 +13,7 @@ module OpenRubyRMK
           @project = Project.load(@parameters["file"])
           Karfunkel.log_info("Loading project '#{@project.name}'.")
           Karfunkel.projects << @project
-          processing(mapset_extraction: 0, charset_extraction: 0)
+          processing(mapset_extraction: 0, char_extraction: 0)
           
           timer = EventMachine.add_periodic_timer(2) do
             unless @project.loaded?
