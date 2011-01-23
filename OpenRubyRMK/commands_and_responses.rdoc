@@ -99,10 +99,67 @@ you shouldn't get this response.
 ==Commands that can be sent
 
 Following is a list of commands that can be sent to Karfunkel after the
-connection has been established (except of the +hello+ command, which
+connection has been established (except of the +Hello+ command, which
 establishes the connection).
 
-===Hello
+===Eval
+
+The +Eval+ request is for debugging purposes. It causes Karfunkel to run 
+arbitrary Ruby code (via +eval+) in the context of the +Eval+ request. It 
+is *only* available if Karfunkel is running in debug mode; pass the "-d" 
+command-line parameter if you _really_ want to do this. This creates a 
+*huge* security hole. As said, this is for *debugging* purposes. If you don't 
+want to debug Karfunkel <b>do not use</b> this request. 
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel id="YOUR_ID">
+    <request type="Eval" id="X">
+      <code>YOUR_RUBY_CODE_HERE</code> #Can span multiple lines
+    </request>
+  </Karfunkel>
+
+==== Possible responses
+
+===== OK
+
+Your request was processed. You get this response even in case of an exception.
+
+No exception: 
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel id="0">
+    <response type="Eval" id="X">
+      <status>ok</status>
+      <result>CODE_RESULT</code> ##inspect was called on the result
+    </response>
+  </Karfunkel>
+
+Exception: 
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel id="0">
+    <response type="Eval" id="X">
+      <status>ok</status>
+      <exception>EXCEPTION_CLASS</exception>
+      <message>EXCEPTION_MESSAGE</message>
+      <backtrace>EXCEPTION_BACKTRACE</backtrace> #Can span multiple lines
+    </response>
+  </Karfunkel>
+
+===== Rejected
+
+You get this response when Karfunkel is not running in debug mode. 
+Additionally, a warning is logged on the server side. 
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel id="0">
+    <response type="Eval" id="X">
+      <status>rejected</status>
+      <reason>Karfunkel is not running in debug mode.</reason>
+    </response>
+  </Karfunkel>
+
+=== Hello
 
 Establishes a connection. Send this command immediately after you have
 connected to Karfunkel.
@@ -114,14 +171,14 @@ connected to Karfunkel.
     </request>
   </Karfunkel>
 
-====Possible Responses
+==== Possible responses
 
 =====OK:
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="0">
     <response type="Hello" id="0"> #The request ID is still 0
-      <status>OK</status>
+      <status>ok</status>
       <id>YOUR_CLIENT_ID</id> #Your client's ID from now on.
       <my_version>KARFUNKEL'S_VERSION</my_version> #Version number of Karfunkel
       <my_project>CURRENTLY_LOADED_PROJECT</my_project> #The project currently loaded. May be empty.
@@ -134,7 +191,56 @@ connected to Karfunkel.
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="0">
     <response type="Hello" id="0">
-      <status>Rejected</status>
+      <status>rejected</status>
+      <reason>REASON_WHY_YOU_WERE_REJECTED</reason>
+    </response>
+  </Karfunkel>
+
+=== OpenProject
+
+Makes Karfunkel load a given project file. The project is not selected, that's 
+a separate +SelectProject+ request. 
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel id="YOUR_ID">
+    <request type="OpenProject" id="X">
+      <file>/path/to/your/project/file.rmk</file> #This file usually resides in the bin/ directory of a game
+    </request>
+  </Karfunkel>
+
+==== Possible responses
+
+===== Processing
+
+This is sent multiple times while the loading is in progress. The 
++PERCENT_DONE+ values can be floating-point. 
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel id="0">
+    <response type="OpenProject" id="X">
+      <status>processing</status>
+      <mapset_extraction>PERCENT_DONE</mapset_extraction>
+      <char_extraction>PERCENT_DONE</char_extraction>
+    </response>
+  </Karfunkel>
+
+===== Finished
+
+Send when the project is in a usable state. 
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel id="0">
+    <response type="OpenProject" id="X">
+      <status>finished</status>
+    </response>
+  </Karfunkel>
+
+=====Rejected:
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel id="0">
+    <response type="OpenProject" id="0">
+      <status>rejected</status>
       <reason>REASON_WHY_YOU_WERE_REJECTED</reason>
     </response>
   </Karfunkel>
