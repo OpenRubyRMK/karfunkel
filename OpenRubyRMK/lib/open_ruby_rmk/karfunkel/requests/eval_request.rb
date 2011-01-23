@@ -22,7 +22,7 @@ module OpenRubyRMK
             res = eval(@parameters["code"])
           rescue Exception => e
             Karfunkel.log_exception(e)
-            ok(:exception => e.class.name, :message => e.message, :backtrace => e.backtrace)
+            ok(:exception => e.class.name, :message => e.message, :backtrace => e.backtrace.join("\n"))
           else
             ok(:result => res.inspect)
           ensure
