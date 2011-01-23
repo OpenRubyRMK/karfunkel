@@ -187,7 +187,7 @@ module OpenRubyRMK
         #Human-readable description of form
         #  #<OpenRubyRMK::Karfunkel::Karfunkel Karfunkel listeing with PID <pid here> at Port <port here>.>
         def inspect
-          "#<#{self.class} Karfunkel listening with PID #{$$} at Port #{@port}.>"
+          "#<#{self.name} listening with PID #{$$} at Port #{@port}.>"
         end
         
         #true if Karfunkel is running in debug mode.
@@ -284,6 +284,7 @@ module OpenRubyRMK
         def setup_signal_handlers
           Signal.trap("SIGINT"){on_sigint}
           Signal.trap("SIGTERM"){on_sigterm}
+          Signal.trap("SIGUSR1"){on_sigusr1}
         end
         
         def on_sigint
@@ -296,6 +297,15 @@ module OpenRubyRMK
           @log.info("Cought SIGTERM, exiting...")
           stop
           exit
+        end
+        
+        def on_sigusr1
+          return unless debug_mode?
+          Karfunkel.log_debug("Cought SIGUSR1. Entering IRB.")
+          ARGV.clear
+          require "irb"
+          IRB.start
+          Karfunkel.log_debug("IRB session ended.")
         end
         
       end
