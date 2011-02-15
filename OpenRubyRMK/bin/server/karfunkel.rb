@@ -30,6 +30,7 @@ end
 require "bundler/setup"
 require "pathname"
 require "rbconfig"
+require "socket"
 require "tempfile"
 require "logger"
 require "zlib"

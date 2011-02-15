@@ -33,7 +33,7 @@ module OpenRubyRMK
         private
         
         def validate_parameters(params)
-          raise(Errors::InvalidParameter, "No project file given!") unless params.has_key?("code")
+          raise(Errors::InvalidParameter, "No code given!") unless params.has_key?("code")
         end
         
       end

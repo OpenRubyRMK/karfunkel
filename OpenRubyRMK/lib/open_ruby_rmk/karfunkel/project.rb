@@ -156,6 +156,12 @@ module OpenRubyRMK
       end
       alias eql? ==
       
+      #Human-readable description of form
+      #  #<OpenRubyRMK::Karfunkel::Project <project_name>>
+      def inspect
+        "#<#{self.class} #{@name}>"
+      end
+      
     end
     
   end

@@ -7,11 +7,11 @@ module OpenRubyRMK
     
     #This is a mixin module mixed into the connections made to
     #Karfunkel. The public methods are called by EventMachine,
-    #the private ones are either helper methods or the actual
-    #request methods that can be triggered by sending a request
-    #of the correct type. The mapping scheme is easy: If you sent a
-    #+open_project+ request, the #process_open_project_request method
-    #is triggered, i.e. <tt>process_<req_name>_requset</tt>.
+    #the private ones are helper methods.
+    #
+    #Whenever the user sent a complete command, #process_command
+    #is triggered which instantiates an instance of one of the
+    #classes in the Requests module.
     module Protocol
       
       #This is the byte that terminates each request.
@@ -212,13 +212,6 @@ module OpenRubyRMK
       def terminate!
         close_connection
         @client.available = false
-      end
-      
-      #======================================
-      #These are the actual protocol methods.
-      
-      def process_open_project_request(command_id, parameters)
-        send_data "Du bist doof.\0"
       end
       
     end
