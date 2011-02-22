@@ -22,7 +22,7 @@ GEM
     rdoc (3.5.3)
     rest-client (1.6.1)
       mime-types (>= 1.16)
-    wxruby-ruby19 (2.0.1)
+    wxruby-ruby19 (2.0.0)
 
 PLATFORMS
   ruby
