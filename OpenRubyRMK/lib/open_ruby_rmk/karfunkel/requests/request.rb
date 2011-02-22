@@ -35,6 +35,13 @@ module OpenRubyRMK
       #inside a library method), use normal threads or processes. This is fine.
       class Request
         
+        #The client that sent this request.
+        attr_reader :client
+        #The ID the client assigned to this request.
+        attr_reader :request_id
+        #The parameters the client handed to the request.
+        attr_reader :parameters
+        
         #Creates a new Request object for the specified Client with the given
         #+request_id+ and +parameters+. This method is called by
         #Protocol#process_command each time a valid request is found.
@@ -98,68 +105,27 @@ module OpenRubyRMK
         #in why you reject the request.
         #The request object will be deleted from the client afterwards.
         def reject(reason)
-          builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-            xml.Karfunkel(:id => Karfunkel::ID) do
-              xml.response(:type => self.to_s, :id => @request_id) do
-                xml.status Protocol::REJECTED
-                xml.reason(reason)
-              end
-            end
-          end
-          send_data(builder.to_xml + Protocol::END_OF_COMMAND)
-          #A rejected request is dead. Remove it.
-          @client.requests.delete(self)
+          Responses::RejectedResponse.new(self, reason).deliver!
         end
         
         #Shortcut for ending a +processing+ response to the waiting client. Pass in a hash
         #containg the information you want to send back. The hash keys will
         #be used as XML nodes, and the values... Well, as the values.
         def processing(hsh)
-          builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-            xml.Karfunkel(:id => Karfunkel::ID) do
-              xml.response(:type => self.to_s, :id => @request_id) do
-                xml.status Protocol::PROCESSING
-                hsh.each_pair{|k, v| xml.send(k, v)}
-              end
-            end
-          end
-          send_data(builder.to_xml + Protocol::END_OF_COMMAND)
+          Responses::ProcessingResponse.new(self, hsh).deliver!
         end
         
         #Shortcut for sending a +fnished+ response to the waiting client.
-        def finished
-          builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-            xml.Karfunkel(:id => Karfunkel::ID) do
-              xml.response(:type => self.to_s, :id => @request_id) do
-                xml.status Protocol::FINISHED
-              end
-            end
-          end
-          send_data(builder.to_xml + Protocol::END_OF_COMMAND)
+        #Pass a hash of key-value pairs if you want to tell the client
+        #something.
+        def finished(hsh = {})
+          Responses::FinishedResponse.new(self, hsh).deliver!
         end
         
         #Shortcut for sending an +ok+ response. Pass in a hash of
         #key-value pairs that shall be presented to the client.
         def ok(hsh)
-          builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-            xml.Karfunkel(:id => Karfunkel::ID) do
-              xml.response(:type => self.to_s, :id => @request_id) do
-                xml.status Protocol::OK
-                hsh.each_pair{|k, v| xml.send(k, v)}
-              end
-            end
-          end
-          send_data(builder.to_xml + Protocol::END_OF_COMMAND)
-        end
-        
-        #Sends data to the client that made the request. +str+ should be a
-        #valid command. You can use Nokogiri::Builder to make up your commands.
-        #Also have a look at the #reject method's sourcecode to learn how to
-        #construct a response.
-        #
-        #All the shortcut methods of this class use this "low level" method.
-        def send_data(str)
-          @client.connection.send_data(str)
+          Responses::OKResponse.new(self, hsh).deliver!
         end
         
       end

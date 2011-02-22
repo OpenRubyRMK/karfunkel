@@ -14,15 +14,8 @@ module OpenRubyRMK
     #classes in the Requests module.
     module Protocol
       
-      #This is the byte that terminates each request.
+      #This is the byte that terminates each command.
       END_OF_COMMAND = "\0".freeze
-      
-      OK = "ok".freeze
-      FINISHED = "finished".freeze
-      FAILED = "failed".freeze
-      PROCESSING = "processing".freeze
-      REJECTED = "rejected".freeze
-      ERROR = "error".freeze
       
       #The client that sits on the other end of the connection.
       attr_reader :client
@@ -33,7 +26,7 @@ module OpenRubyRMK
         @client = Client.new(self)
         Karfunkel.clients << @client
         Karfunkel.log_info("Connection try from #{client}.")
-        #We may get incomplete command over the network, so we have
+        #We may get an incomplete command over the network, so we have
         #to collect the received data until the End Of Command marker,
         #which I defined to be a NUL byte, is encountered. Then
         ##receive_data calls #process_command with the full command
@@ -75,10 +68,14 @@ module OpenRubyRMK
       #===============================================
       #Some helper methods follow.
       
-      #Processes a command and calls the appropriate
-      #protocol methods. If the client has not been
-      #authenticated yet, tries to do so.
+      #Processes a command and instantiates the appropriate
+      #command classes, which in turn instantiate and deliver
+      #the (hopefully) correct response classes. Exception are
+      #the +error+ response which is issued on malformed commands
+      #and the entire processing of the +hello+ request, which are
+      #done inside this method and some helper methods.
       def process_command(command)
+        #If the client has not authenticated yet, we have to do so.
         unless @client.authenticated?
           if authenticate(command)
             @client.authenticated = true
@@ -114,7 +111,7 @@ module OpenRubyRMK
               @client.requests.last.start
             else
               Karfunkel.log_warn("[#{@client}] Invalid request #{type}")
-              reject(client, type, id, "Unknown request type.")
+              Responses::RejectResponse.new(self, "Unknown request type.").deliver!
             end #if
           end #each child
         end #unless authenticated
@@ -132,7 +129,7 @@ module OpenRubyRMK
       #+request+. Returns true if everything worked out,
       #false otherwise.
       def authenticate(request)
-        xml = parse_command(request, true)
+        xml = parse_command(request, true) #Raises MalformedCommand if fed invalid XML
         request = xml.root.children[0]
         #This must be a HELLO request
         unless request["type"] == "Hello"
@@ -156,24 +153,11 @@ module OpenRubyRMK
         builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
           xml.Karfunkel(:id => Karfunkel::ID) do
             xml.response(:type => "Hello", :id => 0) do
-              xml.status OK
+              xml.status "ok"
               xml.id_ @client.id
               xml.my_version VERSION
               #xml.my_project ...
               xml.my_clients_num Karfunkel.clients.size
-            end
-          end
-        end
-        send_data(builder.to_xml + END_OF_COMMAND)
-      end
-      
-      #Sends a response of type +Rejected+.
-      def reject(client, command_type, command_id, reason)
-        builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-          xml.Karfunkel(:id => Karfunkel::ID) do
-            xml.response(:type => command_type, :id => command_id) do
-              xml.status REJECTED
-              xml.reason reason
             end
           end
         end
@@ -185,7 +169,7 @@ module OpenRubyRMK
         builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
           xml.Karfunkel(:id => Karfunkel::ID) do
             xml.response(:type => "unknown", :id => -1) do
-              xml.status ERROR
+              xml.status "error"
               xml.message str
             end
           end

@@ -43,8 +43,17 @@ require_relative "./option_handler"
 require_relative "./client"
 require_relative "./protocol"
 require_relative "./requests/request"
-require_relative "./requests/open_project_request"
-require_relative "./requests/eval_request"
+require_relative "./responses/response"
+
+#Require all files in the requests directory
+Dir.glob(File.join(File.dirname(__FILE__), "requests", "*.rb")).each do |f|
+  require_relative f
+end
+
+#Requires all files in the responses directory
+Dir.glob(File.join(File.dirname(__FILE__), "responses", "*.rb")).each do |f|
+  require_relative f
+end
 
 module OpenRubyRMK
   
@@ -118,6 +127,7 @@ module OpenRubyRMK
         #The currently selected project or +nil+ if no project has been
         #selected yet.
         attr_reader :selected_project
+        
         ##
         # :singleton-method: log_debug
         #call-seq:
