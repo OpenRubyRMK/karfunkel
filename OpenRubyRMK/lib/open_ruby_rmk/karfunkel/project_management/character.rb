@@ -24,17 +24,21 @@ module OpenRubyRMK
   
   module Karfunkel
   
-    class Character
+    module ProjectManagement
+    
+      class Character
       
-      attr_accessor :code
-      attr_reader :graphic_filename
-      attr_reader :x
-      attr_reader :y
-      
-      def initialize(x, y, graphic_filename)
-        @x, @y = x, y
-        @graphic_filename = Pathname.new(graphic_filename)
-        @code = ""
+        attr_accessor :code
+        attr_reader :graphic_filename
+        attr_reader :x
+        attr_reader :y
+        
+        def initialize(x, y, graphic_filename)
+          @x, @y = x, y
+          @graphic_filename = Pathname.new(graphic_filename)
+          @code = ""
+        end
+        
       end
       
     end

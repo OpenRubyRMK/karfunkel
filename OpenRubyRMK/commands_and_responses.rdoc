@@ -104,12 +104,12 @@ establishes the connection).
 
 ===Eval
 
-The +Eval+ request is for debugging purposes. It causes Karfunkel to run 
-arbitrary Ruby code (via +eval+) in the context of the +Eval+ request. It 
-is *only* available if Karfunkel is running in debug mode; pass the "-d" 
-command-line parameter if you _really_ want to do this. This creates a 
-*huge* security hole. As said, this is for *debugging* purposes. If you don't 
-want to debug Karfunkel <b>do not use</b> this request. 
+The +Eval+ request is for debugging purposes. It causes Karfunkel to run
+arbitrary Ruby code (via +eval+) in the context of the +Eval+ request. It
+is *only* available if Karfunkel is running in debug mode; pass the "-d"
+command-line parameter if you _really_ want to do this. This creates a
+*huge* security hole. As said, this is for *debugging* purposes. If you don't
+want to debug Karfunkel <b>do not use</b> this request.
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="YOUR_ID">
@@ -124,7 +124,7 @@ want to debug Karfunkel <b>do not use</b> this request.
 
 Your request was processed. You get this response even in case of an exception.
 
-No exception: 
+No exception:
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="0">
@@ -134,7 +134,7 @@ No exception:
     </response>
   </Karfunkel>
 
-Exception: 
+Exception:
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="0">
@@ -148,8 +148,8 @@ Exception:
 
 ===== Rejected
 
-You get this response when Karfunkel is not running in debug mode. 
-Additionally, a warning is logged on the server side. 
+You get this response when Karfunkel is not running in debug mode.
+Additionally, a warning is logged on the server side.
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="0">
@@ -198,8 +198,10 @@ connected to Karfunkel.
 
 === OpenProject
 
-Makes Karfunkel load a given project file. The project is not selected, that's 
-a separate +SelectProject+ request. 
+Makes Karfunkel load a given project file. The project is not selected, that's
+a separate +SelectProject+ request. The path is understand as a path on the
+system Karfunkel runs on, so you may have to contact the person running the
+server to obtain the name of a project file.
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="YOUR_ID">
@@ -212,8 +214,8 @@ a separate +SelectProject+ request.
 
 ===== Processing
 
-This is sent multiple times while the loading is in progress. The 
-+PERCENT_DONE+ values can be floating-point. 
+This is sent multiple times while the loading is in progress. The
++PERCENT_DONE+ values can be floating-point.
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="0">
@@ -226,7 +228,7 @@ This is sent multiple times while the loading is in progress. The
 
 ===== Finished
 
-Send when the project is in a usable state. 
+Send when the project is in a usable state.
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel id="0">
