@@ -40,7 +40,7 @@ require "eventmachine"
 require "archive/tar/minitar"
 
 #Now require Karfunkel himself
-require_relative "../../lib/open_ruby_rmk/karfunkel/server_management/karfunkel"
+require_relative "../lib/open_ruby_rmk/karfunkel/server_management/karfunkel"
 
 EventMachine.run do
   OpenRubyRMK::Karfunkel::SM::Karfunkel.start

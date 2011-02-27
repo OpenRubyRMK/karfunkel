@@ -35,7 +35,7 @@ end
 require_relative "../project_management"
 require_relative "../server_management"
 require_relative "../project_management/project"
-require_relative "../../paths"
+require_relative "../paths"
 require_relative "../errors"
 require_relative "../project_management/map"
 require_relative "../project_management/mapset"
