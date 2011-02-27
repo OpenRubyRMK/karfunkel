@@ -20,26 +20,49 @@ You should have received a copy of the GNU General Public License
 along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
+#===============================================================================
+# Editable variables
+#===============================================================================
+
+#Remote Ruby source file. Basename will be used as the local filename.
+RUBY_DOWNLOAD_FILE = "ftp://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.2-p180.tar.bz2"
+#Name of the directory contained in RUBY_DOWNLOAD_FILE.
+RUBY_DOWNLOAD_DIRNAME = "ruby-1.9.2-p180"
+#Remote Ruby package file. Basename will also be used as the local filename.
+RUBY_WIN32_DOWNLOAD_FILE = "http://rubyforge.org/frs/download.php/74299/ruby-1.9.2-p180-i386-mingw32.7z"
+#Name of the directory contained in RUBY_WIN32_DOWNLOAD_FILE.
+RUBY_WIN32_DOWNLOAD_DIRNAME = "ruby-1.9.2-p180-i386-mingw32"
+#How many jobs "make" should use when compiling ruby. It's a good idea
+#to set this to the number of cores your processor has.
+MAKE_JOBS = 4
+#The gems that will be installed ontop of the downloaded Ruby.
+GEMS = %w[gosu chingu]
+
+#===============================================================================
+# Require statements
+#===============================================================================
+
 require "bundler/setup"
 require "open-uri"
 require "net/ftp"
-
+gem "rdoc", ">= 3"
 require "rdoc/task"
 require "rake/clean"
 
-#Remote Ruby source file. Basename will be used as the local filename.
-RUBY_DOWNLOAD_FILE = "ftp://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.2-p136.tar.bz2"
-#Name of the directory contained in RUBY_DOWNLOAD_FILE.
-RUBY_DOWNLOAD_DIRNAME = "ruby-1.9.2-p136"
-#Remote Ruby package file. Basename will also be used as the local filename.
-RUBY_WIN32_DOWNLOAD_FILE = "http://rubyforge.org/frs/download.php/72160/ruby-1.9.2-p0-i386-mingw32.7z"
-#Name of the directory contained in RUBY_WIN32_DOWNLOAD_FILE.
-RUBY_WIN32_DOWNLOAD_DIRNAME = "ruby-1.9.2-p0-i386-mingw32"
+#===============================================================================
+# Other variables
+#===============================================================================
 
 #After removing these files the generated result is still usable.
-CLEAN.include(File.basename(RUBY_DOWNLOAD_FILE), RUBY_DOWNLOAD_DIRNAME, File.basename(RUBY_WIN32_DOWNLOAD_FILE), "OpenRubyRMK", "OpenRubyRMK.rb")
+CLEAN.include(File.basename(RUBY_DOWNLOAD_FILE), RUBY_DOWNLOAD_DIRNAME,
+  File.basename(RUBY_WIN32_DOWNLOAD_FILE), "OpenRubyRMK", "OpenRubyRMK.rb")
+
 #Removing these files gives us a blank environment.
 CLOBBER.include("ruby/**/**", "OpenRubyRMK.tar.bz2", "OpenRubyRMK.zip")
+
+#===============================================================================
+# Helper methods
+#===============================================================================
 
 #Returns the name of the 7-Zip executable or raises
 #an Errno::ENOENT if none is found.
@@ -55,14 +78,25 @@ def z7_path
   z7
 end
 
+def make(*args)
+  cmd = MAKE_JOBS > 1 ? "make -j#{MAKE_JOBS}" : "make"
+  args.each{|arg| cmd << " '#{arg}'"}
+  sh cmd
+end
+
+#===============================================================================
+# Task definitions
+#===============================================================================
+
 Rake::RDocTask.new do |rt|
   rt.rdoc_dir = "doc"
-  rt.rdoc_files.include("lib/**/*.rb", "README.rdoc", "commands_and_responses.rdoc", "AUTHORS.rdoc", "COPYING.rdoc")
+  rt.rdoc_files.include("lib/**/*.rb", "*.rdoc")
   rt.generator = "hanna" #Ignored if not there
   rt.title = "OpenRubyRMK RDocs"
   rt.main = "README.rdoc"
 end
 
+#Hanna's definition lists look a bit flat otherwise.
 task :rdoc do
   print "Adding style for definition lists... "
   File.open("doc/css/style.css", "a") do |file|
@@ -98,7 +132,7 @@ task :get_ruby do
       puts "Done."
       open(File.basename(RUBY_WIN32_DOWNLOAD_FILE), "wb"){|f| f.write(str)} #Produces RUBY_WIN32_DOWNLOAD_FILE <CLEAN>
     end
-    rm_r "ruby" if File.directory?("Ruby") #We'll replace it...
+    rm_r "ruby" if File.directory?("ruby") #We'll replace it...
     sh "#{z7} x #{File.basename(RUBY_WIN32_DOWNLOAD_FILE)} > nul"
     mv RUBY_WIN32_DOWNLOAD_DIRNAME, "ruby" #...with the extracted archive.
   else
@@ -130,26 +164,26 @@ task :get_ruby do
     goal_dir = File.join(File.expand_path(Dir.pwd), "ruby")
     cd RUBY_DOWNLOAD_DIRNAME
     sh %Q<./configure --enable-shared --prefix="#{goal_dir}">
-    sh "make"
-    sh "make install" #Produces "ruby/**/**" <CLOBBER>
+    make
+    make :install #Produces "ruby/**/**" <CLOBBER>
     cd ".."
   end
     
 end
 
 task :get_gems => :get_ruby do
-  gems = "gosu chingu"
   if RUBY_PLATFORM =~ /mingw|mswin32/
     sh "ruby\\bin\\gem update --system > nul" #Ensure RubyGems is up to date
-    sh "ruby\\bin\\gem install #{gems} --no-ri --no-rdoc"
+    sh "ruby\\bin\\gem install #{GEMS.join(" ")} --no-ri --no-rdoc"
   else
     sh "./ruby/bin/gem update --system > /dev/null" #Ensure RubyGems is up to date
-    sh "./ruby/bin/gem install #{gems} --no-ri --no-rdoc"
+    sh "./ruby/bin/gem install #{GEMS.join(" ")} --no-ri --no-rdoc"
   end
 end
 
-desc "Compresses OpenRubyRMK into a usable form."
+desc "Compresses OpenRubyRMK into a usable form, DEPRECATED."
 task :compress => [:get_ruby, :get_gems] do #Produces "OpenRubyRMK" <CLEAN>
+  raise(NotImplementedError, "This task is deprecated in favor of the upcoming web installer!")
   mkdir "OpenRubyRMK"
   cp_r "config", "OpenRubyRMK/config"
   cp_r "game", "OpenRubyRMK/game"
@@ -187,68 +221,56 @@ EOF
   end
 end
 
-desc "Remove trailing whitespace"
-task :rstrip do
-  puts "Really, sometimes Redcar sucks. Removing unnecessary whitespace..."
-  Dir.glob("**/**.rb").each do |filename|
-    print "Processing '#{filename}'... "
-    str = File.read(filename)
-    str = str.lines.map(&:rstrip).join("\n")
-    File.open(filename, "w"){|file| file.write(str)}
-    puts "Done."
-  end
-end
-
-desc "Displays a help message"
-task :help do
-  puts(<<HELP)
-USAGE:
-  rake [OPTIONS] [TASK]
-
-DESCRIPTION
-This is OpenRubyRMK's project Rakefile. It provides you with tasks
-to automatically generate a deployable version of OpenRubyRMK. Usually,
-all you need to do is to execute
-
-  rake compress
-
-which gives you an archive containing OpenRubyRMK specifically
-designed for your platform. If that's really everything you want to
-do with the Git sources, it's enough if you have a recent 1.9 Ruby
-installed. Please note that you won't be able to run OpenRubyRMK
-neither from the Git sources nor from the created archive (except you're
-on Windows). See the project's README for more information on this.
-
-WINDOWS
-To compress OpenRubyRMK on Windows, you have to do a bit
-of extra effort. Since the OpenRubyRMK GUI is written in wxRuby
-and wxRuby doesn't use Windows's Visual Styles by default,
-we added the options to overwrite this default. However, in order to
-work you must have the files "ruby.exe.manifest" and
-"rubyw.exe.manifest" in your Ruby installation's bin/ directory.
-You may obtain them from
-http://wiki.ruby-portal.de/wxRuby#Visual_Styles_unter_Windows.
-Additionally, you have to have the wxruby-ruby19 gem installed
-for your Ruby installation, because OCRA (our *.exe generator)
-will run OpenRubyRMK to obtain it's dependencies.
-
-UBUNTU 9.10 (KARMIC) AND NEWER
-There is a problem with the Linux binary of wxRuby provided by
-the wxRuby development team. In order to run OpenRubyRMK
-(not in order to compress it!) you have to get a binary build for
-your system. Either build wxRuby from the sources yourself,
-or use the precompiled gems we provide at
-http://www.github.com/Quintus/OpenRubyRMK/Downloads.
-
-ENVIRONMENT VARIABLES
-The following environment variables influence the compression
-process:
-
-  ORR_MAKE_CONSOLE_APP
-    On Windows, attaches a console to the OpenRubyRMK
-    executable. That's useful for debugging, but should be
-    avoided if you want to deploy the resulting archive. Set it
-    to anything you like, e.g. "yes", the Rakefile will only look
-    wheather it's defined or not.
-HELP
-end
+# desc "Displays a help message"
+# task :help do
+#   puts(<<HELP)
+# USAGE:
+#   rake [OPTIONS] [TASK]
+#
+# DESCRIPTION
+# This is OpenRubyRMK's project Rakefile. It provides you with tasks
+# to automatically generate a deployable version of OpenRubyRMK. Usually,
+# all you need to do is to execute
+#
+#   rake compress
+#
+# which gives you an archive containing OpenRubyRMK specifically
+# designed for your platform. If that's really everything you want to
+# do with the Git sources, it's enough if you have a recent 1.9 Ruby
+# installed. Please note that you won't be able to run OpenRubyRMK
+# neither from the Git sources nor from the created archive (except you're
+# on Windows). See the project's README for more information on this.
+#
+# WINDOWS
+# To compress OpenRubyRMK on Windows, you have to do a bit
+# of extra effort. Since the OpenRubyRMK GUI is written in wxRuby
+# and wxRuby doesn't use Windows's Visual Styles by default,
+# we added the options to overwrite this default. However, in order to
+# work you must have the files "ruby.exe.manifest" and
+# "rubyw.exe.manifest" in your Ruby installation's bin/ directory.
+# You may obtain them from
+# http://wiki.ruby-portal.de/wxRuby#Visual_Styles_unter_Windows.
+# Additionally, you have to have the wxruby-ruby19 gem installed
+# for your Ruby installation, because OCRA (our *.exe generator)
+# will run OpenRubyRMK to obtain it's dependencies.
+#
+# UBUNTU 9.10 (KARMIC) AND NEWER
+# There is a problem with the Linux binary of wxRuby provided by
+# the wxRuby development team. In order to run OpenRubyRMK
+# (not in order to compress it!) you have to get a binary build for
+# your system. Either build wxRuby from the sources yourself,
+# or use the precompiled gems we provide at
+# http://www.github.com/Quintus/OpenRubyRMK/Downloads.
+#
+# ENVIRONMENT VARIABLES
+# The following environment variables influence the compression
+# process:
+#
+#   ORR_MAKE_CONSOLE_APP
+#     On Windows, attaches a console to the OpenRubyRMK
+#     executable. That's useful for debugging, but should be
+#     avoided if you want to deploy the resulting archive. Set it
+#     to anything you like, e.g. "yes", the Rakefile will only look
+#     wheather it's defined or not.
+# HELP
+# end
