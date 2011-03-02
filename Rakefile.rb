@@ -21,24 +21,6 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
 #===============================================================================
-# Editable variables
-#===============================================================================
-
-#Remote Ruby source file. Basename will be used as the local filename.
-RUBY_DOWNLOAD_FILE = "ftp://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.2-p180.tar.bz2"
-#Name of the directory contained in RUBY_DOWNLOAD_FILE.
-RUBY_DOWNLOAD_DIRNAME = "ruby-1.9.2-p180"
-#Remote Ruby package file. Basename will also be used as the local filename.
-RUBY_WIN32_DOWNLOAD_FILE = "http://rubyforge.org/frs/download.php/74299/ruby-1.9.2-p180-i386-mingw32.7z"
-#Name of the directory contained in RUBY_WIN32_DOWNLOAD_FILE.
-RUBY_WIN32_DOWNLOAD_DIRNAME = "ruby-1.9.2-p180-i386-mingw32"
-#How many jobs "make" should use when compiling ruby. It's a good idea
-#to set this to the number of cores your processor has.
-MAKE_JOBS = 4
-#The gems that will be installed ontop of the downloaded Ruby.
-GEMS = %w[gosu chingu]
-
-#===============================================================================
 # Require statements
 #===============================================================================
 
@@ -48,40 +30,151 @@ require "net/ftp"
 gem "rdoc", ">= 3"
 require "rdoc/task"
 require "rake/clean"
+require "pathname"
+
+#===============================================================================
+# Editable variables
+#===============================================================================
+
+#Remote Ruby source file. Basename will be used as the local filename.
+RUBY_DOWNLOAD_URL = "ftp://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.2-p180.tar.bz2"
+#Name of the directory contained in RUBY_DOWNLOAD_URL.
+RUBY_DOWNLOAD_DIRNAME = Pathname.new("ruby-1.9.2-p180")
+#Remote Ruby package file. Basename will also be used as the local filename.
+RUBY_WIN32_DOWNLOAD_URL = "http://rubyforge.org/frs/download.php/74299/ruby-1.9.2-p180-i386-mingw32.7z"
+#Name of the directory contained in RUBY_WIN32_DOWNLOAD_URL.
+RUBY_WIN32_DOWNLOAD_DIRNAME = Pathname.new("ruby-1.9.2-p180-i386-mingw32")
+#How many jobs "make" should use when compiling ruby. It's a good idea
+#to set this to the number of cores your processor has.
+MAKE_JOBS = 4
+#The gems that will be installed ontop of the downloaded Ruby.
+GEMS = %w[gosu chingu]
 
 #===============================================================================
 # Other variables
 #===============================================================================
 
 #After removing these files the generated result is still usable.
-CLEAN.include(File.basename(RUBY_DOWNLOAD_FILE), RUBY_DOWNLOAD_DIRNAME,
-  File.basename(RUBY_WIN32_DOWNLOAD_FILE), "OpenRubyRMK", "OpenRubyRMK.rb")
+CLEAN.include(File.basename(RUBY_DOWNLOAD_URL), RUBY_DOWNLOAD_DIRNAME.to_s,
+  File.basename(RUBY_WIN32_DOWNLOAD_URL), "OpenRubyRMK", "OpenRubyRMK.rb")
 
 #Removing these files gives us a blank environment.
 CLOBBER.include("ruby/**/**", "OpenRubyRMK.tar.bz2", "OpenRubyRMK.zip")
+
+#Where to redirect output in order to get suppressed.
+NULL = RUBY_PLATFORM =~ /mingw|mswin/ ? "nul" : "/dev/null"
+
+ROOT_DIR = Pathname.new(__FILE__).dirname.expand_path
+
+SERVER_DIR = ROOT_DIR + "server"
+CLIENTS_DIR = ROOT_DIR + "clients"
+GUI_CLIENT_DIR = CLIENTS_DIR + "gui"
+RUBY_DIR = SERVER_DIR + "ruby"
+HANNA_CSS_FILE = Pathname.new("doc/css/style.css")
+
+VERSION_FILES = [
+  SERVER_DIR + "VERSION.txt",
+  GUI_CLIENT_DIR + "VERSION.txt"
+  ].freeze
+
+VERSION = {}
+
+ary = VERSION_FILES.first.readlines.map(&:chomp)
+ary[0].match(/^(\d+)\.(\d+)\.(\d+)(-dev)?$/)
+
+VERSION[:mayor] = $1.to_i
+VERSION[:minor] = $2.to_i
+VERSION[:tiny] = $3.to_i
+VERSION[:is_dev] = !!$4
+VERSION[:date] = ary[1]
+VERSION.freeze
 
 #===============================================================================
 # Helper methods
 #===============================================================================
 
-#Returns the name of the 7-Zip executable or raises
-#an Errno::ENOENT if none is found.
-def z7_path
-  z7 = nil
-  begin
-    `7z --help` #Backticks since we don't want to emit output, but an error on not-found
-    z7 = "7z"
-  rescue Errno::ENOENT
-    `7za --help` #Raises Errno::ENOENT as well if not found
-    z7 = "7za"
+#Same as Rake's normal sh method, but automatically redirects
+#output to the null device (nul on Windows, /dev/null otherwise). If
+#+redirect_err+ is true, redirects the standard error as well.
+def qsh(str, redirect_err = false)
+  if redirect_err
+    sh "#{str} 2>&1 > #{NULL}"
+  else
+    sh "#{str} > #{NULL}"
   end
-  z7
 end
 
+#Executes 7-Zip with the given arguments. For example, if you want to
+#extract an archive, use
+#  z7 "x", "the_archive.7z"
+def z7(*args)
+  z7_cmd = nil
+  begin
+    `7z --help` #Backticks since we don't want to emit output, but an error on not-found
+    z7_cmd = "7z"
+  rescue Errno::ENOENT
+    `7za --help` #Raises Errno::ENOENT as well if not found
+    z7_cmd = "7za"
+  end
+  
+  qsh "#{z7_cmd} #{args.map{|arg| "'#{arg}'"}.join(' ')}"
+end
+
+#Executes the +make+ command, passing it all given arguments. Too
+#execute a "make install", you therefore may do
+#  make :install
+#(All args are converted to strings).
 def make(*args)
   cmd = MAKE_JOBS > 1 ? "make -j#{MAKE_JOBS}" : "make"
   args.each{|arg| cmd << " '#{arg}'"}
   sh cmd
+end
+
+#Downloads the file at +url+ and places it in the current directory.
+#Does nothing if that file already exists.
+def download(url)
+  file = Pathname.new(File.basename(url))
+  print "Downloading #{file}... "
+  if file.file?
+    puts "Not needed."
+  else
+    open(url, "rb") do |page|
+      file.open("wb") do |f|
+        byte = nil
+        f.putc(byte) while byte = page.getbyte
+      end
+    end
+    puts "Done."
+  end
+end
+
+#Invokes the downloaded Ruby interpreter with +str+.
+def druby(str)
+  r = RUBY_DIR.join('bin', 'ruby')
+  raise(Errno::ENOENT, "#{r} not found!") unless r.file?
+  sh "'#{r}' #{str}"
+end
+
+#Invokes the downloaded RubyGems with +str+.
+def dgem(str)
+  g = RUBY_DIR.join('bin', 'gem')
+  raise(Errno::ENOENT, "#{g} not found!") unless g.file?
+  sh "'#{g}' #{str}"
+end
+
+#Sets the version in all VERSION.txt files to the given one.
+#The version's date is set to today's.
+def set_version!(mayor, minor, tiny, stable = true)
+  version = "#{mayor}.#{minor}.#{tiny}"
+  version << "-dev" unless stable
+  
+  puts "Setting OpenRubyRMK's version to #{version}."
+  VERSION_FILES.each do |filename|
+    filename.open("w") do |file|
+      file.puts(version)
+      file.write(Time.now.strftime("%d.%m.%y"))
+    end
+  end
 end
 
 #===============================================================================
@@ -90,7 +183,7 @@ end
 
 Rake::RDocTask.new do |rt|
   rt.rdoc_dir = "doc"
-  rt.rdoc_files.include("lib/**/*.rb", "*.rdoc")
+  rt.rdoc_files.include("**/*.rb", "**/*.rdoc", "COPYING.txt")
   rt.generator = "hanna" #Ignored if not there
   rt.title = "OpenRubyRMK RDocs"
   rt.main = "README.rdoc"
@@ -99,7 +192,7 @@ end
 #Hanna's definition lists look a bit flat otherwise.
 task :rdoc do
   print "Adding style for definition lists... "
-  File.open("doc/css/style.css", "a") do |file|
+  HANNA_CSS_FILE.open("a") do |file|
     file.puts(<<CSS)
 dl dt {
 	font-weight: bold;
@@ -111,8 +204,8 @@ end
 
 desc "Creates (with download) a suitable Ruby in ruby/."
 task :get_ruby do
-  if File.directory?("ruby/bin")
-    puts "Found ruby/bin/ruby."
+  if RUBY_DIR.join("bin").directory?
+    puts "Found #{RUBY_DIR}."
     puts "No need to get it."
     next #Neither return nor break work here and since I didn't want such a big if-clause...
   end
@@ -121,20 +214,12 @@ task :get_ruby do
   if RUBY_PLATFORM =~ /mswin32|mingw32/
     puts "Windows."
     puts "We're going to download the RubyInstaller's 7-Zip binary package."
-    z7 = z7_path
     
-    if File.file?(RUBY_WIN32_DOWNLOAD_FILE)
-      puts "Found #{RUBY_WIN32_DOWNLOAD_FILE}."
-      puts "No need to download it."
-    else
-      print "Dowloading #{RUBY_WIN32_DOWNLOAD_FILE}... "
-      str = open(RUBY_WIN32_DOWNLOAD_FILE, "rb"){|page| page.read} #5MB fit in RAM, don't they?
-      puts "Done."
-      open(File.basename(RUBY_WIN32_DOWNLOAD_FILE), "wb"){|f| f.write(str)} #Produces RUBY_WIN32_DOWNLOAD_FILE <CLEAN>
-    end
-    rm_r "ruby" if File.directory?("ruby") #We'll replace it...
-    sh "#{z7} x #{File.basename(RUBY_WIN32_DOWNLOAD_FILE)} > nul"
-    mv RUBY_WIN32_DOWNLOAD_DIRNAME, "ruby" #...with the extracted archive.
+    download RUBY_WIN32_DOWNLOAD_URL #Produces File.basename(RUBY_WIN32_DOWNLOAD_URL) <CLEAN>
+    
+    rm_r RUBY_DIR if RUBY_DIR.directory? #We'll replace it...
+    z7 "x", File.basename(RUBY_WIN32_DOWNLOAD_URL)
+    mv RUBY_WIN32_DOWNLOAD_DIRNAME, RUBY_DIR #...with the extracted archive.
   else
     puts "Other OS."
     puts "We're going to compile Ruby."
@@ -145,25 +230,11 @@ task :get_ruby do
     print "Do you want to continue? (y/n): "
     raise("Aborted by user!") if $stdin.gets =~ /^n/i
     
-    download_basename = File.basename(RUBY_DOWNLOAD_FILE)
+    download RUBY_DOWNLOAD_URL #Produces File.basename(RUBY_DOWNLOAD_URL) <CLEAN>
     
-    if File.file?(download_basename)
-      puts "Found #{download_basename}."
-      puts "No need to download it."
-    else
-      print "Downloading #{download_basename}..."
-      Net::FTP.open("ftp.ruby-lang.org") do |ftp|
-        ftp.login
-        ftp.chdir(File.dirname(RUBY_DOWNLOAD_FILE).sub("ftp://ftp.ruby-lang.org/", ""))
-        ftp.getbinaryfile(download_basename) #Produces File.basename(RUBY_DOWNLOAD_FILE) <CLEAN>
-      end
-      puts "Done."
-    end
-    
-    sh "tar -xjf #{download_basename}" #Produces RUBY_DOWNLOAD_DIRNAME <CLEAN>
-    goal_dir = File.join(File.expand_path(Dir.pwd), "ruby")
+    sh "tar -xjf #{File.basename(RUBY_DOWNLOAD_URL)}" #Produces RUBY_DOWNLOAD_DIRNAME <CLEAN>
     cd RUBY_DOWNLOAD_DIRNAME
-    sh %Q<./configure --enable-shared --prefix="#{goal_dir}">
+    sh %Q<./configure --enable-shared --prefix="#{RUBY_DIR.expand_path}">
     make
     make :install #Produces "ruby/**/**" <CLOBBER>
     cd ".."
@@ -172,13 +243,47 @@ task :get_ruby do
 end
 
 task :get_gems => :get_ruby do
-  if RUBY_PLATFORM =~ /mingw|mswin32/
-    sh "ruby\\bin\\gem update --system > nul" #Ensure RubyGems is up to date
-    sh "ruby\\bin\\gem install #{GEMS.join(" ")} --no-ri --no-rdoc"
-  else
-    sh "./ruby/bin/gem update --system > /dev/null" #Ensure RubyGems is up to date
-    sh "./ruby/bin/gem install #{GEMS.join(" ")} --no-ri --no-rdoc"
+  dgem "update --system" #Ensure RubyGems is up to date
+  dgem "install #{GEMS.join(" ")} --no-ri --no-rdoc"
+end
+
+namespace :bump do
+  
+  desc "Just sets the date of the current version to today's."
+  task :update do
+    puts "Refreshing version date."
+    set_version!(VERSION[:mayor], VERSION[:minor], VERSION[:tiny], !VERSION[:is_dev])
   end
+  
+  desc "Increases the tiny version. Pass STABLE=true for stable version."
+  task :tiny do
+    set_version!(VERSION[:mayor], VERSION[:minor], VERSION[:tiny] + 1, !!ENV["STABLE"])
+  end
+  
+  desc "Increases the minor version. Pass STABLE=true for stable version."
+  task :minor do
+    set_version!(VERSION[:mayor], VERSION[:minor] + 1, 0, !!ENV["STABLE"])
+  end
+  
+  desc "Increases the mayor version. Pass STABLE=true for stable version."
+  task :mayor do
+    set_version!(VERSION[:mayor] + 1, 0, 0, !!ENV["STABLE"])
+  end
+  
+  desc "Shows the current version number."
+  task :show do
+    print VERSION[:mayor], ".", VERSION[:minor], ".", VERSION[:tiny]
+    print "-dev" if VERSION[:is_dev]
+    puts
+    puts VERSION[:date]
+  end
+  
+end
+
+desc "Bumps the version to the given VERSION; pass STABLE if necessary."
+task :bump do
+  raise(ArgumentError, "VERSION not given!") unless ENV["VERSION"]
+  set_version!(*ENV["VERSION"].split("."), !!ENV["STABLE"])
 end
 
 desc "Compresses OpenRubyRMK into a usable form, DEPRECATED."
