@@ -249,6 +249,14 @@ module OpenRubyRMK
             end
           end
           
+          #Makes the project with number +index+ the active project.
+          #Raises an IndexError if there is no project with that index.
+          def select_project(index)
+            proj = @projects[index]
+            raise(IndexError, "No project with index #{index}!") if proj.nil?
+            @selected_project = proj
+          end
+          
           private
           
           def parse_argv
