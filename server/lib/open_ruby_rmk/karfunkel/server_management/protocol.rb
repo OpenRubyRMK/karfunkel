@@ -64,7 +64,7 @@ module OpenRubyRMK
             deliver_answer_command
             remove_dead_requests_and_responses
             @received_data.clear
-            @cached_command = Command.new(@client)
+            @cached_command = Command.new(Karfunkel)
           end
         end
         
@@ -121,7 +121,9 @@ module OpenRubyRMK
           Karfunkel.log_warn("Ignoring error with client #{client}: ")
           Karfunkel.log_exception(e, :warn)
           res = Responses::ErrorResponse.new(-1, :unknown)
-          res.message = "Unable to process request: #{e.class.name}: #{e.message}"
+          res.name = e.class.name
+          res.message = e.message
+          res.conclusion = "Unable to process request."
           @cached_command.responses << res
         end #process_request
         

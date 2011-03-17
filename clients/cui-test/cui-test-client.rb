@@ -54,6 +54,11 @@ class TestCUI
   
   private
   
+  def cmd_raw(str)
+    @sock.write(str + END_OF_COMMAND)
+    puts T.yellow(@sock.gets(END_OF_COMMAND))
+  end
+  
   def cmd_reset_request_id(val)
     @request_id = val.to_i
   end

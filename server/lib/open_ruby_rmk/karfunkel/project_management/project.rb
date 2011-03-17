@@ -85,6 +85,7 @@ module OpenRubyRMK
         #already in a usable state, use #loaded?.
         def self.load(project_file)
           project_file = Pathname.new(project_file)
+          raise(ArgumentError, "Project file not found: '#{project_file}'!") unless project_file.file?
           obj = allocate
           obj.instance_eval do
             @temp_dir = Pathname.new(Dir.mktmpdir("OpenRubyRMK"))
