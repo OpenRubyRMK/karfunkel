@@ -35,7 +35,34 @@ module OpenRubyRMK
     class InvalidMapsetError < OpenRubyRMKError
     end
     
-    class MalformedCommand < OpenRubyRMKError
+    class InvalidCommand < OpenRubyRMKError
+    end
+    
+    class MalformedCommand < InvalidCommand
+    end
+    
+    class RequestNotFound < InvalidCommand
+      
+      attr_reader :type
+      
+      def initialize(msg, type, request_id)
+        super(msg)
+        @type = type
+        @request_id = request_id
+      end
+      
+    end
+    
+    class ResponseNotFound < InvalidCommand
+      
+      attr_reader :type
+      
+      def initialize(msg, type, request_id)
+        super(msg)
+        @type = type
+        @request_id = id
+      end
+      
     end
     
     class InvalidParameter < MalformedCommand

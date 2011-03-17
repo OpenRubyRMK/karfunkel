@@ -11,15 +11,8 @@ module OpenRubyRMK
         
         class OKResponse < Response
           
-          #Pass in a hash of#key-value pairs that shall be presented to the
-          #client.
-          def initialize(request, hsh)
-            super(request)
-            @info = hsh
-          end
-          
-          def build_xml(xml)
-            @info.each_pair{|k, v| xml.send(k, v)}
+          def make_xml(xml)
+            #Nothing to do here, we have no extra information to transmit
           end
           
         end

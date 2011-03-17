@@ -34,6 +34,13 @@ module OpenRubyRMK
           ##receive_data calls #process_command with the full command
           #and empties the @received_data instance variable.
           @received_data = ""
+          #As we may sent multiple requests/responses in one command,
+          #we have to cache them somewhere. Ideally in a Command. This gets
+          #sent and cleared each time a full command has been processed. Note
+          #however that the server may generate Commands aside this cache,
+          #because it is not inspected on a regular basis (the receive_data
+          #method is only called when data was received).
+          @cached_command = Command.new(@client)
           #If the client doesn't authenticate within 5 seconds, disband
           #him.
           EventMachine.add_timer(Karfunkel.config[:greet_timeout]) do
@@ -54,7 +61,10 @@ module OpenRubyRMK
           #Empty the command cache afterwards.
           if @received_data.end_with?(END_OF_COMMAND)
             process_command(@received_data.sub(/#{END_OF_COMMAND}$/, ""))
+            deliver_answer_command
+            remove_dead_requests_and_responses
             @received_data.clear
+            @cached_command = Command.new(@client)
           end
         end
         
@@ -76,10 +86,10 @@ module OpenRubyRMK
         #the +error+ response which is issued on malformed commands
         #and the entire processing of the +hello+ request, which are
         #done inside this method and some helper methods.
-        def process_command(command)
+        def process_command(command_xml)
           #If the client has not authenticated yet, we have to do so.
           unless @client.authenticated?
-            if authenticate(command)
+            if authenticate(command_xml)
               @client.authenticated = true
               Karfunkel.log_debug("Client #{@client} authenticated.")
               greet_back
@@ -89,33 +99,19 @@ module OpenRubyRMK
               terminate!
             end
           else
-            #Check wheather it conforms to Karfunkel's command standards.
-            #If so, get the XML object.
-            xml = parse_command(command)
-            #Now process each request in the command.
-            xml.root.children.each do |request_node|
-              #Get command type and ID
-              type = request_node['type']
-              id = request_node["id"]
-              
-              #The requests are assumed to be classes of the Requests module.
-              #In a specific format of course, otherwise somebody could
-              #try to send a Kernel request or something bad like that.
-              sym = :"#{type}Request"
-              if Requests.const_defined?(sym)
-                Karfunkel.log_debug("[#{@client}] Request: #{type}")
-                #Transform the XML request into a parameters hash, i.e. each
-                #child node is interpreted as a hash key and the node's text is
-                #assigned as the value.
-                hsh = request_node.children.inject({}){|h, node| h[node.name] = node.text; h}
-                
-                @client.requests << Requests.const_get(sym).new(@client, id, hsh)
-                @client.requests.last.start
-              else
-                Karfunkel.log_warn("[#{@client}] Invalid request #{type}")
-                Responses::RejectResponse.new(self, "Unknown request type.").deliver!
-              end #if
-            end #each child
+            begin
+              command = Command.from_xml(command_xml, @client) #I pass client here, because reconstructing it from the command would be bad for performance...
+              command.requests.each do |request|
+                Karfunkel.log_debug("[#{@client}] Request: #{request.type}")
+                @client.requests << request
+                request.start(client)
+              end
+            rescue Errors::RequestNotFound => e
+              Karfunkel.log_warn("[#@client] Unknown request: #{e.type}")
+              res = Responses::RejectedResponse.new(e.request_id, e.type)
+              res.message = "Unknown request type #{e.type}."
+              @cached_command.responses << res
+            end
           end #unless authenticated
         rescue Errors::ConnectionFailed => e #Non-Recoverable--connection immediately cut.
           Karfunkel.log_error("Fatal connection error with client #{client}:")
@@ -124,8 +120,25 @@ module OpenRubyRMK
         rescue => e
           Karfunkel.log_warn("Ignoring error with client #{client}: ")
           Karfunkel.log_exception(e, :warn)
-          error(client, "Unable to process request: #{e.class.name}: #{e.message}")
+          res = Responses::ErrorResponse.new(-1, :unknown)
+          res.message = "Unable to process request: #{e.class.name}: #{e.message}"
+          @cached_command.responses << res
         end #process_request
+        
+        #Sends anything that has been put into @command to the client.
+        #If nothing has been collected there, nothing is send.
+        def deliver_answer_command
+          return if @cached_command.empty? #We don't want to send empty commands.
+          @cached_command.deliver!(@client)
+        end
+        
+        #Removes all requests and responses from this client that have been
+        #processed completely.
+        def remove_dead_requests_and_responses
+          @client.requests.delete_if{|req| !req.alive?}
+          @client.sent_requests.delete_if{|req| !req.alive?}
+          @client.responses.delete_if{|res| !res.alive?}
+        end
         
         #Tries to authenticate the connection by processing
         #+request+. Returns true if everything worked out,

@@ -11,16 +11,12 @@ module OpenRubyRMK
         
         class ProcessingResponse < Response
           
-          #Pass in a hash
-          #containg the information you want to send back. The hash keys will
-          #be used as XML nodes, and the values... Well, as the values.
-          def initialize(request, hsh)
-            super(request)
-            @info = hsh
-          end
+          #Indicates how many percent have already been finished.
+          #If left out, the response simply won't have a PERCENT tag.
+          attr_accessor :percent_done
           
-          def build_xml(xml)
-            @info.each_pair{|k, v| xml.send(k, v)}
+          def make_xml(xml)
+            xml.percent @percent_done if @percent_done
           end
           
         end

@@ -44,6 +44,7 @@ require_relative "../project_management/character"
 require_relative "./option_handler"
 require_relative "./client"
 require_relative "./protocol"
+require_relative "./command"
 require_relative "./requests/request"
 require_relative "./responses/response"
 
@@ -255,6 +256,16 @@ module OpenRubyRMK
             proj = @projects[index]
             raise(IndexError, "No project with index #{index}!") if proj.nil?
             @selected_project = proj
+          end
+          
+          #Returns Karfunkel's ID.
+          def id
+            ID
+          end
+          
+          #Human-readeble description.
+          def inspect
+            "#<#{self.class} I AM KARFUNKEL. THEE IS NOTHING.>"
           end
           
           private

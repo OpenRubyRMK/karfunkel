@@ -37,24 +37,30 @@ module OpenRubyRMK
         #inside a library method), use normal threads or processes. This is fine.
         class Request
           
-          #The client that sent this request.
-          attr_reader :client
           #The ID the client assigned to this request.
           attr_reader :request_id
-          #The parameters the client handed to the request.
-          attr_reader :parameters
+          
+          def self.from_xml(xml)
+            request_node = xml.kind_of?(Nokogiri::XML::Node) ? xml : parse_request(xml)
+            
+            obj = new(request_node["id"])
+            parse_xml!(request_node, obj)
+            obj
+          end
+          
+          #Gets the Nokogiri::XML::Node object of the request and the not yet
+          #complete Request object passed. In subclasses, this method then must
+          #set all attributes specific to the subclass on +obj+.
+          def self.parse_xml!(request_node, obj)
+            raise(NotImplementedError, "This method must be implemented in a subclass!")
+          end
           
           #Creates a new Request object for the specified Client with the given
           #+request_id+ and +parameters+. This method is called by
           #Protocol#process_command each time a valid request is found.
-          def initialize(client, request_id, parameters)
-            @client = client
+          def initialize(request_id)
             @request_id = request_id
-            @parameters = parameters
-            validate_parameters(@parameters)
-          rescue Errors::InvalidParameter => e
-            Karfunkel.log_exception(e)
-            reject("Invalid parameter: #{e.message}")
+            @alive = true
           end
           
           #This method is immediately called by Protocol#process_command
@@ -75,10 +81,9 @@ module OpenRubyRMK
           #  self == other → true or false
           #
           #Two requests are considered equal if they
-          #are associated with the same client and have the
-          #same request ID.
+          #have the same request ID.
           def eql?(other)
-            @client == other.client and @request_id == other.request_id
+            @request_id == other.request_id
           end
           alias == eql?
           
@@ -88,46 +93,51 @@ module OpenRubyRMK
             "#<#{self.class} ID: #{@request_id}>"
           end
           
+          def type
+            self.class.name.split("::").last.match(/Request$/).pre_match
+          end
+          
           #The name of this request, automatically obtained by removing all
           #namespaces from the class's name.
           def to_s
-            self.class.name.split("::").last
+            type.to_s
+          end
+          
+          def build_xml!(parent_node = nil)
+            l = lambda do |xml|
+              xml.request(:type => type, :id => @request_id) do
+                make_xml
+              end
+            end
+            
+            if parent_node?
+              Nokogiri::XML::Builder.with(parent_node, &l)
+            else #Shouldn't be necessary, as this wouldn't be a correct Karfunkel command
+              Nokogiri::XML::Builder.new(encoding: "UTF-8", &l)
+            end
+            
+          end
+          
+          def build_xml
+            build_xml!
+          end
+          
+          #Returns true if this request is still being processed on
+          #the server side.
+          def alive?
+            @alive
           end
           
           private
           
-          #Subclasses should override this method and use it to check wheather
-          #the arguments a user passes via a request are correct. Raise an
-          #InvalidParameter error if they aren't.
-          def validate_parameters(parameters)
+          def self.parse_request(str)
+            xml = Nokogiri::XML(str, nil, nil, Nokogiri::XML::ParseOptions::STRICT | Nokogiri::XML::ParseOptions::NOBLANKS)
+          rescue Nokogiri::XML::SyntaxError
+            raise(Errors::MalformedCommand, "Malformed XML document.")
+          end
+          
+          def make_xml(xml)
             raise(NotImplementedError, "This method has to be overriden in a subclass!")
-          end
-          
-          #Shortcut for calling #send_data with a +rejected+ respone. Just pass
-          #in why you reject the request.
-          #The request object will be deleted from the client afterwards.
-          def reject(reason)
-            Responses::RejectedResponse.new(self, reason).deliver!
-          end
-          
-          #Shortcut for ending a +processing+ response to the waiting client. Pass in a hash
-          #containg the information you want to send back. The hash keys will
-          #be used as XML nodes, and the values... Well, as the values.
-          def processing(hsh)
-            Responses::ProcessingResponse.new(self, hsh).deliver!
-          end
-          
-          #Shortcut for sending a +fnished+ response to the waiting client.
-          #Pass a hash of key-value pairs if you want to tell the client
-          #something.
-          def finished(hsh = {})
-            Responses::FinishedResponse.new(self, hsh).deliver!
-          end
-          
-          #Shortcut for sending an +ok+ response. Pass in a hash of
-          #key-value pairs that shall be presented to the client.
-          def ok(hsh)
-            Responses::OKResponse.new(self, hsh).deliver!
           end
           
         end

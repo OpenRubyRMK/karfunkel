@@ -25,20 +25,86 @@ module OpenRubyRMK
         #will directly be incorporated into the XML response.
         class Response
           
+          attr_reader :request_id
+          attr_reader :type
+          
+          #Some extra key-value pairs you want to include in your response.
+          #They will show up as
+          #  <key>value</key>
+          #inside the RESPONSE tag. Don't use keys for tag names already
+          #used by the response type you use, because that may cause
+          #confusion on the client side.
+          attr_accessor :info
+          
+          def self.from_xml(xml)
+            response_node = xml.kind_of?(Nokogiri::XML::Node) ? xml : parse_response(xml)
+            
+            new(response_node["id"], response_node["type"])
+          end
+          
           #Instantiates an object of this response. Nothing is sent here,
           #but you should define new parameters to get all the necessary
           #information for your request object. Don't forget to call
           #+super+ with the first argument passed to ::new.
-          def initialize(request)
-            @request = request
+          def initialize(request_id, type)
+            @request_id = request_id
+            @type = type
+            @alive = true
+            @info = {}
+          end
+          
+          #Returns wheather or not we still need this response object.
+          def alive?
+            @alive
           end
           
           #Returns the type of this response by looking at the class name,
           #i.e. a class named +OKResponse+ will have a type of "ok". A
           #class named +FooResponse+ will have a type of "foo". The return
           #value is always a downcased string.
-          def to_s
+          def status
             self.class.name.split("::").last.match(/Response$/).pre_match.downcase
+          end
+          alias to_s status
+          
+          def build_xml!(parent_node = nil)
+            l = lambda do |xml|
+              xml.response(:id => @request_id, :type => @type.to_s) do #@type may be a symbol
+                xml.status status
+                make_xml(xml)
+                #Now render the extra information
+                @info.each_pair{|k, v| xml.send(k, v)}
+              end
+            end
+            
+            if parent_node
+              Nokogiri::XML::Builder.with(parent_node, &l)
+            else #Shouldn't be necessary because the resulting XML is not a valid Karfunkel command
+              Nokogiri::XML::Builder.new(encoding: "UTF-8", &l)
+            end
+          end
+          
+          def build_xml
+            build_xml!
+          end
+          
+          #call-seq:
+          #  eql?( other ) → true or false
+          #  self == other → true or false
+          #
+          #Compares two requests. They're considered equal if they both
+          #have the same request ID.
+          def eql?(other)
+            @request_id == other.request_id
+          end
+          alias == eql?
+          
+          private
+          
+          def self.parse_response(str)
+            xml = Nokogiri::XML(str, nil, nil, Nokogiri::XML::ParseOptions::STRICT | Nokogiri::XML::ParseOptions::NOBLANKS)
+          rescue Nokogiri::XML::SyntaxError
+            raise(Errors::MalformedCommand, "Malformed XML document.")
           end
           
           #This method builds the main body of the XML response. It is
@@ -54,39 +120,8 @@ module OpenRubyRMK
           #You don't have to care about all the command stuff that must be
           #placed around this response essence--#send_response takes care
           #about that for you.
-          def build_xml(xml)
+          def make_xml(xml)
             raise(NotImplementedError, "#{__method__} has to be overriden in a subclass!")
-          end
-          
-          #Called immediately before the command containing the response is
-          #sent to the client. Does nothing by default.
-          def pre_deliver
-          end
-          
-          #Called immediately after the command containing the response is
-          #sent to the client. Does nothing by default.
-          def post_deliver
-          end
-          
-          #Delivers this response to the client.
-          def deliver!
-            #First we build the general form of a response...
-            builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-              xml.Karfunkel(:id => Karfunkel::ID) do
-                xml.response(:type => @request.to_s, :id => @request.request_id) do
-                  xml.status self.to_s
-                  #...then we deligate the response-specific details to the
-                  #subclasses.
-                  build_xml(xml)
-                end
-              end
-            end
-            command = builder.to_xml + Protocol::END_OF_COMMAND
-            
-            #Now send the command to the client.
-            pre_deliver
-            @request.client.connection.send_data(command)
-            post_deliver
           end
           
         end

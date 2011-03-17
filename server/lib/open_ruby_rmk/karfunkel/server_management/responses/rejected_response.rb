@@ -11,20 +11,13 @@ module OpenRubyRMK
         
         class RejectedResponse < Response
           
-          #Just pass in why you reject the request.
-          def initialize(request, reason)
-            super(request)
-            @reason = reason
-          end
+          #The reason why the corresponding request was rejected.
+          #Generates a REASON tag. Mandatory.
+          attr_accessor :reason
           
-          def build_xml(xml)
+          def make_xml(xml)
+            raise(ArgumentError, "No reason given!") unless @reason
             xml.reason @reason
-          end
-          
-          #The request object will be deleted from the client afterwards.
-          def post_deliver
-            #A rejected request is dead. Remove it.
-            @request.client.requests.delete(self)
           end
           
         end

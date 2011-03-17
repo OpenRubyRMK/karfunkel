@@ -9,10 +9,13 @@ module OpenRubyRMK
     
       module Responses
         
-        class FinishedResponse < Response
+        class ErrorResponse < Response
+          
+          attr_accessor :message
           
           def make_xml(xml)
-            #Nothing to do here, we have no extra information to transmit
+            raise(ArgumentError, "Errors need to have a message!") unless @message
+            xml.message @message
           end
           
         end

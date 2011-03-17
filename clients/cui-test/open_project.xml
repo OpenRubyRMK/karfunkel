@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Karfunkel>
+  <sender>
+    <id>1</id>
+  </sender>
+  <request type="OpenProject" id="<%= @request_id %>">
+    <file><%= info[:file] %></file>
+  </request>
+</Karfunkel>
