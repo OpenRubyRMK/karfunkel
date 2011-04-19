@@ -184,6 +184,7 @@ end
 Rake::RDocTask.new do |rt|
   rt.rdoc_dir = "doc"
   rt.rdoc_files.include("**/*.rb", "**/*.rdoc", "COPYING.txt")
+  rt.rdoc_files.exclude("server/lib/open_ruby_rmk/karfunkel/server_management/requests/*.rb")
   rt.generator = "hanna" #Ignored if not there
   rt.title = "OpenRubyRMK RDocs"
   rt.main = "README.rdoc"
