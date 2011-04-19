@@ -254,3 +254,22 @@ Send when the project is in a usable state.
       <reason>REASON_WHY_YOU_WERE_REJECTED</reason>
     </response>
   </Karfunkel>
+
+=== SelectProject
+
+Instructs Karfunkel to load the project with the given name.
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel id="YOUR_ID">
+    <request type="SelectProject" id="X">
+      <name>project_name</name> #Without the .rmk extension
+    </request>
+  </Karfunkel>
+  
+  ==== Possible responses
+  
+  [OK]
+    The Project was selected. You can work with it now.
+  [failed]
+    The project couldn't be select for some reason. Check the
+    +reason+ tag.

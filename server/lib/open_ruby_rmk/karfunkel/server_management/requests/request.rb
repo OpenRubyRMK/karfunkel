@@ -110,7 +110,7 @@ module OpenRubyRMK
               end
             end
             
-            if parent_node?
+            if parent_node
               Nokogiri::XML::Builder.with(parent_node, &l)
             else #Shouldn't be necessary, as this wouldn't be a correct Karfunkel command
               Nokogiri::XML::Builder.new(encoding: "UTF-8", &l)

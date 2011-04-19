@@ -250,9 +250,19 @@ module OpenRubyRMK
             end
           end
           
+          #Sets the active project to +project+ if this is possible. Raises
+          #an ArgumentError otherwise
+          def select_project(project)
+            if @projects.include?(project)
+              @selected_project = project
+            else
+              raise(ArgumentError, "The project #{project} is not available.")
+            end
+          end
+          
           #Makes the project with number +index+ the active project.
           #Raises an IndexError if there is no project with that index.
-          def select_project(index)
+          def select_project_by_index(index)
             proj = @projects[index]
             raise(IndexError, "No project with index #{index}!") if proj.nil?
             @selected_project = proj
