@@ -31,42 +31,18 @@ class Pathname
   
 end
 
-#Require the lib
-require_relative "../project_management"
-require_relative "../server_management"
-require_relative "../project_management/project"
+#Require the paths, as they’re needed for some constants
 require_relative "../paths"
-require_relative "../errors"
-require_relative "../project_management/map"
-require_relative "../project_management/mapset"
-require_relative "../project_management/map_field"
-require_relative "../project_management/character"
-require_relative "./option_handler"
-require_relative "./client"
-require_relative "./protocol"
-require_relative "./command"
-require_relative "./requests/request"
-require_relative "./responses/response"
-
-#Require all files in the requests directory
-Dir.glob(File.join(File.dirname(__FILE__), "requests", "*.rb")).each do |f|
-  require_relative f
-end
-
-#Requires all files in the responses directory
-Dir.glob(File.join(File.dirname(__FILE__), "responses", "*.rb")).each do |f|
-  require_relative f
-end
 
 module OpenRubyRMK
+  
+  #The version of OpenRubyRMK, read from the version file.
+  VERSION = OpenRubyRMK::Karfunkel::Paths::VERSION_FILE.read.chomp.freeze
   
   #Namespace of Karfunkel.
   module Karfunkel
     
     module ServerManagement
-      
-      #The version of OpenRubyRMK, read from the version file.
-      VERSION = Paths::VERSION_FILE.read.chomp.freeze
       
       #This is OpenRubyRMK's server. Every GUI is just a client to his majesty Karfunkel.
       #The whole server-client architecture Karfunkel deals with works as follows:
@@ -306,7 +282,7 @@ module OpenRubyRMK
               @log.level = @config[:loglevel]
             end
             @log.datetime_format =  "%d.%m.%Y %H:%M:%S "
-            @log.info("Started.") #OK, not 100% correct, but how to log this before the logger was created?
+            @log.info("This is Karfunkel, version #{VERSION}.")
             if debug_mode?
               @log.warn("Running in DEBUG mode!")
               sleep 1 #Give time to read the above
@@ -359,4 +335,27 @@ module OpenRubyRMK
     
   end
   
+end
+
+#Require the rest of the lib
+require_relative "../errors"
+require_relative "../project_management"
+require_relative "../project_management/map"
+require_relative "../project_management/mapset"
+require_relative "../project_management/map_field"
+require_relative "../project_management/character"
+require_relative "../project_management/project"
+
+require_relative "../server_management"
+require_relative "./client"
+require_relative "./protocol"
+require_relative "./command"
+require_relative "./request"
+require_relative "./response"
+
+require_relative "./option_handler"
+
+#Require all files in the requests directory
+Dir.glob(File.join(File.dirname(__FILE__), "requests", "*.rb")).each do |f|
+  require_relative f
 end

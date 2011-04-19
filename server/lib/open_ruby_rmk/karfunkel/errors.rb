@@ -44,9 +44,9 @@ module OpenRubyRMK
     class RequestNotFound < InvalidCommand
       
       attr_reader :type
+      attr_reader :request_id
       
-      def initialize(msg, type, request_id)
-        super(msg)
+      def initialize(type, request_id)
         @type = type
         @request_id = request_id
       end
@@ -66,6 +66,9 @@ module OpenRubyRMK
     end
     
     class InvalidParameter < MalformedCommand
+    end
+    
+    class AuthenticationError < OpenRubyRMKError
     end
     
     class ConnectionFailed < OpenRubyRMKError

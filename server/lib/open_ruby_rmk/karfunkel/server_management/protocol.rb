@@ -13,7 +13,9 @@ module OpenRubyRMK
       #
       #Whenever the user sent a complete command, #process_command
       #is triggered which instantiates an instance of one of the
-      #classes in the Requests module.
+      #classes in the Requests module. These are generated from the
+      #files in the *lib/open_ruby_rmk/karfunkel/server_management/requests*
+      #directory.
       module Protocol
         
         #This is the byte that terminates each command.
@@ -40,11 +42,11 @@ module OpenRubyRMK
           #however that the server may generate Commands aside this cache,
           #because it is not inspected on a regular basis (the receive_data
           #method is only called when data was received).
-          @cached_command = Command.new(@client)
+          @cached_command = Command.new(Karfunkel)
           #If the client doesn't authenticate within 5 seconds, disband
           #him.
           EventMachine.add_timer(Karfunkel.config[:greet_timeout]) do
-            if @client.available? and !@client.authenticated?
+            if !@client.authenticated?
               Karfunkel.log_warn("Connection timeout for #{@client}.")
               terminate!
             end
@@ -62,7 +64,7 @@ module OpenRubyRMK
           if @received_data.end_with?(END_OF_COMMAND)
             process_command(@received_data.sub(/#{END_OF_COMMAND}$/, ""))
             deliver_answer_command
-            remove_dead_requests_and_responses
+            #remove_dead_requests_and_responses
             @received_data.clear
             @cached_command = Command.new(Karfunkel)
           end
@@ -77,57 +79,52 @@ module OpenRubyRMK
         
         private
         
-        #===============================================
-        #Some helper methods follow.
-        
-        #Processes a command and instantiates the appropriate
-        #command classes, which in turn instantiate and deliver
-        #the (hopefully) correct response classes. Exception are
-        #the +error+ response which is issued on malformed commands
-        #and the entire processing of the +hello+ request, which are
-        #done inside this method and some helper methods.
+        #Processes a full command. If the client sending the command
+        #was not yet authenticated, #check_authentication is invoked to
+        #authenticate the client (or reject him). Otherwise, first
+        #processes the commands’s requests and then it’s responses, collecting
+        #all wanted responses in the @cached_command command.
+        #
+        #This method shouldn’t crash, but rather log exceptions and
+        #warnings, continueing the event loop.
         def process_command(command_xml)
-          #If the client has not authenticated yet, we have to do so.
-          unless @client.authenticated?
-            if authenticate(command_xml)
-              @client.authenticated = true
-              Karfunkel.log_debug("Client #{@client} authenticated.")
-              greet_back
-              Karfunkel.log_info("Client #{@client} connected.")
-            else
-              Karfunkel.log_warn("Authentication failed for #{@client}!")
-              terminate!
-            end
-          else
+          #First we parse the command.
+          begin
+            command = Command.from_xml(command_xml, @client)
+          rescue => e
+            Karfunkel.log_exception(e)
+            error(e.message)
+            return
+          end
+          
+          #Ensure the user is allowed to demand requests. If not, try to
+          #authenticate him.
+          begin
+            check_authentication(command)
+          rescue Errors::AuthenticationError => e
+            Karfunkel.log_warn("[#@client] Authentication failed: #{e.message}")
+            reject("Authentication failed.")
+            terminate!
+            return
+          end
+          
+          #Then we execute all the requests
+          command.requests.each do |request|
             begin
-              command = Command.from_xml(command_xml, @client) #I pass client here, because reconstructing it from the command would be bad for performance...
-              command.requests.each do |request|
-                Karfunkel.log_debug("[#{@client}] Request: #{request.type}")
-                @client.requests << request
-                request.start(client)
-              end
-            rescue Errors::RequestNotFound => e
-              Karfunkel.log_warn("[#@client] Unknown request: #{e.type}")
-              res = Responses::RejectedResponse.new(e.request_id, e.type)
-              res.message = "Unknown request type #{e.type}."
-              @cached_command.responses << res
+              @cached_command.responses << request.execute(@client)
+            rescue => e
+              Karfunkel.log_exception(e)
+              reject(e.message, request)
             end
-          end #unless authenticated
-        rescue Errors::ConnectionFailed => e #Non-Recoverable--connection immediately cut.
-          Karfunkel.log_error("Fatal connection error with client #{client}:")
-          Karfunkel.log_exception(e)
-          terminate!
-        rescue => e
-          Karfunkel.log_warn("Ignoring error with client #{client}: ")
-          Karfunkel.log_exception(e, :warn)
-          res = Responses::ErrorResponse.new(-1, :unknown)
-          res.name = e.class.name
-          res.message = e.message
-          res.conclusion = "Unable to process request."
-          @cached_command.responses << res
-        end #process_request
+          end
+          
+          #And now we chech the responses that Karfunkel’s clients send to us.
+          command.responses.each do |response|
+            puts("TODO: Responses are not processed yet! (#{response})")
+          end
+        end
         
-        #Sends anything that has been put into @command to the client.
+        #Sends anything that has been put into @cached_command to the client.
         #If nothing has been collected there, nothing is send.
         def deliver_answer_command
           return if @cached_command.empty? #We don't want to send empty commands.
@@ -142,77 +139,52 @@ module OpenRubyRMK
           @client.responses.delete_if{|res| !res.alive?}
         end
         
-        #Tries to authenticate the connection by processing
-        #+request+. Returns true if everything worked out,
-        #false otherwise.
-        def authenticate(request)
-          xml = parse_command(request, true) #Raises MalformedCommand if fed invalid XML
-          request = xml.root.children[0]
-          #This must be a HELLO request
-          unless request["type"] == "Hello"
-            raise(Errors::ConnectionFailed, "Request was not a HELLO request.")
+        #Checks if the user is authenticated, and if so, immediately
+        #returns. If not, this method verifies that +command+ contains
+        #a single +Hello+ request and nothing else. Note that this
+        #method just detects structural errors, because the actual
+        #authentication takes place during the execution of the
+        #+Hello+ request.
+        def check_authentication(command)
+          return if @client.authenticated?
+          #OK, not authenticated. This means, the first request the client
+          #sends must be HELLO, and no further requests in this command are
+          #allowed.
+          if command.requests.count > 1
+            raise(AuthenticationError.new(@client), "Client #@client tried to execute requests together with HELLO!")
+          elsif command.requests.first.type != "Hello"
+            raise(AuthenticationError.new(@client), "Client #@client tried to send another request than a HELLO!")
           end
-          #If we get here, the command is a valid greeting.
-          #Here one could add authentication, but for now we accept the
-          #request as OK.
-          new_id = Karfunkel.generate_id
-          @client.id = new_id
-          @client.os = request.children.at_xpath("os")
-          true
-        rescue => e
-          Karfunkel.log_error("Error on initial connection with #{@client}!")
-          Karfunkel.log_exception(e)
-          false
+          #Good, no malicious attempts so far. Return and let the HelloRequest
+          #class check credentials, etc.
         end
         
-        #Karfunkel's positive answer to a HELLO request.
-        def greet_back
-          builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-            xml.Karfunkel(:id => Karfunkel::ID) do
-              xml.response(:type => "Hello", :id => 0) do
-                xml.status "ok"
-                xml.id_ @client.id
-                xml.my_version VERSION
-                #xml.my_project ...
-                xml.my_clients_num Karfunkel.clients.size
-              end
-            end
-          end
-          send_data(builder.to_xml + END_OF_COMMAND)
+        #Sends a +rejected+ response to the client.
+        #===Parameters
+        #[reason]  Reason why the client was rejected.
+        #[request] (nil) An optional Request object used to fill the
+        #          +type+ and +id+ attributes of the response.
+        def reject(reason, request = nil)
+          r = Response.new(request, :rejected)
+          r[:reason] = reason
+          @cached_command.responses << r
         end
         
-        #Sends an error response.
-        def error(client, str)
-          builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-            xml.Karfunkel(:id => Karfunkel::ID) do
-              xml.response(:type => "unknown", :id => -1) do
-                xml.status "error"
-                xml.message str
-              end
-            end
-          end
-          send_data(builder.to_xml + END_OF_COMMAND)
-        end
-        
-        #Checks wheather or not +str+ is a valid Karfunkel command
-        #and raises a MalformedCommand error otherwise. If all went well,
-        #a Nokogiri::XML::Document is returned.
-        def parse_command(str, dont_check_id = false)
-          #Make Nokogiri only parsing valid XML and removing blank nodes, i.e.
-          #text nodes with whitespace only.
-          xml = Nokogiri::XML(str, nil, nil, Nokogiri::XML::ParseOptions::STRICT | Nokogiri::XML::ParseOptions::NOBLANKS)
-          raise(Errors::MalformedCommand, "Root node is not 'Karfunkel'.") unless xml.root.name == "Karfunkel"
-          raise(Errors::MalformedCommand, "No or invalid client ID given.") if !dont_check_id and xml.root["id"] == Karfunkel::ID.to_s
-          return xml
-        rescue Nokogiri::XML::SyntaxError
-          raise(Errors::MalformedCommand, "Malformed XML document.")
+        #Sends an +error+ response to the client.
+        #===Parameters
+        #[description] Explanation on what went wrong.
+        #[request]     (nil) An optional Request object used to fill the
+        #              +type+ and +id+ attributes of the response.
+        def error(description, request = nil)
+          r = Response.new(request, :error)
+          r[:description] = description
+          @cached_command.responses << r
         end
         
         #Immediately cuts the connection to Karfunkel,
         #setting the client's availability status to false.
         def terminate!
           close_connection
-          @client.available = false
         end
         
       end

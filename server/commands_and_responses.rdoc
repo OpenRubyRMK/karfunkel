@@ -68,8 +68,7 @@ always have the following structure:
     <sender>
       <id>0</id> #0 is Karfunkel's own ID
     </sender>
-    <response type="OpenProject" id="12"> #The request type you wanted Karfunkel to process and the command ID you sent along with your request.
-      <status>Finished</status> #The status of your request. Further down you'll find a list of possible stati.
+    <response type="OpenProject" id="12" status="Finished"> #The request type you wanted Karfunkel to process and the command ID you sent along with your request. A list of possible stati can be found below.
       #A response's body differs from response to response. Look into each
       #response's documentation
       #in order to find out what goes here.
