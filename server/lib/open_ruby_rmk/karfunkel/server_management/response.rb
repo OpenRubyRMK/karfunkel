@@ -41,6 +41,7 @@ module OpenRubyRMK::Karfunkel::SM
     def initialize(request, status = :ok, attributes = {})
       raise(ArgumentError, "No request given!") if !request and status != :error
       @request = request
+      @request.response = self if @request
       @attributes = attributes
       @status = status
     end
@@ -75,6 +76,17 @@ module OpenRubyRMK::Karfunkel::SM
         ""
       end
     end
+    
+    #call-seq:
+    #  == other      → true or false
+    #  eql?( other ) → true or false
+    #
+    #Two responses are considered equal if they refer to the
+    #same request.
+    def ==(other)
+      @request == other.request
+    end
+    alias eql? ==
     
   end
   

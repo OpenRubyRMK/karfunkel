@@ -11,7 +11,7 @@ module OpenRubyRMK
       #Karfunkel. The public methods are called by EventMachine,
       #the private ones are helper methods.
       #
-      #Whenever the user sent a complete command, #process_command
+      #Whenever the user sends a complete command, #process_command
       #is triggered which instantiates an instance of one of the
       #classes in the Requests module. These are generated from the
       #files in the *lib/open_ruby_rmk/karfunkel/server_management/requests*
@@ -43,12 +43,34 @@ module OpenRubyRMK
           #because it is not inspected on a regular basis (the receive_data
           #method is only called when data was received).
           @cached_command = Command.new(Karfunkel)
-          #If the client doesn't authenticate within 5 seconds, disband
+          #Sometime Karfunkel needs to send requests as well, and these
+          #requests need an ID. This ID is counted up by means of incrementing
+          #this variable. See also the #next_request_id method.
+          @last_request_id = -1
+          #If the client doesn't authenticate within X seconds, disband
           #him.
           EventMachine.add_timer(Karfunkel.config[:greet_timeout]) do
             if !@client.authenticated?
               Karfunkel.log_warn("Connection timeout for #{@client}.")
               terminate!
+            end
+          end
+          #Clients that do not answer requests can be considered uninterested.
+          #Therefore we sent him every now and then a PING request. If he
+          #doesn’t answer, he’s disconnected.
+          EventMachine.add_periodic_timer(Karfunkel.config[:ping_interval]) do
+            Karfunkel.log_info("[#@client] Sending PING to #@client")
+            @client.available = false
+            cmd = Command.new(Karfunkel)
+            req = Requests::PingRequest.new(next_request_id)
+            cmd.requests << req
+            cmd.deliver!(@client)
+            @client.sent_requests << req
+            #Now wait for the client to respond to the PING, and if
+            #he doesn’t, disconnect.
+            EventMachine.add_timer(Karfunkel.config[:ping_interval] - 1) do #-1, b/c another PING request could be sent then
+              Karfunkel.log_warn("[#@client] No response to PING. Disconnecting #@client.")
+              terminate! unless @client.available?
             end
           end
         end
@@ -97,6 +119,9 @@ module OpenRubyRMK
             return
           end
           
+          #We received data from the client, so he’s available!
+          @client.available = true
+          
           #Ensure the user is allowed to demand requests. If not, try to
           #authenticate him.
           begin
@@ -111,6 +136,7 @@ module OpenRubyRMK
           #Then we execute all the requests
           command.requests.each do |request|
             begin
+              Karfunkel.log_info("[#@client] Request: #{request.type}")
               @cached_command.responses << request.execute(@client)
             rescue => e
               Karfunkel.log_exception(e)
@@ -118,9 +144,16 @@ module OpenRubyRMK
             end
           end
           
-          #And now we chech the responses that Karfunkel’s clients send to us.
+          #And now we check the responses that Karfunkel’s clients send to us.
           command.responses.each do |response|
-            puts("TODO: Responses are not processed yet! (#{response})")
+            begin
+              Karfunkel.log_info("[#@client] Response to #{response.request.type} request")
+              response.request.process_response(@client, response)
+              @client.sent_requests.delete(response.request)
+            rescue => e
+              Karfunkel.log_exception(e)
+              Karfunkel.log_error("[#@client] Failed to process response: #{response}")
+            end
           end
         end
         
@@ -179,6 +212,10 @@ module OpenRubyRMK
           r = Response.new(request, :error)
           r[:description] = description
           @cached_command.responses << r
+        end
+        
+        def next_request_id
+          @last_request_id += 1
         end
         
         #Immediately cuts the connection to Karfunkel,

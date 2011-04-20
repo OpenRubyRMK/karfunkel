@@ -175,12 +175,6 @@ module OpenRubyRMK
             @running = false
           end
           
-          #Human-readable description of form
-          #  #<OpenRubyRMK::Karfunkel::Karfunkel Karfunkel listeing with PID <pid here> at Port <port here>.>
-          def inspect
-            "#<#{self.name} listening with PID #{$$} at Port #{@port}.>"
-          end
-          
           #true if Karfunkel is running in debug mode.
           def debug_mode?
             @config[:debug]
