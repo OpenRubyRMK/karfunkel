@@ -30,15 +30,19 @@ module OpenRubyRMK::Karfunkel::SM
   #    #This method gets called when a request of your type is
   #    #encountered. It gets passed the Client that made the request.
   #    def execute(client)
-  #      #Grab the parameters passed and do the real coding.
-  #      #Note you must access the parameters using self[:parameter],
-  #      #bcecause no instance variables are set for this.
+  #      # Grab the parameters passed and do the real coding.
+  #      # Note you must access the parameters using self[:parameter],
+  #      # bcecause no instance variables are set for this.
   #      result = self[:x].to_i + self[:y].to_i
-  #      #When you’re done, end with one of the possible responses
-  #      #(see the Response class for a list of possible symbols).
-  #      #The answer method takes the response type and a hash whose
-  #      #keys and values will be used to create the respective XML
-  #      #tags of the response.
+  #      # If you feel the need you have to notify all currently connected
+  #      # clients on your actions, call #broadcast and attach some
+  #      # valuable information.
+  #      broadcast :map_loading, :percent => 35
+  #      # When you’re done, end with one of the possible responses
+  #      # (see the Response class for a list of possible symbols).
+  #      # The answer method takes the response type and a hash whose
+  #      # keys and values will be used to create the respective XML
+  #      # tags of the response.
   #      answer :ok, :result => result
   #    end
   #
@@ -66,10 +70,56 @@ module OpenRubyRMK::Karfunkel::SM
   #  end
   class Request
     
-    #For simpler typing
-    Karfunkel = OpenRubyRMK::Karfunkel::SM::Karfunkel
-    #For simpler typing
-    Errors = OpenRubyRMK::Karfunkel::Errors
+    class DSL
+      
+      #For simpler typing
+      Karfunkel = OpenRubyRMK::Karfunkel::SM::Karfunkel
+      #For simpler typing
+      Errors = OpenRubyRMK::Karfunkel::Errors
+      #For simpler typing
+      PM = OpenRubyRMK::Karfunkel::PM
+      
+      def initialize(type, &block)
+        #These variables catch information for the new request class
+        @attribute_names = []
+        @execute_block = nil
+        @process_response_block = nil
+        
+        #This executes the DSL
+        instance_eval(&block)
+        
+        #These create the new request class with all the facilities defined
+        #by the DSL.
+        klass = Class.new(Request)
+        klass.instance_variable_set(:"@attribute_names", @attribute_names) #Yes, this is a class instance variable
+        klass.send(:define_method, :execute, &@execute_block) if @execute_block
+        klass.send(:define_method, :process_response, &@process_response_block) if @response_block
+        Requests.const_set(:"#{type.capitalize}Request", klass)
+      end
+      
+      private
+      
+      def attribute(sym)
+        @attribute_names << sym
+      end
+      
+      def execute(&block)
+        @execute_block = block
+      end
+      
+      def process_response(&block)
+        @execute_block = block
+      end
+      
+      def answer(sym, hsh)
+        #TODO: Send answer
+      end
+      
+      def broadcast(sym, hsh)
+        Karfunkel.add_broadcast(Notification.new(type, attributes))
+      end
+      
+    end
     
     #Parameters for a request. They’re set when the XML is loaded
     #from a file; this is a hash of form
@@ -101,7 +151,7 @@ module OpenRubyRMK::Karfunkel::SM
     #Part of the Request DSL -- tells the request definer that we want to
     #define a new request type.
     def self.define(type, &block)
-      Requests.const_set(:"#{type.capitalize}Request", Class.new(self, &block))
+      DSL.new(type, &block)
     end
     
     #Creates a new Request. You should only instanciate subclasses of this
@@ -140,7 +190,7 @@ module OpenRubyRMK::Karfunkel::SM
     #Part of the request DSL. You must override this method in your own
     #request types; it’s called whenever Karfunkel comes over a request
     #of your type. +client+ is the Client that made the request.
-    def execute(client)
+    def execute!(client)
       raise(NotImplementedError, "This method must be overriden in a subclass!")
     end
     
@@ -176,9 +226,24 @@ module OpenRubyRMK::Karfunkel::SM
     #    #Do some coding...
     #    answer :ok, :some_info => "Something"
     #  end
-    def answer(sym, hsh = {})
-      Response.new(self, sym, hsh)
-    end
+    #def answer(sym, hsh = {})
+    #  @response = Response.new(self, sym, hsh)
+    #end
+    
+    #Part of the Request DSL -- remembers a Notification object you
+    #define by the +type+ (which is used to distinguish notifications
+    #for e.g. easier translations) and the attributes. No restrictions
+    #exist for neither +type+ nor +attributes+, but you should document
+    #what broadcasts your request type tends to deliver.
+    #Example:
+    #  def execute(client)
+    #    #Do some coding...
+    #    broadcast :foo, :message => "This is foo!"
+    #    #Further coding...
+    #  end
+    #def broadcast(type, attributes)
+    #  Karfunkel.add_broadcast(Notification.new(type, attributes))
+    #end
     
   end
   

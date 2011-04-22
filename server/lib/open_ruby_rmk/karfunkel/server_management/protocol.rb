@@ -137,12 +137,20 @@ module OpenRubyRMK
           command.requests.each do |request|
             begin
               Karfunkel.log_info("[#@client] Request: #{request.type}")
-              @cached_command.responses << request.execute(@client)
+              request.execute!(@client) #No, this is not a danger for life ;-)
+              @cached_command.responses << request.response
             rescue => e
               Karfunkel.log_exception(e)
               reject(e.message, request)
             end
           end
+          
+          #Inject the outstanding broadcasts into the command
+          @client.outstanding_broadcasts.each do |note|
+            @cached_command.notifications << note
+          end
+          #All processed, clear the broadcasts
+          @client.outstanding_broadcasts.clear
           
           #And now we check the responses that Karfunkel’s clients send to us.
           command.responses.each do |response|

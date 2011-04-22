@@ -248,6 +248,15 @@ module OpenRubyRMK
             "#<#{self.class} I AM KARFUNKEL. THEE IS NOTHING.>"
           end
           
+          #Adds the Notification object +note+ to each client’s
+          #outstanding broadcasts, causing it to be delivered to all clients
+          #at once.
+          def add_broadcast(note)
+            @clients.each do |client|
+              client.outstanding_broadcasts << client
+            end
+          end
+          
           private
           
           def parse_argv

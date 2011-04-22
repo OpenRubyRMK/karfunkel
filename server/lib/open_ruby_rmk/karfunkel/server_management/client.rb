@@ -22,14 +22,11 @@ module OpenRubyRMK
         #This is set *manually* and does *not* check the
         #actual state of the connection.
         attr_accessor :available
-        #The requests that are outstanding for this client, i.e. those
-        #requests that have been received FROM the client and are
-        #currently being processed.
-        attr_accessor :requests
-        #Responses this client has sent back.
-        attr_accessor :responses
         #The requests that have been send TO the client.
         attr_accessor :sent_requests
+        #Broadcasts that have not yet been sent to the client.
+        #An array of Notification objects.
+        attr_accessor :outstanding_broadcasts
         #The client's IP address.
         attr_reader :ip
         #The port the client uses for the connection.
@@ -43,11 +40,8 @@ module OpenRubyRMK
           @connection = connection
           @authenticated = false
           @available = true
-          @requests = []
           @sent_requests = []
-          @responses = []
-          @last_request_id = 0
-          @request_id_generator_mutex = Mutex.new #This is a shared resource
+          @outstanding_broadcasts = []
           if peer = @connection.get_peername
             @port, @ip = Socket.unpack_sockaddr_in(peer)
           else
@@ -59,14 +53,6 @@ module OpenRubyRMK
         #True if the client is authenticated.
         def authenticated?
           @authenticated
-        end
-        
-        #Generates a new and unused ID for requests sent TO the client.
-        #For the IDs the client sends, he is responsible himself.
-        def generate_request_id
-          @request_id_generator_mutex.synchronize do
-            @last_request_id += 1
-          end
         end
         
         #True if the client can be sent data (see the attribute for further

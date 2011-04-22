@@ -21,6 +21,9 @@ module OpenRubyRMK::Karfunkel::SM
     #An array of Response objects. These are all the responses contained
     #in this command.
     attr_accessor :responses
+    #An array of Notification objects. These are all the notificactions
+    #contained in this command.
+    attr_accessor :notifications
     
     #Loads a command from the XML representation, including all the contained
     #requests and responses.
@@ -69,6 +72,15 @@ module OpenRubyRMK::Karfunkel::SM
         cmd.requests << request
       end
       
+      #Notifications
+      doc.root.xpath("notification").each do |node|
+        note = Notification.new(node["type"])
+        node.children.each do |child_node|
+          note[child_node.name] = child_node.text
+        end
+        cmd.notifications << note
+      end
+      
       #Return value
       cmd
     end
@@ -81,6 +93,7 @@ module OpenRubyRMK::Karfunkel::SM
       @from = from
       @requests = []
       @responses = []
+      @notifications = []
     end
     
     #Checks wheather or not any requests or responses have been defined
@@ -125,6 +138,14 @@ module OpenRubyRMK::Karfunkel::SM
             end
           end
           
+          #Process all the notifications and build <notification> blocks
+          @notifications.each do |note|
+            xml.notification(:type => note.type) do
+              note.attributes.each_pair do |key, value|
+                xml.send(key, value.to_s) #to_s allows for arbitrary values in the attribute
+              end
+            end
+          end
         end
       end
       builder.to_xml

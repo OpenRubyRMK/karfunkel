@@ -21,6 +21,8 @@ purpose, i.e. +Hello+.
 [Request]   The part of a command that indicates what you want Karfunkel to do.
 [Response]  Karfunkel's opinion and reports about your requests. This is also
             part of a command.
+[Notification] Purely informative message you don't have to respond to. Part of
+               a command.
 
 ==How to connect
 
@@ -102,6 +104,25 @@ command contained massive syntactical errors or the like. As Karfunkel wasn't
 able to detect command type and ID, he puts +unknown+ for the command type and
 -1 for the ID. If you send proper commands over a proper network connection,
 you shouldn't get this response.
+
+===Notifications
+
+Sometimes you'll find Karfunkel sending you some data without requesting it.
+These are usually so-called _notifications_, and are delivered when something
+in the server's state changes that affects all clients, e.g. a project file
+was opened or some data on a map was changed. Notifications have the
+following structure:
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel> #As always
+    <notification type="field_set"> #The type tells you what info you'll find...
+      #...in this block here. It's different from notification to notification.
+    </notification>
+  </Karfunkel>
+
+Karfunkel expects no answer to a notification, they're purely informative
+(but you probably should reflect them in your interface, e.g. change a
+map's name if it has been renamed by another client).
 
 ==Commands that can be sent
 
