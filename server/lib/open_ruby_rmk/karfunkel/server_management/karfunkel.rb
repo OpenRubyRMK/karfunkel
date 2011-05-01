@@ -253,7 +253,7 @@ module OpenRubyRMK
           #at once.
           def add_broadcast(note)
             @clients.each do |client|
-              client.outstanding_broadcasts << client
+              client.outstanding_broadcasts << note
             end
           end
           
@@ -355,6 +355,7 @@ require_relative "./protocol"
 require_relative "./command"
 require_relative "./request"
 require_relative "./response"
+require_relative "./notification"
 
 require_relative "./option_handler"
 

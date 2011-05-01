@@ -41,7 +41,7 @@ module OpenRubyRMK::Karfunkel::SM
     def initialize(request, status = :ok, attributes = {})
       raise(ArgumentError, "No request given!") if !request and status != :error
       @request = request
-      @request.response = self if @request
+      @request.responses << self if @request
       @attributes = attributes
       @status = status
     end

@@ -24,6 +24,9 @@ module OpenRubyRMK
         attr_accessor :available
         #The requests that have been send TO the client.
         attr_accessor :sent_requests
+        #Responses that have not yet been sent to the client.
+        #An array of Response objects.
+        attr_accessor :outstanding_responses
         #Broadcasts that have not yet been sent to the client.
         #An array of Notification objects.
         attr_accessor :outstanding_broadcasts
@@ -42,6 +45,7 @@ module OpenRubyRMK
           @available = true
           @sent_requests = []
           @outstanding_broadcasts = []
+          @outstanding_responses = []
           if peer = @connection.get_peername
             @port, @ip = Socket.unpack_sockaddr_in(peer)
           else

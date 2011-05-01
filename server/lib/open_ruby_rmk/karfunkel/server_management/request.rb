@@ -75,9 +75,11 @@ module OpenRubyRMK::Karfunkel::SM
       #For simpler typing
       Karfunkel = OpenRubyRMK::Karfunkel::SM::Karfunkel
       #For simpler typing
-      Errors = OpenRubyRMK::Karfunkel::Errors
+      Errors = OpenRubyRMK::Errors
       #For simpler typing
       PM = OpenRubyRMK::Karfunkel::PM
+      #For simpler typing
+      SM = OpenRubyRMK::Karfunkel::SM
       
       def initialize(type, &block)
         #These variables catch information for the new request class
@@ -92,15 +94,29 @@ module OpenRubyRMK::Karfunkel::SM
         #by the DSL.
         klass = Class.new(Request)
         klass.instance_variable_set(:"@attribute_names", @attribute_names) #Yes, this is a class instance variable
-        klass.send(:define_method, :execute, &@execute_block) if @execute_block
+        klass.send(:define_method, :execute!, &@execute_block) if @execute_block
         klass.send(:define_method, :process_response, &@process_response_block) if @response_block
-        Requests.const_set(:"#{type.capitalize}Request", klass)
+        #The two following method definitions are needed because inside the
+        #block of the #execute method self points to an instance of klass which
+        #doesn’t have access to the DSL class’s instance methods. Therefore I
+        #"expand" the DSL a bit onto klass.
+        #Of course I could define these methods directly in the Request class,
+        #but then some parts of the DSL wouldn’t be defined in the DSL module
+        #which would be kinda surprising.
+        klass.send(:define_method, :answer) do |client, sym, hsh = {}|
+          client.outstanding_responses << Response.new(self, sym, hsh)
+        end
+        klass.send(:define_method, :broadcast) do |sym, hsh|
+          Karfunkel.add_broadcast(SM::Notification.new(type, attributes))
+        end
+        
+        Requests.const_set(:"#{type}Request", klass)
       end
       
       private
       
       def attribute(sym)
-        @attribute_names << sym
+        @attribute_names << sym.to_s #The XML contains only strings
       end
       
       def execute(&block)
@@ -111,15 +127,14 @@ module OpenRubyRMK::Karfunkel::SM
         @execute_block = block
       end
       
-      def answer(sym, hsh)
-        #TODO: Send answer
-      end
-      
-      def broadcast(sym, hsh)
-        Karfunkel.add_broadcast(Notification.new(type, attributes))
-      end
-      
     end
+    
+    #For simpler typing
+    Karfunkel = OpenRubyRMK::Karfunkel::SM::Karfunkel
+    #For simpler typing
+    Errors = OpenRubyRMK::Errors
+    #For simpler typing
+    PM = OpenRubyRMK::Karfunkel::PM
     
     #Parameters for a request. They’re set when the XML is loaded
     #from a file; this is a hash of form
@@ -127,15 +142,8 @@ module OpenRubyRMK::Karfunkel::SM
     attr_reader :attributes
     #The ID of this request.
     attr_reader :id
-    #The response corresponding to this request or nil if there wasn’t
-    #a response yet.
-    attr_accessor :response
-    
-    #Part of the Request DSL -- tells the request definer that +name+
-    #is a parameter of this request. +name+ should be a symbol.
-    def self.attribute(name)
-      valid_attribute_names << name.to_s
-    end
+    #The Responses corresponding to this request.
+    attr_accessor :responses
     
     #Returns a list of all possible attributes/parameter sof this request class.
     def self.valid_attribute_names
@@ -160,20 +168,20 @@ module OpenRubyRMK::Karfunkel::SM
     def initialize(id)
       @id = id.to_s
       @attributes = {}
-      @response = nil
+      @responses = []
     end
     
     #Returns the value of a parameter.
     def [](attribute)
-      raise(ArgumentError, "Not a valid attribute: #{attribute}!") unless self.class.valid_attribute?(attribute)
-      @attributes[attribute]
+      raise(ArgumentError, "Not a valid attribute: #{attribute}!") unless self.class.valid_attribute?(attribute.to_s)
+      @attributes[attribute.to_s]
     end
     
     #Sets the value of a parameter. Should only be used when loading the
     #XML files.
     def []=(attribute, value)
-      raise(ArgumentError, "Not a valid attribute: #{attribute}!") unless self.class.valid_attribute?(attribute)
-      @attributes[attribute] = value
+      raise(ArgumentError, "Not a valid attribute: #{attribute}!") unless self.class.valid_attribute?(attribute.to_s)
+      @attributes[attribute.to_s] = value
     end
     
     #This request’s type. It’s determined from the class name.
@@ -194,16 +202,6 @@ module OpenRubyRMK::Karfunkel::SM
       raise(NotImplementedError, "This method must be overriden in a subclass!")
     end
     
-    #Part of the request DSL. You must override this method in your own
-    #request types; it’s called whenever Karfunkel detects an answer to
-    #a request of this type. +response+ is the Response object representing
-    #the response--this is however just for making the DSL more readable, you
-    #could as well use the @response instance variable which should contain
-    #the same Response. If not, you found a bug.
-    def process_response(response)
-      raise(NotImplementedError, "This method must be overriden in a subclass!")
-    end
-    
     #Two requests are considered equal if they have the same ID.
     def eql?(other)
       @id == other.id
@@ -212,7 +210,7 @@ module OpenRubyRMK::Karfunkel::SM
     
     #Checks wheather or not we already received a response for this request.
     def running?
-      @response.nil?
+      @responses.empty?
     end
     
     private

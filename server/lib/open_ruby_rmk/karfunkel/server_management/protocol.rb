@@ -58,7 +58,7 @@ module OpenRubyRMK
           #Clients that do not answer requests can be considered uninterested.
           #Therefore we sent him every now and then a PING request. If he
           #doesn’t answer, he’s disconnected.
-          EventMachine.add_periodic_timer(Karfunkel.config[:ping_interval]) do
+          @ping_timer = EventMachine.add_periodic_timer(Karfunkel.config[:ping_interval]) do
             Karfunkel.log_info("[#@client] Sending PING to #@client")
             @client.available = false
             cmd = Command.new(Karfunkel)
@@ -69,8 +69,10 @@ module OpenRubyRMK
             #Now wait for the client to respond to the PING, and if
             #he doesn’t, disconnect.
             EventMachine.add_timer(Karfunkel.config[:ping_interval] - 1) do #-1, b/c another PING request could be sent then
-              Karfunkel.log_warn("[#@client] No response to PING. Disconnecting #@client.")
-              terminate! unless @client.available?
+              unless @client.available?
+                Karfunkel.log_warn("[#@client] No response to PING. Disconnecting #@client.")
+                terminate!
+              end
             end
           end
         end
@@ -95,6 +97,7 @@ module OpenRubyRMK
         #Called by EventMachine when this connection has been
         #closed.
         def unbind
+          @ping_timer.cancel
           Karfunkel.clients.delete(@client)
           Karfunkel.log_info("Connection to #{@client} closed.")
         end
@@ -138,15 +141,23 @@ module OpenRubyRMK
             begin
               Karfunkel.log_info("[#@client] Request: #{request.type}")
               request.execute!(@client) #No, this is not a danger for life ;-)
-              @cached_command.responses << request.response
             rescue => e
               Karfunkel.log_exception(e)
               reject(e.message, request)
             end
           end
           
+          #Deliver all outstanding responses
+          @client.outstanding_responses.each do |response|
+            Karfunkel.log_info("[#@client] Response (TO): #{response.request.type}")
+            @cached_command.responses << response
+          end
+          #All processed, clear the responses
+          @client.outstanding_responses.clear
+          
           #Inject the outstanding broadcasts into the command
           @client.outstanding_broadcasts.each do |note|
+            Karfunkel.log_info("[#@client] Notification: #{note.type}")
             @cached_command.notifications << note
           end
           #All processed, clear the broadcasts
@@ -155,7 +166,7 @@ module OpenRubyRMK
           #And now we check the responses that Karfunkel’s clients send to us.
           command.responses.each do |response|
             begin
-              Karfunkel.log_info("[#@client] Response to #{response.request.type} request")
+              Karfunkel.log_info("[#@client] Response (FROM) to #{response.request.type} request")
               response.request.process_response(@client, response)
               @client.sent_requests.delete(response.request)
             rescue => e
@@ -229,6 +240,8 @@ module OpenRubyRMK
         #Immediately cuts the connection to Karfunkel,
         #setting the client's availability status to false.
         def terminate!
+          @client.available = false
+          @client.authenticated = false
           close_connection
         end
         
