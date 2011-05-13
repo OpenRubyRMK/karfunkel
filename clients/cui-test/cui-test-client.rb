@@ -5,6 +5,7 @@ require "term/ansicolor"
 require "pathname"
 require "socket"
 require "erb"
+require "timeout"
 
 class TestCUI
   
@@ -94,6 +95,10 @@ class TestCUI
         puts T.yellow(@sock.gets(END_OF_COMMAND))
       end
     end
+  end
+  
+  def cmd_pong(ping_id)
+    render :pong, :ping_id => ping_id
   end
   
   def render(template_name, info = {})
