@@ -95,7 +95,7 @@ module OpenRubyRMK::Karfunkel::SM
         klass = Class.new(Request)
         klass.instance_variable_set(:"@attribute_names", @attribute_names) #Yes, this is a class instance variable
         klass.send(:define_method, :execute!, &@execute_block) if @execute_block
-        klass.send(:define_method, :process_response, &@process_response_block) if @response_block
+        klass.send(:define_method, :process_response, &@process_response_block) if @process_response_block
         #The two following method definitions are needed because inside the
         #block of the #execute method self points to an instance of klass which
         #doesn’t have access to the DSL class’s instance methods. Therefore I
@@ -104,10 +104,10 @@ module OpenRubyRMK::Karfunkel::SM
         #but then some parts of the DSL wouldn’t be defined in the DSL module
         #which would be kinda surprising.
         klass.send(:define_method, :answer) do |client, sym, hsh = {}|
-          client.outstanding_responses << Response.new(self, sym, hsh)
+          client.response(Response.new(self, sym, hsh))
         end
         klass.send(:define_method, :broadcast) do |sym, hsh|
-          Karfunkel.add_broadcast(SM::Notification.new(type, attributes))
+          Karfunkel.add_broadcast(SM::Notification.new(sym, hsh))
         end
         
         Requests.const_set(:"#{type}Request", klass)
@@ -124,7 +124,7 @@ module OpenRubyRMK::Karfunkel::SM
       end
       
       def process_response(&block)
-        @execute_block = block
+        @process_response_block = block
       end
       
     end

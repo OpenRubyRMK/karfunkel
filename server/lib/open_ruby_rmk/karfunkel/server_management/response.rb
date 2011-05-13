@@ -77,6 +77,13 @@ module OpenRubyRMK::Karfunkel::SM
       end
     end
     
+    #Human-readable description of form
+    #  #<OpenRubyRMK::Karfunkel::SM::Response <type>|<status>, attributes: <attrs>>
+    #.
+    def inspect
+      "#<#{self.class} #{type}|#@status, attributes: #{@attributes.inspect}>"
+    end
+    
     #call-seq:
     #  == other      → true or false
     #  eql?( other ) → true or false

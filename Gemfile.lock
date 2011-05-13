@@ -22,7 +22,6 @@ GEM
     rdoc (3.5.3)
     rest-client (1.6.1)
       mime-types (>= 1.16)
-    wxruby-ruby19 (2.0.1)
 
 PLATFORMS
   ruby
@@ -38,4 +37,3 @@ DEPENDENCIES
   ocra
   r18n-desktop
   rdoc (>= 3.4)
-  wxruby-ruby19 (>= 2.0.0)

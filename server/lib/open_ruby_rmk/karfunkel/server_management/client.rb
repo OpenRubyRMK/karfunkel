@@ -24,12 +24,6 @@ module OpenRubyRMK
         attr_accessor :available
         #The requests that have been send TO the client.
         attr_accessor :sent_requests
-        #Responses that have not yet been sent to the client.
-        #An array of Response objects.
-        attr_accessor :outstanding_responses
-        #Broadcasts that have not yet been sent to the client.
-        #An array of Notification objects.
-        attr_accessor :outstanding_broadcasts
         #The client's IP address.
         attr_reader :ip
         #The port the client uses for the connection.
@@ -63,6 +57,28 @@ module OpenRubyRMK
         #explanation).
         def available?
           @available
+        end
+        
+        def request(request)
+          Karfunkel.log_info("[#{self}] Delivering request: #{request.type}")
+          cmd = SM::Command.new(Karfunkel) #FROM
+          cmd.requests << request
+          cmd.deliver!(self) #TO
+          @sent_requests << request
+        end
+        
+        def response(response)
+          Karfunkel.log_info("[#{self}] Delivering response: #{response.request.type}")
+          cmd = SM::Command.new(Karfunkel) #FROM
+          cmd.responses << response
+          cmd.deliver!(self) #TO
+        end
+        
+        def notification(note)
+          Karfunkel.log_info("[#{self}] Delivering notification: #{note.type}")
+          cmd = SM::Command.new(Karfunkel) #FROM
+          cmd.notifications << note
+          cmd.deliver!(self) #TO
         end
         
         #Human-readable description of form

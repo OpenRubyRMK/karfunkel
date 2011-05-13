@@ -37,7 +37,7 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 #The source where we download gems from
 source "http://rubygems.org"
 
-gem "wxruby-ruby19", ">= 2.0.0"
+#gem "wxruby-ruby19", ">= 2.0.0"
 gem "r18n-desktop"
 gem "minitar", ">= 0.5.3"
 gem "chunky_png"

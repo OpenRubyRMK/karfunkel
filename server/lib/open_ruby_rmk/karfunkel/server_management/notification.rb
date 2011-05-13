@@ -31,6 +31,13 @@ module OpenRubyRMK::Karfunkel::SM
       @attributes[attribute.to_s] = value.to_s
     end
     
+    #Compares two notifications. They’re considered equal if both the type
+    #and the arguments are equal.
+    def ==(other)
+      return false if !other.respond_to?(:type) or !other.respond_to?(:attributes)
+      @type == other.type and @attributes == other.attributes
+    end
+    
   end
   
   

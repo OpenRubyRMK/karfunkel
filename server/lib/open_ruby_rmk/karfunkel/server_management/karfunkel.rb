@@ -253,7 +253,7 @@ module OpenRubyRMK
           #at once.
           def add_broadcast(note)
             @clients.each do |client|
-              client.outstanding_broadcasts << note
+              client.notification(note)
             end
           end
           

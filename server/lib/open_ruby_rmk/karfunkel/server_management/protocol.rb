@@ -36,22 +36,18 @@ module OpenRubyRMK
           ##receive_data calls #process_command with the full command
           #and empties the @received_data instance variable.
           @received_data = ""
-          #As we may sent multiple requests/responses in one command,
-          #we have to cache them somewhere. Ideally in a Command. This gets
-          #sent and cleared each time a full command has been processed. Note
-          #however that the server may generate Commands aside this cache,
-          #because it is not inspected on a regular basis (the receive_data
-          #method is only called when data was received).
-          @cached_command = Command.new(Karfunkel)
           #Sometime Karfunkel needs to send requests as well, and these
           #requests need an ID. This ID is counted up by means of incrementing
           #this variable. See also the #next_request_id method.
           @last_request_id = -1
+          #This is the mutex that ensures that the incrementing is stable
+          #across threads.
+          @last_request_id_mutex = Mutex.new
           #If the client doesn't authenticate within X seconds, disband
           #him.
           EventMachine.add_timer(Karfunkel.config[:greet_timeout]) do
             if !@client.authenticated?
-              Karfunkel.log_warn("Connection timeout for #{@client}.")
+              Karfunkel.log_warn("[#@client] Connection timeout for #{@client}.")
               terminate!
             end
           end
@@ -59,16 +55,11 @@ module OpenRubyRMK
           #Therefore we sent him every now and then a PING request. If he
           #doesn’t answer, he’s disconnected.
           @ping_timer = EventMachine.add_periodic_timer(Karfunkel.config[:ping_interval]) do
-            Karfunkel.log_info("[#@client] Sending PING to #@client")
             @client.available = false
-            cmd = Command.new(Karfunkel)
-            req = Requests::PingRequest.new(next_request_id)
-            cmd.requests << req
-            cmd.deliver!(@client)
-            @client.sent_requests << req
+            @client.request(Requests::PingRequest.new(next_request_id))
             #Now wait for the client to respond to the PING, and if
             #he doesn’t, disconnect.
-            EventMachine.add_timer(Karfunkel.config[:ping_interval] - 1) do #-1, b/c another PING request could be sent then
+            EventMachine.add_timer(Karfunkel.config[:ping_interval] - 1) do #-1, b/c another PING request could be sent otherwise
               unless @client.available?
                 Karfunkel.log_warn("[#@client] No response to PING. Disconnecting #@client.")
                 terminate!
@@ -81,16 +72,13 @@ module OpenRubyRMK
         #the server.
         def receive_data(data)
           #Collect the sent data...
-          @received_data << data
+          @received_data << data #TODO: Attacker could exhaust memory by sending no NULs
           #...until we get the End Of Command marker. Then we know that
           #the command is completed and we can process it.
           #Empty the command cache afterwards.
           if @received_data.end_with?(END_OF_COMMAND)
             process_command(@received_data.sub(/#{END_OF_COMMAND}$/, ""))
-            deliver_answer_command
-            #remove_dead_requests_and_responses
             @received_data.clear
-            @cached_command = Command.new(Karfunkel)
           end
         end
         
@@ -106,9 +94,7 @@ module OpenRubyRMK
         
         #Processes a full command. If the client sending the command
         #was not yet authenticated, #check_authentication is invoked to
-        #authenticate the client (or reject him). Otherwise, first
-        #processes the commands’s requests and then it’s responses, collecting
-        #all wanted responses in the @cached_command command.
+        #authenticate the client (or reject him).
         #
         #This method shouldn’t crash, but rather log exceptions and
         #warnings, continueing the event loop.
@@ -147,26 +133,10 @@ module OpenRubyRMK
             end
           end
           
-          #Deliver all outstanding responses
-          @client.outstanding_responses.each do |response|
-            Karfunkel.log_info("[#@client] Response (TO): #{response.request.type}")
-            @cached_command.responses << response
-          end
-          #All processed, clear the responses
-          @client.outstanding_responses.clear
-          
-          #Inject the outstanding broadcasts into the command
-          @client.outstanding_broadcasts.each do |note|
-            Karfunkel.log_info("[#@client] Notification: #{note.type}")
-            @cached_command.notifications << note
-          end
-          #All processed, clear the broadcasts
-          @client.outstanding_broadcasts.clear
-          
           #And now we check the responses that Karfunkel’s clients send to us.
           command.responses.each do |response|
             begin
-              Karfunkel.log_info("[#@client] Response (FROM) to #{response.request.type} request")
+              Karfunkel.log_info("[#@client] Received response to a #{response.request.type} request")
               response.request.process_response(@client, response)
               @client.sent_requests.delete(response.request)
             rescue => e
@@ -174,21 +144,6 @@ module OpenRubyRMK
               Karfunkel.log_error("[#@client] Failed to process response: #{response}")
             end
           end
-        end
-        
-        #Sends anything that has been put into @cached_command to the client.
-        #If nothing has been collected there, nothing is send.
-        def deliver_answer_command
-          return if @cached_command.empty? #We don't want to send empty commands.
-          @cached_command.deliver!(@client)
-        end
-        
-        #Removes all requests and responses from this client that have been
-        #processed completely.
-        def remove_dead_requests_and_responses
-          @client.requests.delete_if{|req| !req.alive?}
-          @client.sent_requests.delete_if{|req| !req.alive?}
-          @client.responses.delete_if{|res| !res.alive?}
         end
         
         #Checks if the user is authenticated, and if so, immediately
@@ -219,7 +174,7 @@ module OpenRubyRMK
         def reject(reason, request = nil)
           r = Response.new(request, :rejected)
           r[:reason] = reason
-          @cached_command.responses << r
+          @client.response(r)
         end
         
         #Sends an +error+ response to the client.
@@ -230,11 +185,15 @@ module OpenRubyRMK
         def error(description, request = nil)
           r = Response.new(request, :error)
           r[:description] = description
-          @cached_command.responses << r
+          @client.response(r)
         end
         
+        #Threadsafely increments the request ID and returns the next
+        #available ID.
         def next_request_id
-          @last_request_id += 1
+          @last_request_id_mutex.synchronize do
+            @last_request_id += 1
+          end
         end
         
         #Immediately cuts the connection to Karfunkel,

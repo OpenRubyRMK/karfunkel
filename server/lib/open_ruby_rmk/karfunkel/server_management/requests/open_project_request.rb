@@ -21,6 +21,7 @@ OpenRubyRMK::Karfunkel::SM::Request.define :OpenProject do
     timer = EventMachine.add_periodic_timer(2) do
       if project.loaded?
         answer client, :finished
+        broadcast :loaded_project, :name => project.name
         timer.cancel
       else
         broadcast :load_project, project.loading
