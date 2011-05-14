@@ -30,8 +30,8 @@ purpose, i.e. +Hello+.
    hard to get, just connect to the port where you run Karfunkel (it's port
    3141 by default).
 2. When this is done, Karfunkel waits for your application to greet him and
-   wont respond until you did (he's quite perticular about this). Send him the
-   <tt>hello</tt> command (described below) and wait. If you don't greet him
+   won’t respond until you did (he's quite perticular about this). Send him the
+   <tt>Hello</tt> command (described below) and wait. If you don't greet him
    within a few seconds, he'll just cut your connection and go away.
 3. If Karfunkel hadn't had a bad day, he will notice your efforts and respond
    accordingly. Gather the important things from the response and you're done.
@@ -40,7 +40,7 @@ purpose, i.e. +Hello+.
 ==Basic structure of a command
 
 This is the basic structure of a request you send to Karfunkel (exception is
-the +hello+ request which misses the <id> tag at the toplevel as you don't
+the +Hello+ request which misses the <sender> tag at the toplevel as you don't
 have an ID at that moment):
 
   <?xml version="1.0" encoding="UTF-8"?> #XML definition
@@ -70,7 +70,7 @@ always have the following structure:
     <sender>
       <id>0</id> #0 is Karfunkel's own ID
     </sender>
-    <response type="OpenProject" id="12" status="Finished"> #The request type you wanted Karfunkel to process and the command ID you sent along with your request. A list of possible stati can be found below.
+    <response type="OpenProject" id="12" status="finished"> #The request type you wanted Karfunkel to process and the command ID you sent along with your request. A list of possible stati can be found below.
       #A response's body differs from response to response. Look into each
       #response's documentation
       #in order to find out what goes here.
@@ -79,7 +79,7 @@ always have the following structure:
 
 These are the possible stati your request can get assigned:
 
-[ok]         Generic respone for requests that don't need much processing,
+[ok]         Generic response for requests that don't need much processing,
              notably informational ones.
 [finished]   Your request has been executed and finished sucessfully.
 [failed]     For whatever reason, Karfunkel was willing, but not able to
@@ -115,6 +115,9 @@ following structure:
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel> #As always
+    <sender>
+      <id>0</id> #0 is Karfunkel's own ID
+    </sender>
     <notification type="field_set"> #The type tells you what info you'll find...
       #...in this block here. It's different from notification to notification.
     </notification>
@@ -139,12 +142,9 @@ command-line parameter if you _really_ want to do this. This creates a
 *huge* security hole. As said, this is for *debugging* purposes. If you don't
 want to debug Karfunkel <b>do not use</b> this request.
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="YOUR_ID">
-    <request type="Eval" id="X">
-      <code>YOUR_RUBY_CODE_HERE</code> #Can span multiple lines
-    </request>
-  </Karfunkel>
+  <request type="Eval" id="YOUR_REQ_ID">
+    <code>YOUR_RUBY_CODE_HERE</code> #Can span multiple lines
+  </request>
 
 ==== Possible responses
 
@@ -154,75 +154,53 @@ Your request was processed. You get this response even in case of an exception.
 
 No exception:
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="0">
-    <response type="Eval" id="X">
-      <status>ok</status>
-      <result>CODE_RESULT</code> ##inspect was called on the result
-    </response>
-  </Karfunkel>
+  <response type="Eval" id="YOUR_REQ_ID" status="ok">
+    <result>CODE_RESULT</code> ##inspect was called on the result
+  </response>
 
 Exception:
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="0">
-    <response type="Eval" id="X">
-      <status>ok</status>
-      <exception>EXCEPTION_CLASS</exception>
-      <message>EXCEPTION_MESSAGE</message>
-      <backtrace>EXCEPTION_BACKTRACE</backtrace> #Can span multiple lines
-    </response>
-  </Karfunkel>
+  <response type="Eval" id="YOUR_REQ_ID" status="ok">
+    <exception>EXCEPTION_CLASS</exception>
+    <message>EXCEPTION_MESSAGE</message>
+    <backtrace>EXCEPTION_BACKTRACE</backtrace> #Can span multiple lines
+  </response>
 
 ===== Rejected
 
 You get this response when Karfunkel is not running in debug mode.
 Additionally, a warning is logged on the server side.
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="0">
-    <response type="Eval" id="X">
-      <status>rejected</status>
-      <reason>Karfunkel is not running in debug mode.</reason>
-    </response>
-  </Karfunkel>
+  <response type="Eval" id="YOUR_REQ_ID" status="rejected">
+    <reason>Karfunkel is not running in debug mode.</reason>
+  </response>
 
 === Hello
 
 Establishes a connection. Send this command immediately after you have
-connected to Karfunkel.
+connected to Karfunkel. Do not send a <sender> block along with the
+command containing this request.
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel> #Don't put the ID attribute here--you don't have an ID yet!
-    <request type="Hello" id="0"> #The HELLO request always has the ID 0.
-      <os>YOUR_OPERTING_SYSTEM_HERE</os>  #Karfunkel wants to know this for compatibility reasons
-    </request>
-  </Karfunkel>
+  <request type="Hello" id="0"> #The HELLO request always has the ID 0.
+    <os>YOUR_OPERTING_SYSTEM_HERE</os>  #Karfunkel wants to know this for compatibility reasons
+  </request>
 
 ==== Possible responses
 
 =====OK:
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="0">
-    <response type="Hello" id="0"> #The request ID is still 0
-      <status>ok</status>
+    <response type="Hello" id="0" status="ok"> #The request ID is still 0
       <id>YOUR_CLIENT_ID</id> #Your client's ID from now on.
       <my_version>KARFUNKEL'S_VERSION</my_version> #Version number of Karfunkel
       <my_project>CURRENTLY_LOADED_PROJECT</my_project> #The project currently loaded. May be empty.
       <my_clients_num>NUMBER_OF_CLIENTS</my_clients_num> #The number of clients including you
     </response>
-  </Karfunkel>
 
 =====Rejected:
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="0">
-    <response type="Hello" id="0">
-      <status>rejected</status>
+    <response type="Hello" id="0" status="rejected">
       <reason>REASON_WHY_YOU_WERE_REJECTED</reason>
     </response>
-  </Karfunkel>
 
 === OpenProject
 
@@ -231,65 +209,74 @@ a separate +SelectProject+ request. The path is understand as a path on the
 system Karfunkel runs on, so you may have to contact the person running the
 server to obtain the name of a project file.
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="YOUR_ID">
-    <request type="OpenProject" id="X">
-      <file>/path/to/your/project/file.rmk</file> #This file usually resides in the bin/ directory of a game
-    </request>
-  </Karfunkel>
+While the project is being loaded, several +load_project+ notifications are
+delivered and finally a +loaded_project+ notification is send when the
+project has completed loading.
+
+  <request type="OpenProject" id="X">
+    <file>/path/to/your/project/file.rmk</file> #This file usually resides in the bin/ directory of a game
+  </request>
 
 ==== Possible responses
 
 ===== Processing
 
-This is sent multiple times while the loading is in progress. The
-+PERCENT_DONE+ values can be floating-point.
+This is sent when Karfunkel accepted your request and now loads the project.
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="0">
-    <response type="OpenProject" id="X">
-      <status>processing</status>
-      <mapset_extraction>PERCENT_DONE</mapset_extraction>
-      <char_extraction>PERCENT_DONE</char_extraction>
-    </response>
-  </Karfunkel>
+  <response type="OpenProject" id="X" status="processing" />
 
 ===== Finished
 
 Send when the project is in a usable state.
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="0">
-    <response type="OpenProject" id="X">
-      <status>finished</status>
-    </response>
-  </Karfunkel>
+    <response type="OpenProject" id="X" status="finished" />
 
 =====Rejected:
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="0">
-    <response type="OpenProject" id="0">
-      <status>rejected</status>
-      <reason>REASON_WHY_YOU_WERE_REJECTED</reason>
-    </response>
-  </Karfunkel>
+  <response type="OpenProject" id="X" status="rejected">
+    <reason>REASON_WHY_YOU_WERE_REJECTED</reason>
+  </response>
+
+=== Ping
+
+This is one of those requests that Karfunkel may send unconditionally to you.
+It's used to verify that you are still reachable and if you get one, you
+should deliver an answer, otherwise your connection gets cut. Of course you
+can send one to Karfunkel (or another client) as well.
+
+  <request type="Ping" id="X" />
+
+==== Possible responses
+
+  <response type="Ping" id="X" status="ok" />
+
+Tells the requestor that you're available.
 
 === SelectProject
 
+(Not implemented yet)
+
 Instructs Karfunkel to load the project with the given name.
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel id="YOUR_ID">
     <request type="SelectProject" id="X">
       <name>project_name</name> #Without the .rmk extension
     </request>
-  </Karfunkel>
   
-  ==== Possible responses
+==== Possible responses
   
   [OK]
     The Project was selected. You can work with it now.
   [failed]
     The project couldn't be select for some reason. Check the
     +reason+ tag.
+
+== Notifications that can be send
+
+=== load_project
+
+[mapset_extraction] Percent of maps loaded.
+[char_extraction]   Percent of characters loaded.
+
+=== loaded_project
+
+[name] Name of the project loaded.
