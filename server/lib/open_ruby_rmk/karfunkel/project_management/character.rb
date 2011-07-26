@@ -33,10 +33,18 @@ module OpenRubyRMK
         attr_reader :x
         attr_reader :y
         
-        def initialize(x, y, graphic_filename)
-          @x, @y = x, y
-          @graphic_filename = Pathname.new(graphic_filename)
-          @code = ""
+        def self.load(x, y, graphic_filename)
+          char = allocate
+          char.instance_eval do
+            @x, @y = x, y
+            @graphic_filename = Pathname.new(graphic_filename)
+            @code = ""
+          end
+          char
+        end
+        
+        def initialize
+          #TODO
         end
         
       end

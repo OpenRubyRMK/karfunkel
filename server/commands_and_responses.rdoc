@@ -39,28 +39,38 @@ purpose, i.e. +Hello+.
 
 ==Basic structure of a command
 
+===Requests
+
 This is the basic structure of a request you send to Karfunkel (exception is
 the +Hello+ request which misses the <sender> tag at the toplevel as you don't
 have an ID at that moment):
 
   <?xml version="1.0" encoding="UTF-8"?> #XML definition
   <Karfunkel> #This is the root. It's ALWAYS <Karfunkel>. Capitalized.
-    #The SENDER block contains information on the one who sent the request.
-    #Answers have to go to the client with the ID specified here.
+    
+    # The SENDER block contains information on the one who sent the request.
+    # Answers have to go to the client with the ID specified here.
     <sender>
       <id>6</id> #This is the ID you get from Karfunkel via a HELLO request.
     </sender>
-    <request type="OpenProject" id="12"> #The request type you send. One of the various ones described in this file. The ID is an index increasing for each request, allowing you to keep track of requests and responses.
-      #The request's body differs from request to request. Look into
-      #each request's documentation in order to find out what goes here.
-      #Generally, any "parameters", as one would call it in OO programming,
-      #go here.
+    
+    # The request type you send. One of the various ones described in this file.
+    # The ID is an index you are expected to increment (or vary in another 
+    # unique algorithm) for each request; answers to requests get the same 
+    # IDs as their respective requests. NEVER use an ID more than once. 
+    <request type="OpenProject" id="12">
+      # The request's body differs from request to request. Look into
+      # each request's documentation in order to find out what goes here.
+      # Generally, any "parameters", as one would call it in OO programming,
+      # go here.
     </request>
-    #You may put any number of requests here and Karfunkel will handle them
-    #one-by-one, sending a response for each request in any order. So use
-    #your request ID to distinguish which request caused which response. NEVER
-    #use a request ID multiple times.
+    
+    # You may put any number of requests here and Karfunkel will handle them
+    # one-by-one, sending a response for each request in any order. So use
+    # your request ID to distinguish which request caused which response.
   </Karfunkel>
+
+===Responses
 
 Whenever you send a request to Karfunkel, he responds in some way. His responses
 always have the following structure:
@@ -70,11 +80,15 @@ always have the following structure:
     <sender>
       <id>0</id> #0 is Karfunkel's own ID
     </sender>
-    <response type="OpenProject" id="12" status="finished"> #The request type you wanted Karfunkel to process and the command ID you sent along with your request. A list of possible stati can be found below.
-      #A response's body differs from response to response. Look into each
-      #response's documentation
-      #in order to find out what goes here.
+    
+    # A response to a request. The type is the same as your request's, and the
+    # ID as well. Furthermore a status tag allows you to check how Karfunkel
+    # proceeded with your request; you can find a list of possible stati below.
+    <response type="OpenProject" id="12" status="finished"> 
+      # A response's body differs from response to response. Look into each
+      # response's documentation in order to find out what goes here.
     </response>
+    
   </Karfunkel>
 
 These are the possible stati your request can get assigned:
@@ -115,23 +129,72 @@ following structure:
 
   <?xml version="1.0" encoding="UTF-8"?>
   <Karfunkel> #As always
+    
     <sender>
       <id>0</id> #0 is Karfunkel's own ID
     </sender>
+    
     <notification type="field_set"> #The type tells you what info you'll find...
       #...in this block here. It's different from notification to notification.
     </notification>
+    
   </Karfunkel>
 
 Karfunkel expects no answer to a notification, they're purely informative
 (but you probably should reflect them in your interface, e.g. change a
-map's name if it has been renamed by another client).
+map's name if it has been renamed by another client). The existing notification 
+types can be found further down in this file. 
 
-==Commands that can be sent
+==Requests that can be sent
 
-Following is a list of commands that can be sent to Karfunkel after the
-connection has been established (except of the +Hello+ command, which
-establishes the connection).
+Following is a list of requests that can be sent to Karfunkel after the
+connection has been established (except of the +Hello+ request, which
+establishes the connection). The documentation has the following form: 
+
+  Description of the request. 
+  
+  PARAMETERS
+  [parameter1] Parameter 1's description...
+  [parameter2] Parameter 2's description...
+  .
+  .
+  .
+  
+  POSSIBLE RESPONSES
+  
+  [response_status] (optionally short discussion of meaning.)
+    [tag1] Tag 1's description...
+    [tag2] Tag 2's description...
+    .
+    .
+    .
+  [response_status2] (optionally short discussion of meaining)
+    [tag1] Tag 1's description...
+    .
+    .
+    .
+
+The definition lists (those with brackets [ and ]) are meant to abstract the 
+XML structure (to save some typing ;-)). I.e., the following definition list: 
+  
+  POSSIBLE RESPONSES
+  [ok]
+    [par1] Parameter 1.
+    [par2] Parameter 2.
+
+Translates into this XML: 
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Karfunkel>
+    <response type="whatever" id="XX" status="ok">
+      <par1>Content of Parameter 1.</par1>
+      <par2>Content of Parameter 2.</par2>
+    </response>
+  </Karfunkel
+
+Please also note that nearly each of this requests may receive a +rejected+ 
+response, depending on how the server administrator configured Karfunkel. For
+simplicity's sake I don't list the +rejected+ response.
 
 ===Eval
 
@@ -142,100 +205,63 @@ command-line parameter if you _really_ want to do this. This creates a
 *huge* security hole. As said, this is for *debugging* purposes. If you don't
 want to debug Karfunkel <b>do not use</b> this request.
 
-  <request type="Eval" id="YOUR_REQ_ID">
-    <code>YOUR_RUBY_CODE_HERE</code> #Can span multiple lines
-  </request>
+====Parameters
 
-==== Possible responses
+[code] Arbitrary Ruby code, which may span multiple lines. 
 
-===== OK
+====Possible responses
 
-Your request was processed. You get this response even in case of an exception.
-
-No exception:
-
-  <response type="Eval" id="YOUR_REQ_ID" status="ok">
-    <result>CODE_RESULT</code> ##inspect was called on the result
-  </response>
-
-Exception:
-
-  <response type="Eval" id="YOUR_REQ_ID" status="ok">
-    <exception>EXCEPTION_CLASS</exception>
-    <message>EXCEPTION_MESSAGE</message>
-    <backtrace>EXCEPTION_BACKTRACE</backtrace> #Can span multiple lines
-  </response>
-
-===== Rejected
-
-You get this response when Karfunkel is not running in debug mode.
-Additionally, a warning is logged on the server side.
-
-  <response type="Eval" id="YOUR_REQ_ID" status="rejected">
-    <reason>Karfunkel is not running in debug mode.</reason>
-  </response>
+[ok]
+  Your request was processed. You get this response even in case of an
+  exception. Parameters of successful evaluation:
+  
+  [result] Result of the code, on which #inspect was called. 
+  Parameters of failed evaluation:
+  [exception] The exception's class.
+  [message]   The exception's message.
+  [backtrace] The exception's backtrace, which may span multiple lines.
 
 === Hello
 
-Establishes a connection. Send this command immediately after you have
+Establishes a connection. Send this request immediately after you have
 connected to Karfunkel. Do not send a <sender> block along with the
 command containing this request.
 
-  <request type="Hello" id="0"> #The HELLO request always has the ID 0.
-    <os>YOUR_OPERTING_SYSTEM_HERE</os>  #Karfunkel wants to know this for compatibility reasons
-  </request>
+====Parameters
 
-==== Possible responses
+[os] Short string identifying your operating system which Karfunkel wants to 
+     know for compatibility reasons. One of +Windows+, +Mac+, +Linux+. 
 
-=====OK:
+====Possible responses
 
-    <response type="Hello" id="0" status="ok"> #The request ID is still 0
-      <id>YOUR_CLIENT_ID</id> #Your client's ID from now on.
-      <my_version>KARFUNKEL'S_VERSION</my_version> #Version number of Karfunkel
-      <my_project>CURRENTLY_LOADED_PROJECT</my_project> #The project currently loaded. May be empty.
-      <my_clients_num>NUMBER_OF_CLIENTS</my_clients_num> #The number of clients including you
-    </response>
-
-=====Rejected:
-
-    <response type="Hello" id="0" status="rejected">
-      <reason>REASON_WHY_YOU_WERE_REJECTED</reason>
-    </response>
+[ok]
+  [id]             Your client's ID from now on.
+  [my_version]     Version number of Karfunkel.
+  [my_project]     The project currently loaded. May be empty.
+  [my_clients_num] The number of clients including you.
 
 === OpenProject
 
 Makes Karfunkel load a given project file. The project is not selected, that's
 a separate +SelectProject+ request. The path is understand as a path on the
 system Karfunkel runs on, so you may have to contact the person running the
-server to obtain the name of a project file.
+server to obtain the name of a project file (or just leave it to him/her to 
+open a project).
 
 While the project is being loaded, several +load_project+ notifications are
 delivered and finally a +loaded_project+ notification is send when the
 project has completed loading.
 
-  <request type="OpenProject" id="X">
-    <file>/path/to/your/project/file.rmk</file> #This file usually resides in the bin/ directory of a game
-  </request>
+==== Parameters
+
+[file] The project file to load (that one with the .rmk extension). 
 
 ==== Possible responses
 
-===== Processing
-
-This is sent when Karfunkel accepted your request and now loads the project.
-
-  <response type="OpenProject" id="X" status="processing" />
-
-===== Finished
-
-Send when the project is in a usable state.
-
-    <response type="OpenProject" id="X" status="finished" />
-
-=====Rejected:
-
-  <response type="OpenProject" id="X" status="rejected">
-    <reason>REASON_WHY_YOU_WERE_REJECTED</reason>
-  </response>
+[processing] This is sent when Karfunkel accepted your request and now
+             loads the project.
+[finished]   Send when the project is in a usable state.
+[failed]     Reason why the project couldn't be loaded. 
 
 === Ping
 
@@ -244,39 +270,46 @@ It's used to verify that you are still reachable and if you get one, you
 should deliver an answer, otherwise your connection gets cut. Of course you
 can send one to Karfunkel (or another client) as well.
 
-  <request type="Ping" id="X" />
+==== Parameters
+
+None. 
 
 ==== Possible responses
 
-  <response type="Ping" id="X" status="ok" />
-
-Tells the requestor that you're available.
+[ok] Tells the requestor that you're available.
 
 === SelectProject
 
-(Not implemented yet)
-
 Instructs Karfunkel to load the project with the given name.
 
-    <request type="SelectProject" id="X">
-      <name>project_name</name> #Without the .rmk extension
-    </request>
-  
+=== Parameters
+
+[name] Name of the project (without the path and .rmk extension) to select. 
+
 ==== Possible responses
-  
-  [OK]
-    The Project was selected. You can work with it now.
-  [failed]
-    The project couldn't be select for some reason. Check the
-    +reason+ tag.
+
+[ok]     The Project was selected. You can work with it now.
+[failed] The project couldn't be selected for some reason.
+           [reason] Reason why it failed to be selected. 
 
 == Notifications that can be send
 
+The notification documentation follows the same guidelines as the
+request/response documentation, but the paramters/tags are listed directly 
+without a further "parameters" heading. 
+
 === load_project
 
+Karfunkel currently loads a project file. 
+
+[name]              Name of the project being loaded, with the path and 
+                    .rmk extension. 
 [mapset_extraction] Percent of maps loaded.
 [char_extraction]   Percent of characters loaded.
 
 === loaded_project
 
-[name] Name of the project loaded.
+Karfunkel finished loading a project file. 
+
+[name] Name of the project loaded. Without the path and .rmk extension.
+

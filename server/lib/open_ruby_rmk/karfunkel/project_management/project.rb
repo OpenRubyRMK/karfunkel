@@ -36,18 +36,22 @@ module OpenRubyRMK
             @temp_dir = temp_dir
           end
           
+          #The directory complete maps are saved to.
           def maps_dir
             @toplevel_dir + "data" + "maps"
           end
           
+          #The file describing the map structure.
           def maps_structure_file
             maps_dir + "structure.bin"
           end
           
+          #The directory mapsets are saved to.
           def mapsets_dir
             @toplevel_dir + "data" + "graphics" + "mapsets"
           end
           
+          #The directory character graphcis are saved to.
           def characters_dir
             @toplevel_dir + "data" + "graphics" + "characters"
           end
@@ -70,7 +74,7 @@ module OpenRubyRMK
         attr_reader :loading
         #The name of the project, obtained from the project file's name.
         attr_reader :name
-        
+        #All Maps of a project.
         attr_reader :maps
         #This is an array of all mapsets this project deals with.
         attr_reader :mapsets
@@ -117,7 +121,7 @@ module OpenRubyRMK
                 temp_filename = @paths.temp_mapsets_dir + filename.relative_path_from(@paths.mapsets_dir)
                 gz = Zlib::GzipReader.open(filename)
                 Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
-                @mapsets << Mapset.load(self, filename.basename.to_s.sub(/\.tgz$/, ".png"))
+                @mapsets << Mapset.load(filename.basename.to_s.sub(/\.tgz$/, ".png"))
                 #Show the % done
                 @loading[:mapset_extraction] = (index + 1 / num).to_f * 100
               end
@@ -131,6 +135,7 @@ module OpenRubyRMK
                 temp_filename = @paths.temp_characters_dir + filename.relative_path_from(@paths.characters_dir)
                 gz = Zlib::GzipReader.open(filename)
                 Archive::Tar::Minitar.unpack(gz, temp_filename.parent) ##unpack automatically closes the file
+                #No need to reference the characters, this is done by the maps.
                 
                 #Show % done
                 @loading[:char_extraction] = (index + 1 / num).to_f * 100
@@ -161,7 +166,7 @@ module OpenRubyRMK
         alias eql? ==
         
         #Human-readable description of form
-        #  #<OpenRubyRMK::Karfunkel::Project <project_name>>
+        #  #<OpenRubyRMK::Karfunkel::ProjectManagement::Project <project_name>>
         def inspect
           "#<#{self.class} #{@name}>"
         end
