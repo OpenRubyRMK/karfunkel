@@ -87,6 +87,13 @@ module OpenRubyRMK
       #   removes the references Client object from Karfunkel's list of clients.
       #   The now unreferenced connection and it's client get eventually GC'ed.
       #6. Karfunkel shuts down, diconnecting all remaining clients.
+      #
+      #==A note about thread safety
+      #
+      #Due to EventMachine’s heavy use of multithreading, you can
+      #assume that the methods Karfunkel exposes are thread-safe.
+      #To achieve this, a number of internal mutexes are used, but usually
+      #you shouldn’t have to care about this.
       module Karfunkel
         
         #This is the ID Karfunkel himself uses.
@@ -145,6 +152,10 @@ module OpenRubyRMK
           #Logs a FATAL level message. Do not use this, it's for internal use.
           
           #Starts Karfunkel.
+          #===Raises
+          #[RuntimeError] Karfunkel is already running.
+          #===Example
+          #  OpenRubyRMK::Karfunkel::Karfunkel.start
           def start
             raise(RuntimError, "Karfunkel is already running!") if @running
             @clients = []
@@ -169,7 +180,12 @@ module OpenRubyRMK
           end
           
           #Stops Karfunkel and disconnects all clients.
+          #==Raises
+          #[RuntimeError] Karfunkel isn't running.
+          #==Example
+          #  OpenRubyRMK::Karfunkel::Karfunkel.stop
           def stop
+            raise(RuntimeError, "Karfunkel is not running!") unless @running
             #TODO: Clients benachrichtigen
             EventMachine.stop_event_loop
             @running = false
@@ -198,12 +214,26 @@ module OpenRubyRMK
               end
             end
           end
-          
-          #Logs a message of type +level+. The message will be formatted
-          #according to the exception's information and if the log
-          #level has been set to DEBUG, a backtrace will be logged.
-          #Possible log levels include :debug, :info, :warn, :error, :fatal.
-          #Do not use :fatal, it's for internal use.
+
+          #Logs an exception.
+          #==Parameters
+          #[exception] The exception to log.
+          #[level]     (:error) The level to log the exception at. One of:
+          #            * :debug
+          #            * :info
+          #            * :warn
+          #            * :error
+          #            * :fatal
+          #            Do not use :fatal, it’s for internal use.
+          #==Example
+          #  begin
+          #    #Do something
+          #  rescue => e
+          #    OpenRubyRMK::Karfunkel::Karfunkel.log_exception(e, :warn)
+          #  end
+          #==Remarks
+          #If the log level has been set to :debug, a backtrace will
+          #also be logged.
           def log_exception(exception, level = :error)
             @log_mutex.synchronize do
               @log.send(level, "#{exception.class.name}: #{exception.message}")
@@ -213,15 +243,28 @@ module OpenRubyRMK
             end
           end
           
-          #Generates a new and unused ID.
+          #Generates a new and unused ID. These IDs are inteded for use
+          #with clients.
+          #==Return value
+          #An integer.
+          #==Example
+          #  p OpenRubyRMK::Karfunkel::Karfunkel.generate_id #=> 1
+          #  p OpenRubyRMK::Karfunkel::Karfunkel.generate_id #=> 2
           def generate_id
             @id_generator_mutex.synchronize do
               @last_id += 1
             end
           end
-          
-          #Sets the active project to +project+ if this is possible. Raises
-          #an ArgumentError otherwise
+
+          #Sets the active project.
+          #==Parameter
+          #[project] A OpenRubyRMK::Kafunkel::ProjectManagement::Project instance.
+          #==Raises
+          #[ArgumentError] The project wasn’t registed with Karfunkel.
+          #==Example
+          #  proj = OpenRubyRMK::Karfunkel::PM::Project.load("myproj.rmk")
+          #  OpenRubyRMK::Karfunkel::Karfunkel.projects << proj
+          #  OpenRubyRMK::Karfunkel::Karfunkel.select_project(proj)
           def select_project(project)
             if @projects.include?(project)
               @selected_project = project
@@ -229,16 +272,22 @@ module OpenRubyRMK
               raise(ArgumentError, "The project #{project} is not available.")
             end
           end
-          
-          #Makes the project with number +index+ the active project.
-          #Raises an IndexError if there is no project with that index.
+
+          #Makes a project selected by it’s +index+ the active project.
+          #==Parameter
+          #[index] The index in the Karfunkel.projects array.
+          #==Raises
+          #[IndexError] Invalid index given.
+          #==Example
+          #  OpenRubyRMK::Karfunkel::Karfunkel.select_project_by_index(3)
           def select_project_by_index(index)
             proj = @projects[index]
             raise(IndexError, "No project with index #{index}!") if proj.nil?
             @selected_project = proj
           end
           
-          #Returns Karfunkel's ID.
+          #Returns Karfunkel's own client ID. The value of the ID constant, which
+          #is normally 0.
           def id
             ID
           end
@@ -247,10 +296,16 @@ module OpenRubyRMK
           def inspect
             "#<#{self.class} I AM KARFUNKEL. THEE IS NOTHING.>"
           end
-          
-          #Adds the Notification object +note+ to each client’s
-          #outstanding broadcasts, causing it to be delivered to all clients
-          #at once.
+
+          #Register a Notification to be send to all connected clients. You shouldn’t
+          #care about this method, it’s used internally be the request DSL’s #broadcast
+          #method.
+          #==Parameter
+          #[note] A OpenRubyRMK::Karfunkel::ServerManagement::Notification instance.
+          #==Remarks
+          #The notification is not broadcasted immediately, but rather it’s added
+          #to each client’s notification queue. It’s up to the client to finally
+          #read that queue.
           def add_broadcast(note)
             @clients.each do |client|
               client.notification(note)

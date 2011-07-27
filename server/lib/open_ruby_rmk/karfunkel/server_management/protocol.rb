@@ -10,6 +10,11 @@ module OpenRubyRMK
       #This is a mixin module mixed into the connections made to
       #Karfunkel. The public methods are called by EventMachine,
       #the private ones are helper methods.
+      #To clarify: Each time a new client connects to Karfunkel,
+      #an anonymous class created and instanciated by EventMachine
+      #(whatever for) and this module (as specified in the
+      #Karfunkel.start method) is mixed into that class. See also the
+      #EventMachine documentation.
       #
       #Whenever the user sends a complete command, #process_command
       #is triggered which instantiates an instance of one of the
