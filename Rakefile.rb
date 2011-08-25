@@ -26,6 +26,7 @@ gem "rdoc", ">= 3"
 require "yaml"
 require "rake"
 require "rake/clean"
+require "rubygems/package_task"
 require "open-uri"
 require "net/ftp"
 require "pathname"
@@ -46,8 +47,13 @@ SERVER_DIR     = ROOT_DIR + "server"
 CLIENTS_DIR    = ROOT_DIR + "clients"
 INSTALLER_DIR  = ROOT_DIR + "installer"
 DOC_DIR        = ROOT_DIR + "doc"
+PKG_DIR        = ROOT_DIR + "pkg"
 RAKE_DIR       = ROOT_DIR + "rake"
+VERSION_FILE   = ROOT_DIR + "CENTRAL_VERSION"
 HANNA_CSS_FILE = DOC_DIR + "css" + "style.css"
+
+VERSION    = File.read(VERSION_FILE).chomp
+COMPONENTS = %w[karfunkel]
 
 #===============================================================================
 #Load everything inside the rake/ directory.
@@ -60,16 +66,71 @@ Dir["#{RAKE_DIR}/**/*.rake"].each{|file| load(file)}
 # Task definitions
 #===============================================================================
 
-Rake::RDocTask.new do |rt|
-  rt.rdoc_dir = "doc"
-  rt.rdoc_files.include("**/*.rb", "**/*.rdoc", "COPYING.txt")
-  rt.rdoc_files.exclude("server/lib/open_ruby_rmk/karfunkel/server_management/requests/*.rb")
-  rt.generator = "hanna" #Ignored if not there
-  rt.title = "OpenRubyRMK RDocs"
-  rt.main = "README.rdoc"
+namespace :all do
+
+  desc "Builds the gems for all components"
+  task :gems => :gem do
+    mkdir_p PKG_DIR
+    
+    COMPONENTS.each do |component|
+      cd component
+      sh "rake gem"
+      cp "pkg/openrubyrmk-#{component}-#{VERSION}.gem", PKG_DIR
+      cd ".."
+    end
+  end
+
+  desc "Clobbers all component directories."
+  task :clobber do
+    COMPONENTS.each do |component|
+      cd component
+      sh "rake clobber"
+      cd ".."
+    end
+  end
+
+  desc "Builds the RDocs for all components."
+  task :rdoc do
+    mkdir_p DOC_DIR
+    
+    COMPONENTS.each do |component|
+      cd component
+      sh "rake rdoc"
+      cp_r "doc", DOC_DIR + "server"
+      cd ".."
+    end
+  end
+
+  desc "Updates all VERSION files to the value in CENTRAL_VERSION."
+  task :bump_version do
+    COMPONENTS.each do |component|
+      puts "Bumping #{component}"
+      File.open(File.join(component, "VERSION"), "w") do |f|
+        f.write(VERSION)
+      end
+    end
+  end
+  
 end
 
-#Add request documentation to the RDocs.
-task :rdoc do
-  document_requests
+gemspec = Gem::Specification.new do |s|
+  s.name = "openrubyrmk"
+  s.summary = "The free and open-source RPG creation program"
+  s.description =<<-DESCRIPTION
+This is a meta-gem that pulls in all components of the Open
+Ruby RMK, a free and open-source program for creating
+role-play games (RPG) written in Ruby. It features a server-
+client model that allows multiple persons to work on a
+single game via a network connection.
+  DESCRIPTION
+  s.version = VERSION.gsub("-", ".")
+  s.author = "The OpenRubyRMK team"
+  s.email = "openrubyrmk@googlemail.com"
+  s.platform = Gem::Platform::RUBY
+  s.required_ruby_version = ">= 1.9.2"
+  COMPONENTS.each{|comp| s.add_dependency("openrubyrmk-#{comp}")}
+  s.has_rdoc = true
+  s.extra_rdoc_files = ["README.rdoc", "COPYING"]
+  s.rdoc_options << "-" << "OpenRubyRMK RDocs" << "-m" << "README.rdoc"
 end
+Gem::PackageTask.new(gemspec).define
