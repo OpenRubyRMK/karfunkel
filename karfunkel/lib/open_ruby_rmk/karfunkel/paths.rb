@@ -1,24 +1,25 @@
-#!/usr/bin/env ruby
-#Encoding: UTF-8
+# -*- coding: utf-8 -*-
+#
+# This file is part of OpenRubyRMK.
+# 
+# Copyright © 2010 OpenRubyRMK Team
+# 
+# OpenRubyRMK is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# OpenRubyRMK is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
-=begin
-This file is part of OpenRubyRMK.
-
-Copyright © 2010 OpenRubyRMK Team
-
-OpenRubyRMK is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-OpenRubyRMK is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
-=end
+require "pathname"
+require "nokogiri"
+require "chunky_png"
 
 module OpenRubyRMK
   
@@ -39,6 +40,7 @@ module OpenRubyRMK
       #created with OpenRubyRMK, but refers to Karfunkel's
       #installation directory. On Windows, it's the temporary directory
       #created by OCRA.
+      p Pathname.new(__FILE__).methods.sort
       ROOT_DIR = Pathname.new(__FILE__).dirname.parent.parent.parent.expand_path
       #Karfunkel's real installation directory. On Windows, this is the
       #directory where Karfunkel was installed to (in contrast to ROOT_DIR).
@@ -52,7 +54,7 @@ module OpenRubyRMK
       CONFIG_FILE = INSTALL_DIR + "config" + "OpenRubyRMK-rc.yml"
       #The file that contains the version of OpenRubyRMK (should be the
       #same version for the server and the clients).
-      VERSION_FILE = ROOT_DIR + "VERSION.txt"
+      VERSION_FILE = ROOT_DIR + "VERSION"
       
     end
     
