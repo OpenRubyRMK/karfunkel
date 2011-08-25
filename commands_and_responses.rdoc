@@ -1,11 +1,11 @@
 =Commands and responses
 
-This file describes the (XML) commands that can be send to an OpenRubyRMK
-server and how Karfunkel, the server, responds to them. As a general convention
-throughout this file, I use the hash sign # to denote comments. These are *not*
-valid XML, so do not use them inside your requests. If you want to embed a
-comment into your request (for whatever reason), use the normal XML comment
-syntax <tt><!-- YOUR_COMMENT_HERE --></tt>.
+This file describes the general layout of the (XML) commands that can be
+send to an OpenRubyRMK server and how Karfunkel, the server, responds to
+them. As a general convention throughout this file, I use the hash sign # 
+to denote comments. These are *not* valid XML, so do not use them inside your 
+requests. If you want to embed a comment into your request (for whatever reason), 
+use the normal XML comment syntax <tt><!-- YOUR_COMMENT_HERE --></tt>.
 
 Please also note that Karfunkel acts case-sensitive, i.e. a "HELLO" request is
 not the same as a "Hello" request, Karfunkel will only accept the latter one.
@@ -147,169 +147,7 @@ types can be found further down in this file.
 
 ==Requests that can be sent
 
-Following is a list of requests that can be sent to Karfunkel after the
-connection has been established (except of the +Hello+ request, which
-establishes the connection). The documentation has the following form: 
-
-  Description of the request. 
-  
-  PARAMETERS
-  [parameter1] Parameter 1's description...
-  [parameter2] Parameter 2's description...
-  .
-  .
-  .
-  
-  POSSIBLE RESPONSES
-  
-  [response_status] (optionally short discussion of meaning.)
-    [tag1] Tag 1's description...
-    [tag2] Tag 2's description...
-    .
-    .
-    .
-  [response_status2] (optionally short discussion of meaining)
-    [tag1] Tag 1's description...
-    .
-    .
-    .
-
-The definition lists (those with brackets [ and ]) are meant to abstract the 
-XML structure (to save some typing ;-)). I.e., the following definition list: 
-  
-  POSSIBLE RESPONSES
-  [ok]
-    [par1] Parameter 1.
-    [par2] Parameter 2.
-
-Translates into this XML: 
-
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Karfunkel>
-    <response type="whatever" id="XX" status="ok">
-      <par1>Content of Parameter 1.</par1>
-      <par2>Content of Parameter 2.</par2>
-    </response>
-  </Karfunkel
-
-Please also note that nearly each of this requests may receive a +rejected+ 
-response, depending on how the server administrator configured Karfunkel. For
-simplicity's sake I don't list the +rejected+ response.
-
-===Eval
-
-The +Eval+ request is for debugging purposes. It causes Karfunkel to run
-arbitrary Ruby code (via +eval+) in the context of the +Eval+ request. It
-is *only* available if Karfunkel is running in debug mode; pass the "-d"
-command-line parameter if you _really_ want to do this. This creates a
-*huge* security hole. As said, this is for *debugging* purposes. If you don't
-want to debug Karfunkel <b>do not use</b> this request.
-
-====Parameters
-
-[code] Arbitrary Ruby code, which may span multiple lines. 
-
-====Possible responses
-
-[ok]
-  Your request was processed. You get this response even in case of an
-  exception. Parameters of successful evaluation:
-  
-  [result] Result of the code, on which #inspect was called. 
-  Parameters of failed evaluation:
-  [exception] The exception's class.
-  [message]   The exception's message.
-  [backtrace] The exception's backtrace, which may span multiple lines.
-
-=== Hello
-
-Establishes a connection. Send this request immediately after you have
-connected to Karfunkel. Do not send a <sender> block along with the
-command containing this request.
-
-====Parameters
-
-[os] Short string identifying your operating system which Karfunkel wants to 
-     know for compatibility reasons. One of +Windows+, +Mac+, +Linux+. 
-
-====Possible responses
-
-[ok]
-  [id]             Your client's ID from now on.
-  [my_version]     Version number of Karfunkel.
-  [my_project]     The project currently loaded. May be empty.
-  [my_clients_num] The number of clients including you.
-
-=== OpenProject
-
-Makes Karfunkel load a given project file. The project is not selected, that's
-a separate +SelectProject+ request. The path is understand as a path on the
-system Karfunkel runs on, so you may have to contact the person running the
-server to obtain the name of a project file (or just leave it to him/her to 
-open a project).
-
-While the project is being loaded, several +load_project+ notifications are
-delivered and finally a +loaded_project+ notification is send when the
-project has completed loading.
-
-==== Parameters
-
-[file] The project file to load (that one with the .rmk extension). 
-
-==== Possible responses
-
-[processing] This is sent when Karfunkel accepted your request and now
-             loads the project.
-[finished]   Send when the project is in a usable state.
-[failed]     Reason why the project couldn't be loaded. 
-
-=== Ping
-
-This is one of those requests that Karfunkel may send unconditionally to you.
-It's used to verify that you are still reachable and if you get one, you
-should deliver an answer, otherwise your connection gets cut. Of course you
-can send one to Karfunkel (or another client) as well.
-
-==== Parameters
-
-None. 
-
-==== Possible responses
-
-[ok] Tells the requestor that you're available.
-
-=== SelectProject
-
-Instructs Karfunkel to load the project with the given name.
-
-=== Parameters
-
-[name] Name of the project (without the path and .rmk extension) to select. 
-
-==== Possible responses
-
-[ok]     The Project was selected. You can work with it now.
-[failed] The project couldn't be selected for some reason.
-           [reason] Reason why it failed to be selected. 
-
-== Notifications that can be send
-
-The notification documentation follows the same guidelines as the
-request/response documentation, but the paramters/tags are listed directly 
-without a further "parameters" heading. 
-
-=== load_project
-
-Karfunkel currently loads a project file. 
-
-[name]              Name of the project being loaded, with the path and 
-                    .rmk extension. 
-[mapset_extraction] Percent of maps loaded.
-[char_extraction]   Percent of characters loaded.
-
-=== loaded_project
-
-Karfunkel finished loading a project file. 
-
-[name] Name of the project loaded. Without the path and .rmk extension.
-
+You can get an overview of all possible requests and their associated
+responses and notifications in {a separate HTML file}[link:server_requests.html].
+Note that the +error+ response is usually not listed as it is normally an
+indicator of a bad network connection and therefore applies to each request.
