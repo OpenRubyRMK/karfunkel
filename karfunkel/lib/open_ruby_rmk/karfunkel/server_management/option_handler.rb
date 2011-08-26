@@ -82,11 +82,13 @@ module OpenRubyRMK
           def banner
             <<-EOF
             USAGE:
-            OpenRubyRMK.rb [-V] [-d] [-l [FILE]] [-L LEVEL]
+            karfunkel [-V] [-d] [-l [FILE]] [-L LEVEL]
             
             DESCRIPTION
+            Karfunkel is the server component of the OpenRubyRMK.
             OpenRubyRMK is a free and open-source RPG creation program. If you find any
-            bugs, please let us know via the mail address openrubyrmk@googlemail.com.
+            bugs, please let us know via the mail address openrubyrmk@googlemail.com
+            or file a bug at https://github.com/Quintus/OpenRubyRMK/issues.
             Below is a summary of possible command-line options, but please note that
             the -s, -l, and -L options don't have any effect when -d is passed. It is
             not possible to combine the short options into someting like -sV as the
@@ -104,22 +106,27 @@ module OpenRubyRMK
             1 - Info. Logs much information on what's going on.
             2 - Warn. This is the default; logs only warnings and errors.
             3 - Error. Log only errors.
-            4 - Fatal. Log only errors that cause OpenRubyRMK to crash.
+            4 - Fatal. Log only errors that cause Karfunkel to crash.
             5 - Unknown. Suppresses any logging. Shouldn't be used.
             
             EXAMPLES
             Show additional information on the console while running
-            OpenRubyRMK.rb -s -V
+            karfunkel -s -V
+            
             Same as above
-            OpenRubyRMK.rb -s -L1
+            karfunkel -s -L1
+            
             Log only fatal errors
-            OpenRubyRMK.rb --loglevel=4
+            karfunkel --loglevel=4
+            
             Log only fatal errors, change the log dir
-            OpenRubyRMK.rb -l /home/freak/logs/ -L4
+            karfunkel -l /home/freak/logs/ -L4
+            
             Same as above
-            OpenRubyRMK.rb --logdir=/home/freak/logs/ --loglevel=4
+            karfunkel --logdir=/home/freak/logs/ --loglevel=4
+            
             Use another configuration file
-            OpenRubyRMK.rb -c /home/freak/myconfig.yml
+            karfunkel -c /home/freak/myconfig.yml
             
             OPTIONS
             EOF
