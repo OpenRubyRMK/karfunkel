@@ -5,7 +5,7 @@ module OpenRubyRMK::Karfunkel::SM
   #A command is the container for responses and requests, and every communication
   #with the OpenRubyRMK server Karfunkel is done with them. Their external
   #representation is a XML structure which is fully defined in the
-  #commands_and_responses.rdoc file.
+  #commands_and_responses.rdoc and the {requests}[link:server_requests.html] file.
   #
   #This is one of the classes you should pay some attention to if you want to
   #write a client for the server. You don’t have to understand the whole thing,

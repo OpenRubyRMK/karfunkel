@@ -1,5 +1,21 @@
-#!/usr/bin/env ruby
-#Encoding: UTF-8
+# -*- coding: utf-8 -*-
+# 
+# This file is part of OpenRubyRMK.
+# 
+# Copyright © 2010,2011 OpenRubyRMK Team
+# 
+# OpenRubyRMK is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# OpenRubyRMK is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 module OpenRubyRMK
   
@@ -20,7 +36,9 @@ module OpenRubyRMK
         attr_accessor :authenticated
         #Wheather or not data can be send to this client.
         #This is set *manually* and does *not* check the
-        #actual state of the connection.
+        #actual state of the connection. It’s used by the
+        #PING request that sets it to false, whereas every
+        #successful request makes it true.
         attr_accessor :available
         #The requests that have been send TO the client.
         attr_accessor :sent_requests
@@ -31,8 +49,15 @@ module OpenRubyRMK
         #The connection this client is tied to.
         attr_reader :connection
         
-        #Creates a new Client instance. Pass in the connection the
-        #client uses.
+        #Creates a new Client instance. This method is called automatically
+        #in Protocol#post_init and isn’t intended to be used elsewhere.
+        #==Parameters
+        #[connection] The connection the client uses; usually only available
+        #             inside the Protocol module as +self+.
+        #==Return value
+        #The newly created instance.
+        #==Example
+        #See the sourcode of Protocol#post_init.
         def initialize(connection)
           @connection = connection
           @authenticated = false

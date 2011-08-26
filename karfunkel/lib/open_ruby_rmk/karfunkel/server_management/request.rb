@@ -27,9 +27,9 @@ module OpenRubyRMK::Karfunkel::SM
   #    attribute :x
   #    attribute :y
   #
-  #    #This method gets called when a request of your type is
+  #    #This defines a method that gets called when a request of your type is
   #    #encountered. It gets passed the Client that made the request.
-  #    def execute(client)
+  #    execute do |client|
   #      # Grab the parameters passed and do the real coding.
   #      # Note you must access the parameters using self[:parameter],
   #      # bcecause no instance variables are set for this.
@@ -46,11 +46,11 @@ module OpenRubyRMK::Karfunkel::SM
   #      answer :ok, :result => result
   #    end
   #
-  #    #This method gets called when Karfunkel sent a request of your type
+  #    #This code block gets called when Karfunkel sent a request of your type
   #    #to a client and now received a response from the client. +client+ is
   #    #the client sending the response and +response+ is the Response
   #    #object.
-  #    def process_response(client, response)
+  #    process_response do |client, response|
   #      Karfunkel.log_info("[#{client}] Client answered #{response[:result]}.")
   #    end
   #
@@ -64,7 +64,7 @@ module OpenRubyRMK::Karfunkel::SM
   #exception for indicating that you encountered a missing or incorrect
   #parameter, e.g.
   #
-  #  def execute(client)
+  #  execute do |client|
   #    raise(Errors::InvalidParameter, "X not given!") unless self[:x]
   #    #...
   #  end

@@ -114,6 +114,7 @@ module OpenRubyRMK
           end
           
           #We received data from the client, so he’s available!
+          #This is enough to answer a PING request.
           @client.available = true
           
           #Ensure the user is allowed to demand requests. If not, try to

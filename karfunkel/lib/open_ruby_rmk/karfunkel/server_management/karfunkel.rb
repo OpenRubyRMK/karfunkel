@@ -64,12 +64,12 @@ module OpenRubyRMK
       #Karfunkel listens on a port specified in the config file (port 3141 by default)
       #for connections. If he detects a connection try, he waits for the potential
       #client to send him the +hello+ request (see the commands_and_responses.rdoc file)
-      #and if the client does so, Karfunkel assignes a free ID at him and sends it
+      #and if the client does so, Karfunkel assigns a free ID at him and sends it
       #to the client. If not, the connection is closed. Clients are represented by
       #the OpenRubyRMK::Karfunkel::Client class and they store the information specific
       #to a single client, for instance the client's ID.
       #
-      #The third and most important component is OpenRubyRMK::Karfunkel::Protcol. This
+      #The third and most important component is OpenRubyRMK::Karfunkel::Protocol. This
       #is a mixin module that is automatically mixed into the connections
       #(EventMachine::Connection derivatives, anonymous classes) made. Each connection
       #has it's own instance and runs in it's own thread which means that you can
@@ -81,7 +81,8 @@ module OpenRubyRMK
       #stores. For example it stores a data buffer to allow commands to be send
       #as parts instead of a whole.
       #
-      #So the whole process is like follows:
+      #So the whole process is as follows:
+      #
       #1. Karfunkel starts and listens on a port.
       #2. A connection is made to that port. EventMachine instanciates an
       #   anonymous class and mixes in the Protocol module. All events that
@@ -166,7 +167,7 @@ module OpenRubyRMK
           #===Example
           #  OpenRubyRMK::Karfunkel::Karfunkel.start
           def start
-            raise(RuntimError, "Karfunkel is already running!") if @running
+            raise(RuntimeError, "Karfunkel is already running!") if @running
             @clients = []
             @projects = []
             @selected_project = nil
@@ -195,7 +196,7 @@ module OpenRubyRMK
           #  OpenRubyRMK::Karfunkel::Karfunkel.stop
           def stop
             raise(RuntimeError, "Karfunkel is not running!") unless @running
-            #TODO: Clients benachrichtigen
+            #TODO: Inform clients
             EventMachine.stop_event_loop
             @running = false
           end
@@ -282,7 +283,8 @@ module OpenRubyRMK
             end
           end
 
-          #Makes a project selected by it’s +index+ the active project.
+          #Makes a project selected by it’s +index+ in the +projects+ array
+          #the active project.
           #==Parameter
           #[index] The index in the Karfunkel.projects array.
           #==Raises
