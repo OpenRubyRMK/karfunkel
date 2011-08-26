@@ -23,6 +23,7 @@
 
 #require "bundler/setup"
 gem "rdoc", ">= 3"
+require "psych"
 require "yaml"
 require "rake"
 require "rake/clean"
@@ -55,6 +56,9 @@ HANNA_CSS_FILE = DOC_DIR + "css" + "style.css"
 VERSION    = File.read(VERSION_FILE).chomp
 COMPONENTS = %w[karfunkel]
 
+CLOBBER.include(DOC_DIR.to_s)
+COMPONENTS.each{|comp| CLOBBER.include("#{comp}/VERSION")}
+
 #===============================================================================
 #Load everything inside the rake/ directory.
 #===============================================================================
@@ -69,19 +73,19 @@ Dir["#{RAKE_DIR}/**/*.rake"].each{|file| load(file)}
 namespace :all do
 
   desc "Builds the gems for all components"
-  task :gems => :gem do
+  task :gems => [:gem, :version] do
     mkdir_p PKG_DIR
     
     COMPONENTS.each do |component|
       cd component
       sh "rake gem"
-      cp "pkg/openrubyrmk-#{component}-#{VERSION}.gem", PKG_DIR
+      cp "pkg/openrubyrmk-#{component}-#{VERSION.gsub("-", ".")}.gem", PKG_DIR
       cd ".."
     end
   end
 
   desc "Clobbers all component directories."
-  task :clobber do
+  task :clob => :clobber do
     COMPONENTS.each do |component|
       cd component
       sh "rake clobber"
@@ -102,7 +106,7 @@ namespace :all do
   end
 
   desc "Updates all VERSION files to the value in CENTRAL_VERSION."
-  task :bump_version do
+  task :version do
     COMPONENTS.each do |component|
       puts "Bumping #{component}"
       File.open(File.join(component, "VERSION"), "w") do |f|

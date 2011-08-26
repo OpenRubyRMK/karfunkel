@@ -18,16 +18,19 @@
 # along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 gem "rdoc"
+require "psych"
+require "yaml"
 require "rake"
 require "rake/clean"
 require "rubygems/package_task"
 require "rdoc/task"
 require "pathname"
+require "redcloth"
 
 SUBPROJ_DIR  = Pathname.new(__FILE__).dirname.expand_path
 DOC_DIR      = SUBPROJ_DIR + "doc"
 VERSION_FILE = SUBPROJ_DIR + "VERSION"
-VERSION      = File.read(VERSION_FILE).chomp
+VERSION      = File.read(VERSION_FILE).chomp rescue "0.0.0" #May be clobbered
 
 DEPENDENCIES = %w[eventmachine minitar chunky_png nokogiri]
 DEVEL_DEPS   = %w[hanna-nouveau ocra]
@@ -52,7 +55,7 @@ open-source RPG creation program written in Ruby.
                 Dir["config/**/*"],
                 Dir["game/**/*"],
                 Dir["lib/**/*"],
-                "VERSION.rb",
+                "VERSION",
                 "README.rdoc",
                 "COPYING"
                ].flatten
@@ -65,7 +68,7 @@ Gem::PackageTask.new(gemspec).define
 
 Rake::RDocTask.new do |rt|
   rt.rdoc_dir = "doc"
-  rt.rdoc_files.include("**/*.rb", "**/*.rdoc", "COPYING.txt")
+  rt.rdoc_files.include("**/*.rb", "**/*.rdoc", "COPYING")
   rt.rdoc_files.exclude("server/lib/open_ruby_rmk/karfunkel/server_management/requests/*.rb")
   rt.generator = "hanna" #Ignored if not there
   rt.title = "OpenRubyRMK RDocs"
