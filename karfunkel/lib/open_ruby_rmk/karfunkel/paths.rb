@@ -17,10 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
-require "pathname"
-require "nokogiri"
-require "chunky_png"
-
 module OpenRubyRMK
   
   module Karfunkel
@@ -40,7 +36,6 @@ module OpenRubyRMK
       #created with OpenRubyRMK, but refers to Karfunkel's
       #installation directory. On Windows, it's the temporary directory
       #created by OCRA.
-      p Pathname.new(__FILE__).methods.sort
       ROOT_DIR = Pathname.new(__FILE__).dirname.parent.parent.parent.expand_path
       #Karfunkel's real installation directory. On Windows, this is the
       #directory where Karfunkel was installed to (in contrast to ROOT_DIR).
