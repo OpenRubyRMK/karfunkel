@@ -57,7 +57,7 @@ module OpenRubyRMK
       #The whole server-client architecture Karfunkel deals with works as follows:
       #
       #The main component is the server. It's called Karfunkel and it's represented
-      #by the OpenRubyRMK::Karfunkel::Karfunkel module. For each Ruby process
+      #by the OpenRubyRMK::Karfunkel::ServerManagement::Karfunkel module. For each Ruby process
       #there can only be one server running. Here all the information shared by all
       #clients is stored (e.g. the project list).
       #
@@ -66,10 +66,10 @@ module OpenRubyRMK
       #client to send him the +hello+ request (see the commands_and_responses.rdoc file)
       #and if the client does so, Karfunkel assigns a free ID at him and sends it
       #to the client. If not, the connection is closed. Clients are represented by
-      #the OpenRubyRMK::Karfunkel::Client class and they store the information specific
+      #the OpenRubyRMK::Karfunkel::ServerManagement::Client class and they store the information specific
       #to a single client, for instance the client's ID.
       #
-      #The third and most important component is OpenRubyRMK::Karfunkel::Protocol. This
+      #The third and most important component is OpenRubyRMK::Karfunkel::ServerManagement::Protocol. This
       #is a mixin module that is automatically mixed into the connections
       #(EventMachine::Connection derivatives, anonymous classes) made. Each connection
       #has it's own instance and runs in it's own thread which means that you can
@@ -112,7 +112,7 @@ module OpenRubyRMK
         class << self
           
           #An array containing all clients to whom Karfunkel holds
-          #connections. Karfunkel::Client objects.
+          #connections. Karfunkel::ServerManagement::Client objects.
           attr_reader :clients
           #An array of all currently loaded projects.
           attr_reader :projects
@@ -168,12 +168,14 @@ module OpenRubyRMK
           #  OpenRubyRMK::Karfunkel::Karfunkel.start
           def start
             raise(RuntimeError, "Karfunkel is already running!") if @running
+            @preparing_shutdown = false
             @clients = []
             @projects = []
             @selected_project = nil
             @last_id = 0
             @log_mutex = Mutex.new #The log is a shared resource.
             @id_generator_mutex = Mutex.new #The ID generator as well.
+            @request_id_generator_mutex = Mutex.new #For the request ID generator
             
             @config = {}
             parse_argv
@@ -194,13 +196,27 @@ module OpenRubyRMK
           #[RuntimeError] Karfunkel isn't running.
           #==Example
           #  OpenRubyRMK::Karfunkel::Karfunkel.stop
-          def stop
+          def stop(requestor = self)
             raise(RuntimeError, "Karfunkel is not running!") unless @running
-            #TODO: Inform clients
+            log_info("Regular shutdown requested by #{requestor}, informing connected clients.")
+            
+            req = Requests::Shutdown.new(self, next_request_id)
+            req[:requestor] = requestor.id
+            @clients.each do |client|
+              client.accepted_shutdown = false #Clear any previous answers
+              client.request(req)
+            end
+          end
+
+          #Immediately stops Karfunkel, forcibly disconnecting
+          #all clients. The clients are not notified about
+          #the server shutdown. Use this method with care.
+          def stop!
+            raise(RuntimeError, "Karfunkel is not running!") unless @running
             EventMachine.stop_event_loop
             @running = false
           end
-          
+
           #true if Karfunkel is running in debug mode.
           def debug_mode?
             @config[:debug]
@@ -266,6 +282,17 @@ module OpenRubyRMK
             end
           end
 
+          #Generates a new and unused ID for use with requests sent
+          #by Karfunkel.
+          #==Return value
+          #An integer.
+          def next_request_id
+            @request_id_generator_mutex.synchronize do
+              @last_req_id ||= 1
+              @last_req_id += 1
+            end
+          end
+          
           #Sets the active project.
           #==Parameter
           #[project] A OpenRubyRMK::Kafunkel::ProjectManagement::Project instance.
@@ -377,13 +404,13 @@ module OpenRubyRMK
           
           def on_sigint
             @log.info("Cought SIGINT, exiting...")
-            stop
+            stop!
             exit
           end
           
           def on_sigterm
             @log.info("Cought SIGTERM, exiting...")
-            stop
+            stop!
             exit
           end
           

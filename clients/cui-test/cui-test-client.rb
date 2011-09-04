@@ -74,7 +74,7 @@ class TestCUI
   def cmd_greet(port)
     @port = port
     @sock = TCPSocket.open("localhost", @port)
-    render :hello
+    render_and_wait :hello
   end
   
   def cmd_clear
@@ -85,8 +85,16 @@ class TestCUI
     puts T.yellow(@sock.gets(END_OF_COMMAND))
   end
   
+  def cmd_shutdown
+    render_and_wait :shutdown
+  end
+  
+  def cmd_accept_shutdown(shutdown_id)
+    render :shutdown_response, :shutdown_id => shutdown_id
+  end
+  
   def cmd_open_project(file)
-    render :open_project, :file => file
+    render_and_wait :open_project, :file => file
   end
   
   def cmd_observe(secs)
@@ -106,6 +114,10 @@ class TestCUI
     cmd << END_OF_COMMAND
     @request_id += 1
     @sock.write(cmd)
+  end
+  
+  def render_and_wait(*args)
+    render(*args)
     puts T.yellow(@sock.gets(END_OF_COMMAND))
   end
   

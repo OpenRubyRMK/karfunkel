@@ -42,6 +42,9 @@ module OpenRubyRMK
         attr_accessor :available
         #The requests that have been send TO the client.
         attr_accessor :sent_requests
+        #Wheather or not this client has agreed to a shutdown
+        #request.
+        attr_accessor :accepted_shutdown
         #The client's IP address.
         attr_reader :ip
         #The port the client uses for the connection.
@@ -59,12 +62,13 @@ module OpenRubyRMK
         #==Example
         #See the sourcode of Protocol#post_init.
         def initialize(connection)
-          @connection = connection
-          @authenticated = false
-          @available = true
-          @sent_requests = []
+          @connection             = connection
+          @authenticated          = false
+          @accepted_shutdown      = false
+          @available              = true
+          @sent_requests          = []
           @outstanding_broadcasts = []
-          @outstanding_responses = []
+          @outstanding_responses  = []
           if peer = @connection.get_peername
             @port, @ip = Socket.unpack_sockaddr_in(peer)
           else

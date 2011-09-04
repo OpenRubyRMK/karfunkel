@@ -27,6 +27,31 @@
 #  NameOfYourSecondRequest:
 #  ...
 ---
+Shutdown:
+  desc: >-
+    As the name hopefully implies, this request initiates a server
+    shutdown, i.e. asks Karfunkel to halt himself. When you send
+    such a request to Karfunkel, he in turn will issue @Shutdown@
+    requests to all connected clients, asking them wheather they
+    agree with the shutdown you requested (you see, the @Shutdown@
+    request is "biderectional": If you send it to Karfunkel, he’ll
+    start halting, and if you as a client receive one, it’s Karfunkel
+    asking wheather he’s allowed to halt). If you answer the request
+    with @ok@, you agree to a shutdown, whereas a @rejected@ reponse
+    will cause Kafunkel to abort the shutdown.
+  parameters:
+    requestor: >-
+      [OPTIONAL] When you _send_ this request, don’t set this, it would
+      be ignored. When you _receive_ this request, this is the ID of
+      the client who originally asked Karfunkel to shutdown.
+  responses:
+    ok:
+      desc: >
+        Always replied by Karfunkel if you _send_ this request to him.
+        If you _receive_ a @Shutdown@ request, you agree to the shutdown
+        with this response.
+    rejected:
+      desc: Use this to abort a running shutdown.
 Eval:
   desc: >
     The @Eval@ request is for debugging purposes. It causes

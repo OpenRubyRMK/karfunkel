@@ -32,6 +32,11 @@ module OpenRubyRMK::Karfunkel::SM
     #The Request object this response is a reaction to. This can be +nil+
     #in the case of an :error response.
     attr_reader :request
+    #The Client object in charge for sending the response, i.e.
+    #where the response comes *from*. To get the Client object
+    #describing the original _request_ sender, use
+    #<tt>resp.request.sender</tt>.
+    attr_reader :sender
     
     #Creates a new Response. Pass in the Request you react to (you can
     #only pass +nil+ if you’re constructing an error response, because this
