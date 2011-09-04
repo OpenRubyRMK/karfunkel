@@ -112,8 +112,13 @@ module OpenRubyRMK::Karfunkel::SM
     attr_accessor :responses
     
     #Creates a new Request. You should only instanciate subclasses of this
-    #class, otherwise this is a senseless object. Pass in the ID of
-    #the request.
+    #class, otherwise this is a senseless object. 
+    #==Parameters
+    #[sender] The Client object that sent the request, i.e. where
+    #         the request comes *from*.
+    #[id]     A unique ID for the request.
+    #==Return value
+    #The newly created instance.
     def initialize(sender, id)
       @id = id.to_s
       @sender = sender
@@ -122,6 +127,14 @@ module OpenRubyRMK::Karfunkel::SM
     end
     
     #Returns the value of a parameter.
+    #==Parameters
+    #[par] The symbol for the parameter to receive. May
+    #      also be a string.
+    #==Raises
+    #[ArgumentError] +par+ is not defined for this request.
+    #==Return value
+    #The parameter’s value. If +par+ is an optional parameter
+    #and not set, returns the default value for it.
     def [](par)
       par = par.to_s #This way it works for symbols, too
       raise(ArgumentError, "Not a valid parameter: #{par}!") unless self.class.valid_parameter?(par)
@@ -134,14 +147,22 @@ module OpenRubyRMK::Karfunkel::SM
     
     #Sets the value of a parameter. Should only be used when loading the
     #XML files.
+    #==Parameters
+    #[par]   The symbol (or string) of the parameter to set.
+    #[value] The value for the parameter (autoconverted to a string by calling +to_s+ on it).
+    #==Raises
+    #[ArgumentError] +par+ was not defined for this request.
     def []=(par, value)
       raise(ArgumentError, "Not a valid parameter: #{par}!") unless self.class.valid_parameter?(par)
       @parameters[par.to_s] = value.to_s
     end
     
     #This request’s type. It’s determined from the class name.
+    #==Example
+    #  req.class.name #=> "OpenRubyRMK::Karfunkel::SM::Requests::Hello"
+    #  req.type       #=> "Hello"
     def type
-      self.class.name.split("::").last.sub(/Request$/, "")
+      self.class.name.split("::").last
     end
     
     #Human-readable description of form
@@ -164,8 +185,6 @@ module OpenRubyRMK::Karfunkel::SM
       execute(self.class.optional_parameters.merge(@parameters))
     end
 
-
-    
     #Two requests are considered equal if they have the same ID.
     def eql?(other)
       @id == other.id
@@ -199,31 +218,44 @@ module OpenRubyRMK::Karfunkel::SM
       raise(NotImplementedError, "#{__method__} must be overriden in a subclass!")
     end
     
-    private
+    protected
     
-    #Part of the Request DSL -- tells the request processor to create
+    #Part of the Request DSL--tells the request processor to create
     #a Response with the given values. The respose is not sent immediately,
     #but scheduled to be sent when Karfunkel finished processing all requests
     #of the current command.
-    #Example:
+    #==Parameters
+    #[sym] The symbol for the response. See the Response class for a list
+    #      of possible values.
+    #[hsh] A key-value list (aka hash) describing the XML attributes for the
+    #      response. E.g., passing <tt>"foo" => "bar"</tt> will result in this
+    #      XML being in the response:
+    #        <foo>bar</foo>
+    #==Example
     #  def execute
-    #    #Do some coding...
+    #    # Do some coding...
     #    answer :ok, :some_info => "Something"
     #  end
     def answer(sym, hsh = {})
       @sender.response(Response.new(Karfunkel, self, sym, hsh)) #This sends a response TO the requestor
     end
-    
-    #Part of the Request DSL -- remembers a Notification object you
-    #define by the +type+ (which is used to distinguish notifications
-    #for e.g. easier translations) and the attributes. No restrictions
-    #exist for neither +type+ nor +attributes+, but you should document
-    #what broadcasts your request type tends to deliver.
-    #Example:
+
+    #Part of the Request DSL -- use this method to deliver a message to
+    #all currently connected clients. The notification is not immediately
+    #send, but rather scheduled to be sent when Karfunkel has finished
+    #processing everything else for this request.
+    #==Parameters
+    #[type] The type of the notification. No restriction exists here, pass
+    #       any string (or symbol) you like (and document it, of course).
+    #[attributes] A hash describing the XML attributes for the notification.
+    #             For instance, if you pass <tt>"foo" => "bar"</tt> here,
+    #             the notification will contain the following XML:
+    #             <foo>bar</foo>
+    #==Example
     #  def execute(client)
-    #    #Do some coding...
+    #    # Do some coding...
     #    broadcast :foo, :message => "This is foo!"
-    #    #Further coding...
+    #    # Further coding...
     #  end
     def broadcast(type, attributes)
       Karfunkel.add_broadcast(Notification.new(Karfunkel, type, attributes))
@@ -233,7 +265,15 @@ module OpenRubyRMK::Karfunkel::SM
       public
       
       #Part of the Request DSL -- tells the request definer that we want to
-      #define a new request type.
+      #define a new request type. Should be part of the very first statement
+      #you make inside your request file.
+      #==Parameter
+      #[type] The type of request you want to define. A symbol whose
+      #       first letter is capitalized (e.g. <tt>:Foo</tt>).
+      #==Remarks
+      #Inside the block +self+ points to a subclass of this class,
+      #allowing you to access the +protected+ methods defined specifically
+      #for the Request DSL.
       def define(type, &block)
         Requests.const_set(type, Class.new(self, &block))
       end
@@ -257,21 +297,29 @@ module OpenRubyRMK::Karfunkel::SM
       #==Parameter
       #[str] The symbolic name of the parameter to check.
       #==Return value
-      #Either true or false
+      #Either true or false.
       def valid_parameter?(str)
         str = str.to_s #This way it works for symbols, too
         parameters.include?(str) || optional_parameters.keys.include?(str)
       end
       
-      private
+      protected
       
       #Part of the Request DSL -- adds a required parameter.
+      #==Parameter
+      #[str] The stringified (or symbolified) name of the parameter.
+      #==Remarks
+      #Missing required parameters cause an exception before request
+      #execution, so you don’t have to check for their presence.
       def parameter(str)
         parameters << str.to_s #This way it works for symbols, too
       end
 
       #Part of the Request DSL -- adds an optional parameter with
-      #a default value (which defaults to an empty string). 
+      #a default value.
+      #==Parameters
+      #[str]     The stringified (or symbolified) name of the parameter.
+      #[opt_val] ("") The default value for the parameter.
       def optional_parameter(str, opt_val = "")
         optional_parameters[str.to_s] = opt_val.to_s #XML can only contain strings
       end      
