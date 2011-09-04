@@ -2,9 +2,9 @@
 
 OpenRubyRMK::Karfunkel::SM::Request.define :SetMapField do
   
-  attribute :foo
+  parameter :foo
   
-  execute do |client|
+  def execute(pars)
     map = Karfunkel.selected_project["mapname"]
     map[1, 2, 3] = [4, 9]
   end

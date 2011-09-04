@@ -93,7 +93,7 @@ module OpenRubyRMK
         end
         
         def response(response)
-          Karfunkel.log_info("[#{self}] Delivering response: #{response.request.type}")
+          Karfunkel.log_info("[#{self}] Delivering response: #{response.status}")
           cmd = SM::Command.new(Karfunkel) #FROM
           cmd.responses << response
           cmd.deliver!(self) #TO

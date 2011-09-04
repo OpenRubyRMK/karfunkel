@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-#Encoding: UTF-8
+# -*- coding: utf-8 -*-
 
 require "term/ansicolor"
 require "pathname"

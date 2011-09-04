@@ -14,10 +14,20 @@ module OpenRubyRMK::Karfunkel::SM
     #All information associated with this notification as a hash whose
     #keys and values are strings.
     attr_accessor :attributes
+
+    #The Client who sent the Notification. Should be the Karfunkel
+    #module, because it’s the server’s job to deliver messages to
+    #everyone. Even if you call #broadcast inside a request, all
+    #you do is to instruct Karfunkel to send a message to all
+    #connected clients--you don’t send the message yourself. You
+    #wouldn’t be able to either, because you don’t have the list
+    #of all clients and how to reach them.
+    attr_reader :sender
     
     #Creates a new Notification. There shouldn’t be a need for you to
     #call this directly.
-    def initialize(type, attributes = {})
+    def initialize(sender, type, attributes = {})
+      @sender = sender
       @type = type.to_s
       #Convert keys and values to strings
       @attributes = Hash[attributes.map{|k, v| [k.to_s, v.to_s]}]

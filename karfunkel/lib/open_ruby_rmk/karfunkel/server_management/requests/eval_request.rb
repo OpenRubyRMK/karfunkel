@@ -1,19 +1,19 @@
-#Encoding: UTF-8
+# -*- coding: utf-8 -*-
 
 OpenRubyRMK::Karfunkel::SM::Request.define :Eval do
   
-  attribute :code
+  parameter :code
   
-  execute do |client|
+  def execute(pars)
     if Karfunkel.debug_mode?
       Karfunkel.log_debug("[#{client} Executing EVAL request]")
       res = nil
       begin
-        res = eval(self[:code])
-        answer client, :ok,  :result => res.inspect, :exception => false
+        res = eval(pars[:code])
+        answer :ok,  :result => res.inspect, :exception => false
       rescue Exception => e
         Karfunkel.log_exception(e)
-        answer client, :ok, :result => "", :exception => true, :class => e.class, :message => e.message, :bactrace => e.backtrace.join("|")
+        answer :failed, :result => "", :exception => true, :class => e.class, :message => e.message, :bactrace => e.backtrace.join("|")
       ensure
         Karfunkel.log_debug("[#{client} Finished EVAL request]")
       end

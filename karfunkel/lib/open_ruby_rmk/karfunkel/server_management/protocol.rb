@@ -61,7 +61,7 @@ module OpenRubyRMK
           #doesn’t answer, he’s disconnected.
           @ping_timer = EventMachine.add_periodic_timer(Karfunkel.config[:ping_interval]) do
             @client.available = false
-            @client.request(Requests::PingRequest.new(next_request_id))
+            @client.request(Requests::Ping.new(Karfunkel, next_request_id))
             #Now wait for the client to respond to the PING, and if
             #he doesn’t, disconnect.
             EventMachine.add_timer(Karfunkel.config[:ping_interval] - 1) do #-1, b/c another PING request could be sent otherwise
@@ -132,7 +132,7 @@ module OpenRubyRMK
           command.requests.each do |request|
             begin
               Karfunkel.log_info("[#@client] Request: #{request.type}")
-              request.execute!(@client) #No, this is not a danger for life ;-)
+              request.execute!
             rescue => e
               Karfunkel.log_exception(e)
               reject(e.message, request)
@@ -143,7 +143,7 @@ module OpenRubyRMK
           command.responses.each do |response|
             begin
               Karfunkel.log_info("[#@client] Received response to a #{response.request.type} request")
-              response.request.process_response(@client, response)
+              response.request.process_response(response)
               @client.sent_requests.delete(response.request)
             rescue => e
               Karfunkel.log_exception(e)
@@ -178,7 +178,7 @@ module OpenRubyRMK
         #[request] (nil) An optional Request object used to fill the
         #          +type+ and +id+ attributes of the response.
         def reject(reason, request = nil)
-          r = Response.new(request, :rejected)
+          r = Response.new(Karfunkel, request, :rejected)
           r[:reason] = reason
           @client.response(r)
         end
@@ -189,7 +189,7 @@ module OpenRubyRMK
         #[request]     (nil) An optional Request object used to fill the
         #              +type+ and +id+ attributes of the response.
         def error(description, request = nil)
-          r = Response.new(request, :error)
+          r = Response.new(Karfunkel, request, :error)
           r[:description] = description
           @client.response(r)
         end

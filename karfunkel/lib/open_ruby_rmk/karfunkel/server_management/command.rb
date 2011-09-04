@@ -49,7 +49,7 @@ module OpenRubyRMK::Karfunkel::SM
       #Responses
       doc.root.xpath("response").each do |node|
         request = from.sent_requests.find{|req| req.id == node["id"]}
-        resp = Response.new(request)
+        resp = Response.new(from, request)
         
         resp.status = node["status"]
         
@@ -61,9 +61,8 @@ module OpenRubyRMK::Karfunkel::SM
       
       #Requests
       doc.root.xpath("request").each do |node|
-        sym = :"#{node['type']}Request"
-        raise(OpenRubyRMK::Errors::RequestNotFound.new(node["type"], node["id"]), "No such request: '#{node['type']}'!") unless Requests.const_defined?(sym)
-        request = Requests.const_get(sym).new(node["id"])
+        raise(OpenRubyRMK::Errors::RequestNotFound.new(node["type"], node["id"]), "No such request: '#{node['type']}'!") unless Requests.const_defined?(node["type"])
+        request = Requests.const_get(node["type"]).new(from, node["id"])
         
         node.children.each do |child_node|
           request[child_node.name] = child_node.text
@@ -73,8 +72,12 @@ module OpenRubyRMK::Karfunkel::SM
       end
       
       #Notifications
+      #This is for completeness, it’s the server who sends notifications,
+      #not some clients. One could even send a REJECT response to
+      #a client sending a notification. See the Notification#sender
+      #attribute for some explanation.
       doc.root.xpath("notification").each do |node|
-        note = Notification.new(node["type"])
+        note = Notification.new(from, node["type"])
         node.children.each do |child_node|
           note[child_node.name] = child_node.text
         end
@@ -132,7 +135,7 @@ module OpenRubyRMK::Karfunkel::SM
           #Process all requests and build <request> blocks
           @requests.each do |request|
             xml.request(:type => request.type, :id => request.id) do
-              request.attributes.each_pair do |key, value|
+              request.parameters.each_pair do |key, value|
                 xml.send(key, value.to_s) #to_s allows for arbitrary values in the attribute
               end
             end

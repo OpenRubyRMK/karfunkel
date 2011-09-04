@@ -38,8 +38,9 @@ module OpenRubyRMK::Karfunkel::SM
     #response may be a result of malformed XML where you can’t construct a
     #Request object), the requests +status+ (see this class’s documentation
     #for a list of possible symbols) and the attributes of this response.
-    def initialize(request, status = :ok, attributes = {})
+    def initialize(sender, request, status = :ok, attributes = {})
       raise(ArgumentError, "No request given!") if !request and status != :error
+      @sender = sender
       @request = request
       @request.responses << self if @request
       @attributes = attributes
