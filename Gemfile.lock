@@ -1,0 +1,39 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    chingu (0.8.1)
+      crack
+      gosu (>= 0.7.25)
+      rest-client
+    chunky_png (1.1.0)
+    crack (0.1.8)
+    eventmachine (0.12.10)
+    gosu (0.7.29)
+    haml (3.0.25)
+    hanna-nouveau (0.2.2)
+      haml
+      rdoc
+    mime-types (1.16)
+    minitar (0.5.3)
+    nokogiri (1.4.4)
+    r18n-core (0.4.9)
+    r18n-desktop (0.4.9)
+      r18n-core (= 0.4.9)
+    rdoc (3.5.3)
+    rest-client (1.6.1)
+      mime-types (>= 1.16)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  chingu
+  chunky_png
+  eventmachine
+  gosu
+  hanna-nouveau
+  minitar (>= 0.5.3)
+  nokogiri
+  ocra
+  r18n-desktop
+  rdoc (>= 3.4)

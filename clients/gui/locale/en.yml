@@ -1,0 +1,199 @@
+#Encoding: UTF-8
+#This file contains the ENGLISH translation for OpenRubyRMK. 
+#
+#=========================================
+#This is the main locale file for OpenRubyRMK. If no translation 
+#for any other language is found, OpenRubyRMK looks into this 
+#file to at least display _something_. DO NOT DELETE THIS FILE! 
+#=========================================
+#
+#HOWTO TRANSLATE OpenRubyRMK INTO OTHER LANGUAGES
+#
+#It's really easy! Make a copy of this file inside OpenRubyRMK's locale/ 
+#directory and name it as the ISO abbreviation for your language 
+#("es.yml" for Spanish, for example). Then start translating all 
+#the english words and phrases in your copy and make sure to surround 
+#phrases which containg non-standard characters (like !) with double 
+#quotes (you're actually writing YAML markup, if you're interested in the reason). 
+#
+#If your system is set up with the language you are creating the translation 
+#for, OpenRubyRMK will automatically pick up your new translation and 
+#display strings accordingly. However, if you're translating for another 
+#locale than your system's, you have to edit OpenRubyRMK's configuration 
+#file (config/OpenRubyRMK-rc.yml) and change the value for "locale" to 
+#the ISO language abbreviation for the language you translate into. 
+#This will force OpenRubyRMK to use the language you put into the config. 
+#
+#When you're finished, you should remove this statement and just state 
+#(in English) for which language the file serves. If you like, you could 
+#also translate this text rather than removing it, but remove the "this 
+#is the main locale file..." statement from your translation file anyway, 
+#since the "main locale file" IS the English locale file. 
+#
+#Some translation strings can contain special character sequences 
+#beginning with a percent sign %. Those will be replaced by a 
+#run-time value such as an ID a user entered. Wherever this 
+#is possible, it's commented. Technically, those escape 
+#sequences are evaluated by the String#% method, with takes 
+#a format string according to Kernel#sprintf. 
+#=================
+#START OF TRANSLATIONS
+
+
+#These are some general strings. The "application_name" will 
+#be used from OpenRubyRMK whenever it refers to itself and 
+#it shouldn't be changed. The "application_slogan" is the 
+#string that will be displayed in the window's title bar next 
+#to the application name and "description" shows up 
+#in the "about" menu as the program's description. 
+#And last but not least, don't forget to put your name into 
+#"translators"! If you do so, OpenRubyRMK will automatically 
+#honor you if somebody clicks on "Help" -> "About..." (or 
+#however the menus are named in your translation). Separate 
+#multiple names with a comma and a space, e.g. 
+#"Foo <foo@example.com>, Bar <bar@example.com>". 
+general:
+  application_name: OpenRubyRMK
+  application_slogan: "The free and open-source RPG creation program!"
+  description: "A free and open-source RPG (role-play games) creation program."
+  translators: "Quintus <sutniuq@gmx.net>"
+  often_used:
+    width: Width
+    height: Height
+    depth: Depth
+
+#The menu labels are described here. The "name" of a menu 
+#is what gets displayed in the menu bar, "tooltip"s are shown 
+#if a toolbar tool exists for that menu entry and the strings 
+#stated in "statusbar" get shown in the statusbar. 
+menus:
+  mainwindow:
+    file:
+      name: File
+      new:
+        name: New project...
+        tooltip: Creates a new project.
+        statusbar: Creates a new project.
+      open: 
+        name: Open...
+        tooltip: Opens a saved project.
+        statusbar: Opens a saved project.
+      save:
+        name: Save
+        tooltip: Saves the project.
+        statusbar: Saves the project.
+      saveas:
+        name: Save as...
+        tooltip: Saves the project under a specific directory.
+        statusbar: Saves the project under a specific directory.
+      exit:
+        name: Exit
+        tooltip: Quits OpenRubyRMK.
+        statusbar: Quits OpenRubyRMK.
+    
+    view:
+      name: View
+      windows:
+        name: Windows
+        mapset: 
+          name: Mapset
+          tooltip: Shows the mapset window
+          statusbar: Shows the mapset window
+        properties:
+          name: Map properties
+          tooltip: Shows the map properties window
+          statusbar: Shows the map properties window
+    
+    edit:
+      name: Edit
+      new_map:
+        name: New Map...
+        tooltip: Creates a new map.
+        statusbar: Creates a new map.
+    
+    extras:
+      name: Extras
+      console:
+        name: OpenRubyRMKonsole
+        tooltip: Opens OpenRubyRMKonsole. 
+        statusbar: Opens OpenRubyRMKonsole.
+    
+    help:
+      name: Help
+      help:
+        name: Help...
+        tooltip: Opens OpenRubyRMK's help.
+        statusbar: Opens OpenRubyRMK's help.
+      about:
+        name: About OpenRubyRMK...
+        tooltip: Information about the application.
+        statusbar: Information about the application.
+  mapset_window:
+    file:
+      name: File
+      close:
+        name: Close
+        tooltip: Closes the mapset window
+        statusbar: Closes the mapset window
+
+window_titles:
+  mapset_window: Current mapset
+  properties_window: Map properties
+
+#The following are dialog strings. All of them have a 
+#title string you may translate or not, and some have a message. 
+#Other dialogs, such as the map dialog, define a whole lot of 
+#text which needs to be translated. 
+dialogs:
+  #File -> Open...
+  open_project: 
+    title: Select the project file
+  load_project:
+    title: Loading project
+    #This is the message displayed just before loading starts. 
+    #Make sure to put a long message in here, or the dialog 
+    #will come out quite small. 
+    start_message: Loading project structure...
+    load_mapsets: Extracting mapsets...
+    load_characters: Extracting characters...
+    build_map_structure: Building up map hierarchy...
+  #New and edit map dialog
+  map_dialog:
+    title_new: Create a new map
+    title_edit: Edit a map
+    map_name: Map name
+    parent_id: Parent ID
+    map_id: Map ID
+    mapset: Mapset
+
+#Error messages that are displayed if the user makes mistakes or just 
+#behaves anormally. 
+errors:
+  #Message for fatal errors shown when OpenRubyRMK crashes. You have three %s escapes available: 
+  #The first will be replaced by the error's class name, the second by the error message and the third 
+  #by the error's backtrace. Whatever you write here, you don't have any influence on how the 
+  #error will be written to the log file. 
+  fatal: "A fatal error occured during execution of OpenRubyRMK. \nWe're sorry for this, but please help us improving OpenRubyRMK by filing a bug at \nhttp://github.com/Quintus/OpenRubyRMK \nor by sending an email to \nopenrubyrmk@googlemail.com. \nDescribe what you did and attach the most recent log file. \nHere is the original error which can also be found in the log file: \n\n%s: %s\nBacktrace:\n%s"
+  no_project:
+    title: No project selected
+    message: You don't have a project opened. In order to execute this action you have to create a new project or open up an existing one.
+  id_in_use:
+    title: ID already in use
+    #The ID is available via %i here. 
+    message: The ID %i is already in use. Please choose a different one.
+  id_not_in_use:
+    title: Non-existing ID
+    #The ID is available via %i here. 
+    message: The ID %i doesn't exist. 
+  invalid_id:
+    title: Invalid ID
+    message: You entered an invalid ID value. Make sure the ID doesn't contain anything other than decimal numbers.
+  zero_reserved:
+    title: ID zero is reserved
+    message: The ID 0 (zero) is reserved. Please choose a different one.
+  no_map:
+    title: No map selected
+    message: You don't have a map selected.
+
+plugins:
+  your_plugin_here: "Write your plugins translations here!"
