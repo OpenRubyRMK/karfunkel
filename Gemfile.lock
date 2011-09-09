@@ -7,7 +7,7 @@ GEM
       rest-client
     chunky_png (1.1.0)
     crack (0.1.8)
-    eventmachine (0.12.10)
+    eventmachine (1.0.0.beta.3)
     gosu (0.7.29)
     haml (3.0.25)
     hanna-nouveau (0.2.2)
@@ -29,7 +29,7 @@ PLATFORMS
 DEPENDENCIES
   chingu
   chunky_png
-  eventmachine
+  eventmachine (>= 1.0.0.beta3)
   gosu
   hanna-nouveau
   minitar (>= 0.5.3)

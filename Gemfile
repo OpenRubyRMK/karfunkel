@@ -42,7 +42,7 @@ gem "r18n-desktop"
 gem "minitar", ">= 0.5.3"
 gem "chunky_png"
 gem "nokogiri"
-gem "eventmachine"
+gem "eventmachine", ">= 1.0.0.beta3"
 
 group :development do
   gem "rdoc", ">= 3.4"
