@@ -43,9 +43,11 @@ gem "minitar", ">= 0.5.3"
 gem "chunky_png"
 gem "nokogiri"
 gem "eventmachine", ">= 1.0.0.beta3"
+gem "rake"
 
 group :development do
   gem "rdoc", ">= 3.4"
+  gem "RedCloth", :require => "redcloth"
   gem "hanna-nouveau"
   gem "gosu"
   gem "chingu"
