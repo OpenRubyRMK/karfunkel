@@ -93,12 +93,16 @@ class TestCUI
     render :shutdown_response, :shutdown_id => shutdown_id
   end
   
+  def cmd_chat(message, target = nil)
+    render :chat_message, :message => message, :target => target
+  end
+  
   def cmd_open_project(file)
     render_and_wait :open_project, :file => file
   end
   
   def cmd_observe(secs)
-    Timeout.timeout(secs) do
+    Timeout.timeout(secs.to_i) do
       loop do
         puts T.yellow(@sock.gets(END_OF_COMMAND))
       end

@@ -27,6 +27,30 @@
 #  NameOfYourSecondRequest:
 #  ...
 ---
+ChatMessage:
+  desc: >-
+    Delivers a text message either to all connected clients or
+    to a specific one. If you get a @ChatMessage@ request,
+    someone has requested a message to be send only to you
+    (and nobody else). Answer this with OK.
+  parameters:
+    message: The message text.
+    target: >-
+      [OPTIONAL] The ID of the client that shall receive the
+      message. If left out, all clients are notified.
+    original_sender: >-
+      [OPTIONAL] Used internally to preserve the original
+      requestor's ID when forwarding the request.
+  responses:
+    ok:
+      desc: >
+        Your message has been delivered successfully. If you
+        receive a @ChatMessage@ request, this should be your
+        answer.
+    rejected:
+      desc: "Your message couldn't be delivered."
+      parameters:
+        reason: "Reason why it didn't work out."
 Shutdown:
   desc: >-
     As the name hopefully implies, this request initiates a server
