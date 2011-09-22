@@ -377,7 +377,7 @@ module OpenRubyRMK
               @log = Logger.new(@config[:logdir] + "OpenRubyRMK.log", 5, 1048576) #1 MiB
               @log.level = @config[:loglevel]
             end
-            @log.datetime_format =  "%d.%m.%Y %H:%M:%S "
+            @log.formatter = lambda{|severity, time, progname, msg| "#{severity.chars.first} [#{time.strftime('%d-%m-%Y %H:%M:%S')} ##$$] #{msg}\n"}
             @log.info("This is Karfunkel, version #{VERSION}.")
             if debug_mode?
               @log.warn("Running in DEBUG mode!")
