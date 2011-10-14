@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 =begin
 This file is part of OpenRubyRMK.
 
@@ -52,4 +53,5 @@ group :development do
   gem "gosu"
   gem "chingu"
   gem "ocra", :platforms => :mswin
+  gem "test-unit"
 end

@@ -24,6 +24,7 @@ GEM
     rdoc (3.5.3)
     rest-client (1.6.1)
       mime-types (>= 1.16)
+    test-unit (2.3.0)
 
 PLATFORMS
   ruby
@@ -41,3 +42,4 @@ DEPENDENCIES
   r18n-desktop
   rake
   rdoc (>= 3.4)
+  test-unit

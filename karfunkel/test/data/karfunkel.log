@@ -1,0 +1,16 @@
+I [11-10-2011 12:52:10 #4575] This is Karfunkel, version 0.0.1-dev.
+W [11-10-2011 12:52:10 #4575] Running in DEBUG mode!
+D [11-10-2011 12:52:11 #4575] The configuration is as follows:
+D [11-10-2011 12:52:11 #4575] -| debug => true
+D [11-10-2011 12:52:11 #4575] -| startup_dir => auto
+D [11-10-2011 12:52:11 #4575] -| ruby => /opt/rubies/ruby-1.9.2-p180/bin
+D [11-10-2011 12:52:11 #4575] -| port => 3141
+D [11-10-2011 12:52:11 #4575] -| greet_timeout => 5
+D [11-10-2011 12:52:11 #4575] -| logdir => (none)
+D [11-10-2011 12:52:11 #4575] -| loglevel => 0
+D [11-10-2011 12:52:11 #4575] -| ping_interval => 20
+I [11-10-2011 12:52:11 #4575] A new story may begin now. Karfunkel waits with PID 4575 on port 3141 for you...
+I [11-10-2011 12:52:14 #4575] Connection try from 127.0.0.1.
+I [11-10-2011 12:52:14 #4575] Connection to 127.0.0.1 closed.
+W [11-10-2011 12:52:19 #4575] [127.0.0.1] Connection timeout for 127.0.0.1.
+I [11-10-2011 12:52:25 #4575] Cought SIGTERM, exiting...
