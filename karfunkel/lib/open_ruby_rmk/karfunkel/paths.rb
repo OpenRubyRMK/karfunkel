@@ -19,7 +19,7 @@
 
 module OpenRubyRMK
   
-  module Karfunkel
+  class Karfunkel
   
     #This module encapsulates all the different directories we work with.
     #Path information about the projects created are stored in their
@@ -46,7 +46,10 @@ module OpenRubyRMK
       #The directory where Karfunkel's global configuration file resides in.
       CONFIG_DIR = INSTALL_DIR + "config"
       #This is the path of Karfunkel's configuration file.
-      CONFIG_FILE = INSTALL_DIR + "config" + "OpenRubyRMK-rc.yml"
+      CONFIG_FILE = INSTALL_DIR + "config" + "karfunkel-conf.yml"
+      #From this directory all files are loaded automatically. It’s
+      #inteded for plugins.
+      PLUGIN_DIR = INSTALL_DIR + "plugins"
       #The file that contains the version of OpenRubyRMK (should be the
       #same version for the server and the clients).
       VERSION_FILE = ROOT_DIR + "VERSION"
