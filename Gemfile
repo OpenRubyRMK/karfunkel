@@ -38,20 +38,36 @@ along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 #The source where we download gems from
 source "http://rubygems.org"
 
-#gem "wxruby-ruby19", ">= 2.0.0"
-gem "r18n-desktop"
-gem "minitar", ">= 0.5.3"
-gem "chunky_png"
-gem "nokogiri"
-gem "eventmachine", ">= 1.0.0.beta3"
-gem "rake"
+#Generally needed gems for all components
 
+
+#Gems only needed for Karfunkel, the server
+group :karfunkel do
+  gem "nokogiri"
+  gem "eventmachine"
+  #gem "minitar"
+end
+
+#Gems only needed for the GUI client
+group :gui do
+  #gem "wxruby-ruby19", ">= 2.0.0"
+  #gem "r18n-desktop"
+  #gem "chunky_png"
+end
+
+#Gems only needed to run the created games
+group :game do
+  #gem "gosu"
+  #gem "chingu"
+end
+
+#Gems only needed for developing and testing the OpenRubyRMK
 group :development do
   gem "rdoc", ">= 3.4"
-  gem "RedCloth", :require => "redcloth"
   gem "hanna-nouveau"
-  gem "gosu"
-  gem "chingu"
+  gem "rake"
   gem "ocra", :platforms => :mswin
   gem "test-unit"
+  #gem "RedCloth", :require => "redcloth"
 end
+

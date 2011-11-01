@@ -50,10 +50,7 @@ module OpenRubyRMK
     module Plugins
     end
 
-    #The Logger currently in use by Karfunkel. Note that the
-    #default logger set up here just writes everything out
-    #to $stdout and is overridden by the _core_ plugin with a
-    #more useful one.
+    #The Logger currently in use by Karfunkel.
     attr_reader :log
     
     #The configuration options from both the commandline and the
@@ -79,23 +76,33 @@ module OpenRubyRMK
     def initialize(argv)
       raise("There can only be one instance of Karfunkel!") if self.class.const_defined?(:THE_INSTANCE)
       
-      #There *must* be a log, even if it’s just $stdout.
-      #This is overridden by the core plugin to allow other
-      #log formats.
-      @log = Logger.new($stdout)
       #This is where all configuration, i.e. both from commandline
       #options and from the configuration file, is stored in.
       @config = {}
             
       #Setup the base things. Most of these call hook methods,
       #but aren’t themselves hooks.
+      load_raw_config
+      load_plugins
+      parse_config(@__raw_config)
       load_argv(argv)
-      load_config
       setup_signal_handlers
 
       #Add a constant referring to self as the one and only instance
       #of this class.
       self.class.const_set(:THE_INSTANCE, self)
+    end
+
+    #The very heart of the plugin mechanism. This plugs a
+    #module into Karfunkel. Called from #parse_config, but you can
+    #call it later if you want to include plugins not found
+    #by #parse_config or just delay plugin loading.
+    #==Parameter
+    #[mod] The plugin to include.
+    #==Example
+    #  Karfunkel::THE_INSTANCE.load_plugin(MyPlugin)
+    def load_plugin(mod)
+      self.class.send(:include, mod) #Mixins for the world! ;-)
     end
 
     pluggify do
@@ -114,10 +121,10 @@ module OpenRubyRMK
       
       protected
 
-      #*HOOK*. This methods parses the options passed to Karfunkel.
+      #*HOOK*. This method parses the options passed to Karfunkel.
       #Bare Karfunkel understands the following options:
-      #[-c] Set the config file path.
       #[-h] Display the help.
+      #[-v] Display the version number.
       #Everything else is done by plugins.
       #==Parameter
       #[op] An OptionParser instance you can tweak around in
@@ -125,12 +132,7 @@ module OpenRubyRMK
       #     in there.
       def parse_argv(op)
         op.banner = "Karfunkel, OpenRubyRMK's server."
-        op.on("-c", 
-              "--configfile FILE", 
-              "Uses FILE as the configuration file.") do |path|
-          @config[:configfile] = Pathname.new(path)
-        end
-        
+
         op.on("-h",
               "--help",
               "Display this message and exit.") do
@@ -141,36 +143,21 @@ module OpenRubyRMK
         op.on("-v",
               "--version",
               "Print version and exit.") do
-          puts "This is OpenRubyRMK, version #{OpenRubyRMK::VERSION}."
+          puts "This is OpenRubyRMK's Karfunkel, version #{OpenRubyRMK::VERSION}."
           exit
         end
       end
 
       #*HOOK*. This methods specifies how to handle configuration
-      #directives in the configuration file. Bare Karfunkel understands
-      #the following configuration directives:
-      #[plugins] A list of modules to load on startup (actually
-      #          the plugins are loaded in this very method). The
-      #          specified names will be capitalized before searching
-      #          for the module constant in the
-      #          OpenRubyRMK::Karfunkel::Plugins module.
+      #directives in the configuration file. Note that the :plugin
+      #directive is special, see #load_plugins in this file’s sourecode
+      #for further explanation.
+      #
+      #This method doesn’t do anything by default.
       #==Parameter
       #[hsh] The content of the configuration file in form of a hash.
       #      Note that the keys are symbols, not strings.
       def parse_config(hsh)
-        #Load all specified plugins.
-        @config[:plugins] = []
-        hsh[:plugins].each do |str|
-          modname = str.capitalize
-          if self.class::Plugins.const_defined?(modname)
-            mod = self.class::Plugins.const_get(modname)
-            
-            @config[:plugins] << mod
-            load_plugin(mod)
-          else
-            raise("Plugin not found: #{modname}!")
-          end
-        end
       end
 
       #*HOOK*. This method is intended to set up signal handlers
@@ -183,7 +170,7 @@ module OpenRubyRMK
     
     private
 
-    #Calls the hook method for the OptionParser (#parse_config)
+    #Calls the hook method for the OptionParser (#parse_argv)
     #and then passes +argv+ into it.
     def load_argv(argv)
       op = OptionParser.new
@@ -191,20 +178,34 @@ module OpenRubyRMK
       op.parse!(argv)
     end
     
-    #This loads the configuration file and calls the
-    ##parse_config hook with the resulting hash whose keys have
-    #already been converted to symbols.
-    def load_config
-      cfg = YAML.load_file(@config[:configfile])
-      cfg = Hash[cfg.map{|k, v| [k.to_sym, v]}] #Symbolify the keys
-      parse_config(cfg)
+    #Reads in the configuration file and converts the keys from strings
+    #to symbols, but doesn’t interpret it.
+    def load_raw_config
+      unless Paths::CONFIG_FILE.file? and Paths::CONFIG_FILE.readable?
+        raise("Can't read the configuration file at #{Paths::CONFIG_FILE}!")
+      end
+      @__raw_config = YAML.load_file(Paths::CONFIG_FILE.to_s)
+      @__raw_config = Hash[@__raw_config.map{|k, v| [k.to_sym, v]}] #Symbolify the keys
     end
 
-    #The very heart of the plugin mechanism. This plugs a
-    #module (+mod+) into Karfunkel. Called from #parse_config.
-    def load_plugin(mod)
-      @log.debug("Loading plugin: #{mod}")
-      include(mod) #Mixins for the world! ;-)
+    #This method loads all the plugins found by #load_config and populates
+    #the @config variable with them. This behaviour should be
+    #in #parse_config as that’s the method supposed to fill @config (together
+    #with #parse_argv), but that would cause a chicken-egg-problem, because
+    #plugins are allowed to do their own configuration file parsing.
+    def load_plugins
+      @config[:plugins] = []
+      
+      @__raw_config[:plugins].each do |modname|
+        modname = modname.capitalize
+        if self.class::Plugins.const_defined?(modname)
+          mod = self.class::Plugins.const_get(modname)
+          load_plugin(mod)
+          @config[:plugins] << modname
+        else
+          raise("Plugin #{modname} couldn't be found!")
+        end
+      end
     end
 
   end
@@ -213,7 +214,8 @@ end
 
 #Load the plugin modules (loaded after the above definitions,
 #because things like the VERSION constant aren’t defined otherwise
-#and a plugin can’t make use of them).
+#and a plugin can’t make use of them). This doesn’t include subdirectories,
+#because plugins may store their own further classes in subdirectories.
 OpenRubyRMK::Karfunkel::Paths::PLUGIN_DIR.each_child do |path|
   require(path)
 end

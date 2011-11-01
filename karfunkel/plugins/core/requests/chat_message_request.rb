@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-OpenRubyRMK::Karfunkel::SM::Request.define :ChatMessage do
+
+OpenRubyRMK::Karfunkel.define_request :ChatMessage do
 
   parameter :message
   optional_parameter :target

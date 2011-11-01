@@ -25,8 +25,8 @@ if RUBY_VERSION < "1.9.2"
   exit 1
 end
 
-require_relative "../lib/open_ruby_rmk/karfunkel/server_management/karfunkel"
+require_relative "../lib/open_ruby_rmk/karfunkel"
 
 EventMachine.run do
-  OpenRubyRMK::Karfunkel::SM::Karfunkel.start
+  OpenRubyRMK::Karfunkel.new(ARGV).start
 end

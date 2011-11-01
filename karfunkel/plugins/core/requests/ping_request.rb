@@ -1,6 +1,6 @@
-#Encoding: UTF-8
+# -*- coding: utf-8 -*-
 
-OpenRubyRMK::Karfunkel::SM::Request.define :Ping do
+OpenRubyRMK::Karfunkel.define_request :Ping do
   
   def execute(pars)
     #If Karfunkel gets a PING request, we just answer it as OK and

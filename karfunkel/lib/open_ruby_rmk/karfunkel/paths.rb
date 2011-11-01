@@ -46,7 +46,7 @@ module OpenRubyRMK
       #The directory where Karfunkel's global configuration file resides in.
       CONFIG_DIR = INSTALL_DIR + "config"
       #This is the path of Karfunkel's configuration file.
-      CONFIG_FILE = INSTALL_DIR + "config" + "karfunkel-conf.yml"
+      CONFIG_FILE = INSTALL_DIR + "config" + "karfunkel.conf"
       #From this directory all files are loaded automatically. It’s
       #inteded for plugins.
       PLUGIN_DIR = INSTALL_DIR + "plugins"

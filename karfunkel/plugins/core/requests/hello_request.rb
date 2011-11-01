@@ -1,6 +1,6 @@
-#Encoding: UTF-8
+# -*- coding: utf-8 -*-
 
-OpenRubyRMK::Karfunkel::SM::Request.define :Hello do
+OpenRubyRMK::Karfunkel.define_request :Hello do
   
   parameter :os
   

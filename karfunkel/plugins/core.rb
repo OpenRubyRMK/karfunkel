@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
+require "eventmachine"
+require "nokogiri"
+
 module OpenRubyRMK::Karfunkel::Plugins::Core
 
   #This is the "client" id Karfunkel himself uses.
@@ -66,6 +69,17 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
   #
   #Logs a FATAL level message. Do not use this, it's for internal use.
 
+  #--
+  # I know, this is a hack, but I don’t know how to get this
+  # class method on Karfunkel otherwise...
+  #++
+  module ::OpenRubyRMK
+    #Deligates to Request.define. This is a non-hookable class method.
+    def Karfunkel.define_request(*args, &block)
+      OpenRubyRMK::Karfunkel::Plugins::Core::Request.define(*args, &block)
+    end
+  end
+
   #(Hooked) Starts Karfunkel.
   #===Raises
   #[RuntimeError] Karfunkel is already running.
@@ -83,10 +97,11 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
     @id_generator_mutex         = Mutex.new #Never generate duplicate client IDs.
     @request_id_generator_mutex = Mutex.new #Same for request IDs.
 
-    Thread.abort_on_exception = true if debug_mode?
     create_logger
+    Thread.abort_on_exception = true if debug_mode?
 
-    @log.info("A new story may begin now. Karfunkel waits with PID #{$$} on port #{@port} for you...")
+    @log.info("Loaded plugins: #{@config[:plugins].map(&:to_s).join(', ')}")
+    @log.info("A new story may begin now. Karfunkel waits with PID #$$ on port #{@config[:port]} for you...")
     EventMachine.start_server("localhost", @config[:port], Protocol)
     @running = true
   end
@@ -117,6 +132,18 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
     raise("Karfunkel is not running!") unless @running
     EventMachine.stop_event_loop
     @running = false
+  end
+
+  def setup_signal_handlers
+    super
+    Signal.trap("SIGINT") do
+      @log.info("Cought SIGINT, going to shutdown...")
+      stop
+    end
+    Signal.trap("SIGTERM") do
+      @log.info("Cought SIGTERM, forcing shutdown...")
+      stop!
+    end
   end
 
   #true if Karfunkel is running in debug mode.
@@ -264,21 +291,23 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
       @config[:loglevel] = level
     end
   end
-
+  
   #Hooked.
   def parse_config(hsh)
     super
-    case
-    when hsh[:port]          then @config[:port]          = hsh[:port]
-    when hsh[:greet_timeout] then @config[:greet_timeout] = hsh[:greet_timeout]
-    when hsh[:loglevel]      then @config[:loglevel]      = hsh[:loglevel]
-    when hsh[:ping_interval] then @config[:ping_interval] = hsh[:ping_interval]
-    when hsh[:logdir]        then @config[:logdir]        = Pathname.new(hsh[:logdir])
+    hsh.each_pair do |k, v|
+      case k
+      when :port          then @config[:port]          = v
+      when :greet_timeout then @config[:greet_timeout] = v
+      when :loglevel      then @config[:loglevel]      = v
+      when :ping_interval then @config[:ping_interval] = v
+      when :logdir        then @config[:logdir]        = Pathname.new(v)
+      when :log_format    then @config[:log_format]    = v
+      end
     end
   end
 
-  #Overwrites bare Karfunkel’s default logger with something
-  #more useful.
+  #Creates the logger.
   def create_logger
     if debug_mode?
       $stdout.sync       = $stderr.sync = true
@@ -293,8 +322,14 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
       @log.level = @config[:loglevel]
     end
 
-    @log.formatter = lambda{|severity, time, progname, msg| "#{severity.chars.first} [#{time.strftime('%d-%m-%Y %H:%M:%S')} ##$$] #{msg}\n"}
-    @log.info("This is Karfunkel, version #{VERSION}.")
+    @log = Logger.new($stdout)
+    @log.level = Logger::DEBUG
+    @log.formatter = lambda do |severity, time, progname, msg| 
+      timestr = time.strftime(@config[:log_format])
+      sprintf(timestr.gsub(/&(\w+)/, '%{\1}'), :sev => severity.chars.first, :pid => $$, :msg => msg) + "\n"
+    end
+    
+    @log.info("This is Karfunkel, version #{OpenRubyRMK::VERSION}.")
     if debug_mode?
       @log.warn("Running in DEBUG mode!")
       sleep 1 #Give time to read the above
@@ -302,5 +337,19 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
       @config.each_pair{|k, v| @log.debug("-| #{k} => #{v}")}
     end
   end
-
 end
+
+# Require all the classes for this plugin
+require_relative "core/protocol"
+require_relative "core/command"
+require_relative "core/request"
+require_relative "core/response"
+require_relative "core/notification"
+require_relative "core/client"
+# Request classes
+require_relative "core/requests/chat_message_request"
+require_relative "core/requests/eval_request"
+require_relative "core/requests/hello_request"
+require_relative "core/requests/open_project_request"
+require_relative "core/requests/ping_request"
+require_relative "core/requests/shutdown_request"

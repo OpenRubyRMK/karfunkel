@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-OpenRubyRMK::Karfunkel::SM::Request.define :Eval do
-  
+OpenRubyRMK::Karfunkel.define_request :Eval do
+
   parameter :code
   
   def execute(pars)

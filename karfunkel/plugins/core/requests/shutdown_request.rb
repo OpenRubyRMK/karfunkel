@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 
-OpenRubyRMK::Karfunkel::SM::Request.define :Shutdown do
+OpenRubyRMK::Karfunkel.define_request :Shutdown do
 
   optional_parameter :requestor
   
