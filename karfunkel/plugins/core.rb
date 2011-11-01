@@ -115,7 +115,10 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
     raise(RuntimeError, "Karfunkel is not running!") unless @running
     @log.info("Regular shutdown requested by #{requestor}, informing connected clients.")
     
-    req = Requests::Shutdown.new(self, next_request_id)
+    #There’s no sense to wait for clients when no clients are connected.
+    return stop! if @clients.empty?
+    
+    req = OpenRubyRMK::Karfunkel::Plugins::Core::Request::Requests::Shutdown.new(self, next_request_id)
     req[:requestor] = requestor.id
     @clients.each do |client|
       client.accepted_shutdown = false #Clear any previous answers
