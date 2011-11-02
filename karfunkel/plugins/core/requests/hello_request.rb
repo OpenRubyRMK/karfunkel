@@ -6,14 +6,14 @@ OpenRubyRMK::Karfunkel.define_request :Hello do
   
   def execute(pars)
     answer :reject, :reason => "Already authenticated!" and return if @sender.authenticated?
-    Karfunkel.log_debug("Trying to authenticate '#@sender'...")
+    karfunkel.log_debug("Trying to authenticate '#@sender'...")
     
     #TODO: Here one could add password checks and other nice things...
-    @sender.id = Karfunkel.generate_id
+    @sender.id = karfunkel.generate_id
     @sender.authenticated = true
     
-    Karfunkel.log_info("[#@sender] Authenticated.")
-    answer :ok, :id => @sender.id, :my_version => OpenRubyRMK::VERSION, :my_project => Karfunkel.selected_project.to_s, :my_clients_num => Karfunkel.clients.count
+    karfunkel.log_info("[#@sender] Authenticated.")
+    answer :ok, :id => @sender.id, :my_version => OpenRubyRMK::VERSION, :my_project => karfunkel.selected_project.to_s, :my_clients_num => karfunkel.clients.count
   end
   
 end

@@ -5,11 +5,11 @@ OpenRubyRMK::Karfunkel.define_request :OpenProject do
   parameter :file
   
   def execute(pars)
-    raise(Errors::InvalidParameter, "'#{pars[:file]}' is not a file!") unless File.file?(pars[:file])
+    raise(Errors::InvalidParameter, "'#{pars[:file]}' is not a file!") unless File.file?(pars["file"])
     
-    project = PM::Project.load(pars[:file])
-    Karfunkel.log_info("[#@sender] Loading project '#{project.name}'.")
-    Karfunkel.projects << project
+    project = OpenRubyRMK::Karfunkel::PM::Project.load(pars["file"])
+    karfunkel.log_info("[#@sender] Loading project '#{project.name}'.")
+    karfunkel.projects << project
     
     answer :processing
     broadcast :load_project, :mapset_extraction => 0, :char_extraction => 0

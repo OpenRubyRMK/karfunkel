@@ -147,6 +147,15 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
       @log.info("Cought SIGTERM, forcing shutdown...")
       stop!
     end
+    Signal.trap("SIGUSR1") do
+      if debug_mode?
+        @log.debug("Cought SIGUSR1, loading IRB...")
+        ARGV.clear #If there’s something in, IRB will run amok
+        require "irb"
+        IRB.start
+        @log.debug("Finished IRB.")
+      end
+    end
   end
 
   #true if Karfunkel is running in debug mode.
@@ -157,6 +166,11 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
   #true if any project is currently loaded.
   def has_project?
     !@projects.empty?
+  end
+
+  #Human-readable description.
+  def inspect
+    "#<#{self.class} I AM KARFUNKEL. THEE IS NOTHING.>"
   end
   
   #true if the server has already been started.

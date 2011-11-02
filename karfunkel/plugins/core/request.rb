@@ -33,7 +33,7 @@
 #    #automatically set to their default value.
 #    def execute(pars)
 #      # Grab the parameters passed and do the real coding.
-#      result = pars[:x].to_i + pars[:y].to_i
+#      result = pars["x"].to_i + pars["y"].to_i
 #      # If you feel the need you have to notify all currently connected
 #      # clients on your actions, call #broadcast and attach some
 #      # valuable information.
@@ -231,7 +231,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
   #    answer :ok, :some_info => "Something"
   #  end
   def answer(sym, hsh = {})
-    @sender.response(Response.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, self, sym, hsh)) #This sends a response TO the requestor
+    @sender.response(OpenRubyRMK::Karfunkel::Plugins::Core::Response.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, self, sym, hsh)) #This sends a response TO the requestor
   end
 
   #Part of the Request DSL -- use this method to deliver a message to
@@ -252,7 +252,15 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
   #    # Further coding...
   #  end
   def broadcast(type, attributes)
-    OpenRubyRMK::Karfunkel::THE_INSTANCE.add_broadcast(Notification.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, type, attributes))
+    OpenRubyRMK::Karfunkel::THE_INSTANCE.add_broadcast(OpenRubyRMK::Karfunkel::Plugins::Core::Notification.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, type, attributes))
+  end
+
+  #Part of the Request DSL -- refers to the one and only instance
+  #of Karfunkel. Could also be accessed by
+  #  OpenRubyRMK::Karfunkel::THE_INSTANCE
+  #, but that is significantly harder to type.
+  def karfunkel
+    OpenRubyRMK::Karfunkel::THE_INSTANCE
   end
 
   class << self

@@ -92,14 +92,14 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Client
   
   def response(response)
     OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("[#{self}] Delivering response: #{response.status}")
-    cmd = SM::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE) #FROM
+    cmd = OpenRubyRMK::Karfunkel::Plugins::Core::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE) #FROM
     cmd.responses << response
     cmd.deliver!(self) #TO
   end
   
   def notification(note)
     OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("[#{self}] Delivering notification: #{note.type}")
-    cmd = SM::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE) #FROM
+    cmd = OpenRubyRMK::Karfunkel::Plugins::Core::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE) #FROM
     cmd.notifications << note
     cmd.deliver!(self) #TO
   end

@@ -60,7 +60,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Command
     #Requests
     doc.root.xpath("request").each do |node|
       raise(OpenRubyRMK::Errors::RequestNotFound.new(node["type"], node["id"]), "No such request: '#{node['type']}'!") unless OpenRubyRMK::Karfunkel::Plugins::Core::Request::Requests.const_defined?(node["type"])
-      request = Requests.const_get(node["type"]).new(from, node["id"])
+      request = OpenRubyRMK::Karfunkel::Plugins::Core::Request::Requests.const_get(node["type"]).new(from, node["id"])
       
       node.children.each do |child_node|
         request[child_node.name] = child_node.text

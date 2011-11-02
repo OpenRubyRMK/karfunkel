@@ -201,7 +201,7 @@ module OpenRubyRMK
         if self.class::Plugins.const_defined?(modname)
           mod = self.class::Plugins.const_get(modname)
           load_plugin(mod)
-          @config[:plugins] << modname
+          @config[:plugins] << mod
         else
           raise("Plugin #{modname} couldn't be found!")
         end

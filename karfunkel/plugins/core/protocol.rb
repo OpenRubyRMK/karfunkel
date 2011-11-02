@@ -25,7 +25,7 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
   #Called by EventMachine immediately after a connection try
   #was made.
   def post_init
-    @client = Client.new(self)
+    @client = OpenRubyRMK::Karfunkel::Plugins::Core::Client.new(self)
     OpenRubyRMK::Karfunkel::THE_INSTANCE.clients << @client
     OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("Connection try from #{client}.")
     #We may get an incomplete command over the network, so we have
@@ -54,7 +54,7 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
     #doesn’t answer, he’s disconnected.
     @ping_timer = EventMachine.add_periodic_timer(OpenRubyRMK::Karfunkel::THE_INSTANCE.config[:ping_interval]) do
       @client.available = false
-      @client.request(OpenRubyRMK::Karfunkel::Plugins::Core::Requests::Ping.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, next_request_id))
+      @client.request(OpenRubyRMK::Karfunkel::Plugins::Core::Request::Requests::Ping.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, next_request_id))
       #Now wait for the client to respond to the PING, and if
       #he doesn’t, disconnect.
       EventMachine.add_timer(OpenRubyRMK::Karfunkel::THE_INSTANCE.config[:ping_interval] - 1) do #-1, b/c another PING request could be sent otherwise
