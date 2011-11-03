@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-#A command is the container for responses and requests, and every communication
-#with the OpenRubyRMK server Karfunkel is done with them. Their external
-#representation is a XML structure which is fully defined in the
+#A command is the container for responses (class Core::Response),
+#requests (class Core::Request) and notifications (class Core::Notification), 
+#and every communication #with the OpenRubyRMK server Karfunkel is done with them. 
+#Their external representation is a XML structure which is fully defined in the
 #commands_and_responses.rdoc and the {requests}[link:server_requests.html] file.
 #
 #This is one of the classes you should pay some attention to if you want to
@@ -11,15 +12,15 @@
 #your requests and responses.
 class OpenRubyRMK::Karfunkel::Plugins::Core::Command
   
-  #The Client that sent the command.
+  #The Core::Client that sent the command.
   attr_reader :from
-  #An array of instances of Request subclasses. These are all the
+  #An array of instances of Core::Request subclasses. These are all the
   #requests contained in this command.
   attr_accessor :requests
-  #An array of Response objects. These are all the responses contained
+  #An array of Core::Response objects. These are all the responses contained
   #in this command.
   attr_accessor :responses
-  #An array of Notification objects. These are all the notificactions
+  #An array of Core::Notification objects. These are all the notificactions
   #contained in this command.
   attr_accessor :notifications
   
@@ -27,9 +28,9 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Command
   #requests and responses.
   #===Parameters
   #[str]  The XML string.
-  #[from] The Client object from which this command was sent.
+  #[from] The Core::Client object from which this command was sent.
   #===Raises
-  #[MalformedCommand] On XML syntax errors and an incorrect root element
+  #[MalformedCommand] On XML syntax errors and an incorrect root element.
   #[RequestNotFound]  Invalid request type found.
   def self.from_xml(str, from)
     begin
@@ -88,7 +89,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Command
   
   #Creates a new and blank command.
   #===Parameters
-  #[from] The Client object this command shell be send *from*. Where
+  #[from] The Core::Client object this command shell be send *from*. Where
   #       it goes *to* is specified as an argument to the #deliver! method.
   def initialize(from)
     @from = from
@@ -97,15 +98,15 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Command
     @notifications = []
   end
   
-  #Checks wheather or not any requests or responses have been defined
-  #for this command.
+  #Checks wheather or not any requests, responses or notifications 
+  #have been defined for this command.
   #===Example
-  #  Command.new(Karfunkel).empty? #=> true
-  #  c = Command.new(Karfunkel)
-  #  c.responses << Response.new(a_request, a_request.id, :ok)
+  #  OpenRubyRMK::Karfunkel::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE).empty? #=> true
+  #  c = OpenRubyRMK::Karfunkel::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE)
+  #  c.responses << OpenRubyRMK::Karfunkel::Response.new(a_request, a_request.id, :ok)
   #  e.empty? #=> false
   def empty?
-    @requests.empty? and @responses.empty?
+    @requests.empty? and @responses.empty? and @notifications.empty?
   end
   
   #This build the XML tree that can be delivered over the wire. The resulting
@@ -155,7 +156,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Command
   #Delivers this command to the given client. Ensure that +to_client+’s
   #+connection+ is valid.
   #===Parameters
-  #[to_client] The Client where to send the command to.
+  #[to_client] The Core::Client where to send the command to.
   def deliver!(to_client)
     to_client.connection.send_data(to_xml + OpenRubyRMK::Karfunkel::Plugins::Core::Protocol::END_OF_COMMAND)
   end

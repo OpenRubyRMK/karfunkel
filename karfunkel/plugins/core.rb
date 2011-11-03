@@ -19,17 +19,22 @@
 require "eventmachine"
 require "nokogiri"
 
+#This is the core plugin that comes with the OpenRubyRMK’s server,
+#Karfunkel. It provides the basic functionality of Karfunkel and
+#hence shouldn’t be removed from your configuration’s plugin
+#list unless you have written something equivalent.
 module OpenRubyRMK::Karfunkel::Plugins::Core
 
   #This is the "client" id Karfunkel himself uses.
   ID = 0
 
   #An array containing all clients to whom Karfunkel holds
-  #connections. Karfunkel::ServerManagement::Client objects.
+  #connections. Client objects.
   attr_reader :clients
   #An array of all currently loaded projects.
   attr_reader :projects
-  
+  #The Logger instance used by the log_* methods.
+  attr_reader :log
   #The currently selected project or +nil+ if no project has been
   #selected yet.
   attr_reader :selected_project
@@ -137,6 +142,10 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
     @running = false
   end
 
+  #(Hooked) Sets up handlers for the following UNIX process signals:
+  #[SIGINT]  Request a shutdown, asking all clients for agreement.
+  #[SIGTERM] Force a shutdown, don’t ask the clients.
+  #[SIGUSR1] Only available in debug mode. Enter IRB on the server side.
   def setup_signal_handlers
     super
     Signal.trap("SIGINT") do
@@ -166,11 +175,6 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
   #true if any project is currently loaded.
   def has_project?
     !@projects.empty?
-  end
-
-  #Human-readable description.
-  def inspect
-    "#<#{self.class} I AM KARFUNKEL. THEE IS NOTHING.>"
   end
   
   #true if the server has already been started.
@@ -294,7 +298,7 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
 
   private
 
-  #Hooked.
+  #Hooked. Adds the -d (debug mode) and -L (loglevel) options.
   def parse_argv(op)
     super
     
@@ -309,7 +313,14 @@ module OpenRubyRMK::Karfunkel::Plugins::Core
     end
   end
   
-  #Hooked.
+  #Hooked. Adds the interpretation of the following configuration
+  #file directives:
+  #* :port
+  #* :greet_timeout
+  #* :loglevel
+  #* :ping_interval
+  #* :logdir
+  #* :log_format
   def parse_config(hsh)
     super
     hsh.each_pair do |k, v|

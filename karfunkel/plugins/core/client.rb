@@ -19,7 +19,7 @@
 
 #This is a client that sits on the other end of the connection.
 #Objects of this class are automatically instanciated by the
-#Protocol module.
+#Core::Protocol module.
 class OpenRubyRMK::Karfunkel::Plugins::Core::Client
   
   #The operating system a client uses.
@@ -47,14 +47,14 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Client
   attr_reader :connection
   
   #Creates a new Client instance. This method is called automatically
-  #in Protocol#post_init and isn’t intended to be used elsewhere.
+  #in Core::Protocol#post_init and isn’t intended to be used elsewhere.
   #==Parameters
   #[connection] The connection the client uses; usually only available
-  #             inside the Protocol module as +self+.
+  #             inside the Core::Protocol module as +self+.
   #==Return value
   #The newly created instance.
   #==Example
-  #See the sourcode of Protocol#post_init.
+  #See the sourcode of Core::Protocol#post_init.
   def initialize(connection)
     @connection             = connection
     @authenticated          = false
@@ -82,6 +82,12 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Client
     @available
   end
   
+  #Causes Karfunkel to send a request to this client.
+  #==Parameter
+  #[request] An instance of Core::Request.
+  #==Example
+  #  req = OpenRubyRMK::Karfunkel::Request::Requests::PingRequest.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, 12)
+  #  client.request(req)
   def request(request)
     OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("[#{self}] Delivering request: #{request.type}")
     cmd = OpenRubyRMK::Karfunkel::Plugins::Core::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE) #FROM
@@ -90,13 +96,25 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Client
     @sent_requests << request
   end
   
+  #Causes Karfunkel to send a response to this client.
+  #==Parameter
+  #[response] An instance of Core::Notification.
+  #==Example
+  #  res = OpenRubyRMK::Karfunkel::Response.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, a_request, :ok)
+  #  client.response(res)
   def response(response)
     OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("[#{self}] Delivering response: #{response.status}")
     cmd = OpenRubyRMK::Karfunkel::Plugins::Core::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE) #FROM
     cmd.responses << response
     cmd.deliver!(self) #TO
   end
-  
+
+  #Causes Karfunkel to send a notification to this client.
+  #==Parameter
+  #[note] An instance of Core::Notification.
+  #==Example
+  #  note = OpenRubyRMK::Karfunkel::Notification.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, :foo, :foo => "bar")  
+  #  client.notificiation(note)
   def notification(note)
     OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("[#{self}] Delivering notification: #{note.type}")
     cmd = OpenRubyRMK::Karfunkel::Plugins::Core::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE) #FROM

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-#Responses are delivered as reactions on requests (see the Request class).
-#They’re parts of a Command, you cannot deliver standalone responses.
+#Responses are delivered as reactions on requests (see the Core::Request class).
+#They’re parts of a Core::Command, you cannot deliver standalone responses.
 #
 #The most important place where it comes to responses is inside the
 #Request classes when calling the +answer+ method. This method takes
@@ -30,17 +30,31 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Response
   #The Request object this response is a reaction to. This can be +nil+
   #in the case of an :error response.
   attr_reader :request
-  #The Client object in charge for sending the response, i.e.
-  #where the response comes *from*. To get the Client object
+  #The Core::Client object in charge for sending the response, i.e.
+  #where the response comes *from*. To get the Core::Client object
   #describing the original _request_ sender, use
   #<tt>resp.request.sender</tt>.
   attr_reader :sender
   
-  #Creates a new Response. Pass in the Request you react to (you can
-  #only pass +nil+ if you’re constructing an error response, because this
-  #response may be a result of malformed XML where you can’t construct a
-  #Request object), the requests +status+ (see this class’s documentation
-  #for a list of possible symbols) and the attributes of this response.
+  #Creates a new Response. 
+  #==Parameters
+  #[sender]          The Core::Client object this response comes *from*.
+  #[request]         The request you want to answer. If you’re deliving an
+  #                  :error response you can set this to +nil+, because an
+  #                  :error response usually is the result of sending malformed
+  #                  or otherwise damaged XML from which you cannot derive a
+  #                  Core::Request object.
+  #[status]          (:ok) This response’s status. See this class’ documentation
+  #                  for a list of possible symbols.
+  #[attributes] ({}) Further attributes you want to attach to your response.
+  #                  Keys will show up as tag names, values as their, well, values.
+  #==Return value
+  #The newly created instance.
+  #==Example
+  #  resp = OpenRubyRMK::Karfunkel::Response.new(a_client,
+  #                                              a_request,
+  #                                              :rejected,
+  #                                              :reason => "I don't like you")
   def initialize(sender, request, status = :ok, attributes = {})
     raise(ArgumentError, "No request given!") if !request and status != :error
     @sender = sender
@@ -50,19 +64,25 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Response
     @status = status
   end
   
-  #Grabs the specified +attribute+ which should be a string.
+  #Grabs an attribute.
+  #==Parameter
+  #[attribute] The attribute to read. Autoconverted to a string by #to_s.
+  #==Return value
+  #Either the attribute or nil if it can’t be found.
   def [](attribute)
-    @attributes[attribute]
+    @attributes[attribute.to_s]
   end
   
-  #Sets the spcified +attribute+. Both the +attribute+ and the +value+
-  #should be strings.
+  #Sets an attribute.
+  #==Parameters
+  #[attribute] The attribute to set. Autoconverted to a string by #to_s.
+  #[value]     The value to assign. Autoconverted to a string by #to_s.
   def []=(attribute, value)
     @attributes[attribute] = value
   end
   
   #Returns the request’s ID or -1 if no request was set for an :error
-  #response.
+  #response. Note this is, as everything else, a string.
   def id
     if @request
       @request.id
@@ -82,7 +102,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Response
   end
   
   #Human-readable description of form
-  #  #<OpenRubyRMK::Karfunkel::SM::Response <type>|<status>, attributes: <attrs>>
+  #  #<OpenRubyRMK::Karfunkel::Plugins::Core::Response <type>|<status>, attributes: <attrs>>
   #.
   def inspect
     "#<#{self.class} #{type}|#@status, attributes: #{@attributes.inspect}>"

@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 
-#A request is the part of the Command that instructs the other
+#A request is the part of the Core::Command that instructs the other
 #end of the connection to take action. A command may contain multiple
 #requests or none at all, but if it does, the requests’s structure must
 #be defined by one of the subclasses of this class. They all reside
-#in the Requests module, and are loaded dynamically from the
-#*lib/open_ruby_rmk/karfunkel/server_management/requests* directory.
+#in the Requests module, and are loaded by the core plugin from the
+#*lib/open_ruby_rmk/karfunkel/plugins/core/requests* directory. You
+#can define your own requests in your plugins, just call the
+#Karfunkel.define_request method (defined by the Core plugin) as
+#described below.
 #
 #== Defining new request types
-#
 #The files in that directory are simple Ruby files containing the
 #request type’s definition in a simple DSL (Domain specific language). To
 #define a new request type, let’s say +Foo+, create a file *foo.rb* in
-#the above directory and put this in it:
+#a suitable directory (usually something like
+#*lib/open_ruby_rmk/karfunkel/plugins/your_plugin/requests*) and ensure
+#it gets required by your plugin (see the Karfunkel class’ documentation
+#on how to write plugins). Then, put this in it:
 #
 #  #This line tells the processor to define a request type called "Foo"
 #  OpenRubyRMK::Karfunkel.define_request :Foo do
@@ -49,7 +54,8 @@
 #    #This method gets called when Karfunkel sent a request of your type
 #    #to a client and now received a response from the client.
 #    def process_response(resp)
-#      Karfunkel::THE_INSTANCE.log_info("[#{resp.sender}] Client answered #{response[:result]}.")
+#      karfunkel.log_info("[#{resp.sender}] Client answered #{response[:result]}.")
+#     #↑ note the lowercase k, this is a method call
 #    end
 #
 #  end
@@ -57,7 +63,7 @@
 #=== XML
 #Please don’t forget that all communication between the server and
 #it’s clients happens in XML format. While this shouldn’t bother
-#you for the most cases, it playes an important role for parameters
+#you for the most cases, it plays an important role for parameters
 #and their values: XML doesn’t know about "numbers" or "objects".
 #In XML, there are just strings, and that’s the reason why your
 #parameters hash will be composed entirely of strings--the parameters
@@ -66,7 +72,6 @@
 #to add them mathematically together.
 #
 #=== Accessing the sender
-#
 #If you need to access the object describing the sender of the request
 #for some reason, you can do so via the instance variable <tt>@sender</tt>.
 #It contains an instance of class OpenRubyRMK::Karfunkel::Plugins::Core::Client.
@@ -100,7 +105,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
   #from a file; this is a hash of form
   #  {:parameter => "value"}
   attr_reader :parameters
-  #The ID of this request.
+  #The ID of this request. Note that this is, as everything else, a string.
   attr_reader :id
   #The Responses corresponding to this request.
   attr_accessor :responses
@@ -108,7 +113,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
   #Creates a new Request. You should only instanciate subclasses of this
   #class, otherwise this is a senseless object. 
   #==Parameters
-  #[sender] The Client object that sent the request, i.e. where
+  #[sender] The Core::Client object that sent the request, i.e. where
   #         the request comes *from*.
   #[id]     A unique ID for the request.
   #==Return value
@@ -153,7 +158,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
   
   #This request’s type. It’s determined from the class name.
   #==Example
-  #  req.class.name #=> "OpenRubyRMK::Karfunkel::Plugins::Core::Requests::Hello"
+  #  req.class.name #=> "OpenRubyRMK::Karfunkel::Plugins::Core::Requests::HelloRequest"
   #  req.type       #=> "Hello"
   def type
     self.class.name.split("::").last
@@ -179,6 +184,10 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
     execute(self.class.optional_parameters.merge(@parameters))
   end
 
+  #call-seq:
+  #  eql?(other)   → a_bool
+  #  self == other → a_bool
+  #
   #Two requests are considered equal if they have the same ID.
   def eql?(other)
     @id == other.id
@@ -219,7 +228,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
   #but scheduled to be sent when Karfunkel finished processing all requests
   #of the current command.
   #==Parameters
-  #[sym] The symbol for the response. See the Response class for a list
+  #[sym] The symbol for the response. See the Core::Response class for a list
   #      of possible values.
   #[hsh] A key-value list (aka hash) describing the XML attributes for the
   #      response. E.g., passing <tt>"foo" => "bar"</tt> will result in this
@@ -234,7 +243,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
     @sender.response(OpenRubyRMK::Karfunkel::Plugins::Core::Response.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, self, sym, hsh)) #This sends a response TO the requestor
   end
 
-  #Part of the Request DSL -- use this method to deliver a message to
+  #Part of the Request DSL--use this method to deliver a message to
   #all currently connected clients. The notification is not immediately
   #send, but rather scheduled to be sent when Karfunkel has finished
   #processing everything else for this request.
@@ -266,9 +275,11 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
   class << self
     public
     
-    #Part of the Request DSL -- tells the request definer that we want to
+    #Part of the Request DSL--tells the request definer that we want to
     #define a new request type. Should be part of the very first statement
-    #you make inside your request file.
+    #you make inside your request file. Equivalent to calling
+    #  OpenRubyRMK::Karfunkel.define_request
+    #with the same parameters.
     #==Parameter
     #[type] The type of request you want to define. A symbol whose
     #       first letter is capitalized (e.g. <tt>:Foo</tt>).
@@ -307,7 +318,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
     
     protected
     
-    #Part of the Request DSL -- adds a required parameter.
+    #Part of the Request DSL--adds a required parameter.
     #==Parameter
     #[str] The stringified (or symbolified) name of the parameter.
     #==Remarks
@@ -317,7 +328,7 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Request
       parameters << str.to_s #This way it works for symbols, too
     end
 
-    #Part of the Request DSL -- adds an optional parameter with
+    #Part of the Request DSL--adds an optional parameter with
     #a default value.
     #==Parameters
     #[str]     The stringified (or symbolified) name of the parameter.

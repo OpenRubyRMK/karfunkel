@@ -6,20 +6,25 @@
 #To clarify: Each time a new client connects to Karfunkel,
 #an anonymous class created and instanciated by EventMachine
 #(whatever for) and this module (as specified in the
-#Karfunkel.start method) is mixed into that class. See also the
+#Core#start method) is mixed into that class. See also the
 #EventMachine documentation.
 #
 #Whenever the user sends a complete command, #process_command
 #is triggered which instantiates an instance of one of the
-#classes in the Requests module. These are generated from the
-#files in the *lib/open_ruby_rmk/karfunkel/server_management/requests*
-#directory.
+#classes in the Core::Request::Requests module. These are 
+#usually generated from the files in the 
+#*lib/open_ruby_rmk/karfunkel/plugins/core/requests*
+#directory, but further requests can be defined by calling
+#Karfunkel.define_request (defined by the Core plugin) or
+#by directly subclassing the Core::Request class and placing
+#the new subclass inside the Core::Request::Requests module.
 module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
     
   #This is the byte that terminates each command.
   END_OF_COMMAND = "\0".freeze
   
   #The client that sits on the other end of the connection.
+  #A Core::Client object.
   attr_reader :client
   
   #Called by EventMachine immediately after a connection try
@@ -89,11 +94,6 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
   end
   
   private
-  
-  #For easier typing, resolves to OpenRubyRMK::Karfunkel::THE_INSTANCE.
-  def karfunkel
-    OpenRubyRMK::Karfunkel::THE_INSTANCE
-  end
 
   #Processes a full command. If the client sending the command
   #was not yet authenticated, #check_authentication is invoked to
@@ -175,6 +175,8 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
   #[reason]  Reason why the client was rejected.
   #[request] (nil) An optional Request object used to fill the
   #          +type+ and +id+ attributes of the response.
+  #
+  #TODO: Don’t be lazy, Request.new only allows a +nil+ request for :error responses.
   def reject(reason, request = nil)
     r = OpenRubyRMK::Karfunkel::Plugins::Core::Response.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, request, :rejected)
     r[:reason] = reason

@@ -41,17 +41,62 @@ module OpenRubyRMK
   #methods where plugins can easily intercept. These methods are
   #marked in this documentation with *HOOK* at the beginning.
   #
+  #== Writing a plugin
+  #
+  #Writing a plugin is as easy as creating a module inside the
+  #OpenRubyRMK::Karfunkel::Plugins namespace. As described above,
+  #Karfunkel exposes some methods you can hook into and change or
+  #add to Karfunkel’s acting. If for example you want to display
+  #a nice starting message on the server side (whatever for) you
+  #could do it like this:
+  #
+  #  module OpenRubyRMK::Karfunkel::Plugins::StartupMessagePlugin
+  #    def start
+  #      super
+  #      puts("Hey, time to do some cool coding!")
+  #    end
+  #  end
+  #
+  #Note the call to +super+: This is important, because otherwise the
+  #code of other plugins, maybe even _core_, would not be run.
+  #
+  #When you’ve finished writing your plugin, save it into the
+  #*lib/open_ruby_rmk/karfunkel/plugins* directory. On startup,
+  #Karfunkel will load any files it finds in that directory. Note
+  #that files in subdirectories aren’t automatically recognized,
+  #because you may find yourself needing multiple classes for
+  #your plugins. Assuming you’re writing a plugin called
+  #+MyPlugin+ that resides in a file called *my_plugin.rb* in
+  #the above directory, you can then easily add a subdirectory
+  #*plugins/my_plugin/* that is completely under your control,
+  #Karfunkel’s loading won’t interfere with yours. See the
+  #_core_ plugin for an example.
+  #
+  #Note however that your plugin (as the name suggests) is
+  #_included_ into the OpenRubyRMK::Karfunkel class. Therefore,
+  #if you define a class OpenRubyRMK::Karfunkel::Plugins::MyPlugin::SecretClass,
+  #it will be available after loading your plugin as
+  #OpenRubyRMK::Karfunkel::SecretClass. Please also beware you don’t
+  #accidentally overwrite existing classes this way.
+  #
+  #If you add instance methods to your plugin module that didn’t
+  #exist in any way before inside Karfunkel, the methods will
+  #be available on the Karfunkel instance after loading your
+  #plugin. After all, this is just a normal Ruby +include+.
+  #
   #If you write a plugin and need to initialize it in some way,
   #you can use Ruby’s own Module#included hook.
+  #
+  #The magic allowing you to overwrite methods via #include (which
+  #normally isn’t possible in Ruby) can be found inside the
+  #OpenRubyRMK::Karfunkel::Pluggable module. If you want to use
+  #that one in your own classes, you of course can do so.
   class Karfunkel
     extend Pluggable
 
     #The namespace for all plugins.
     module Plugins
     end
-
-    #The Logger currently in use by Karfunkel.
-    attr_reader :log
     
     #The configuration options from both the commandline and the
     #configuration file as a hash (whose keys are symbols).
