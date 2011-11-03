@@ -18,7 +18,6 @@
 # along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
 gem "rdoc"
-require "psych"
 require "yaml"
 require "rake"
 require "rake/clean"
@@ -55,6 +54,7 @@ open-source RPG creation program written in Ruby.
                 Dir["config/**/*"],
                 Dir["game/**/*"],
                 Dir["lib/**/*"],
+                Dir["plugins/**/*"],
                 "VERSION",
                 "README.rdoc",
                 "COPYING"
