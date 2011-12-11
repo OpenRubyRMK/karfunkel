@@ -44,7 +44,7 @@ source "http://rubygems.org"
 #Gems only needed for Karfunkel, the server
 group :karfunkel do
   gem "nokogiri"
-  gem "eventmachine"
+  gem "eventmachine", ">= 1.0.0.beta.4"
   #gem "minitar"
 end
 
