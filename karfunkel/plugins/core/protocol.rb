@@ -9,10 +9,49 @@
 #Core#start method) is mixed into that class. See also the
 #EventMachine documentation.
 #
+#== How sending and receiving works
+#After the OpenRubyRMK::Karfunkel class was instanciated,
+#Karfunkel starts listening on a port defined in the config
+#file (3141 by default). Then the following takes place:
+#
+#1. A possible client tries to establish a connection. This
+#   causes the #post_init method to be called.
+#2. #post_init instanciates the Plugins::Core::Client class
+#   with the given information and adds the resulting instance
+#   to an internal array of connected clients. Then Karfunkel
+#   waits for the client to greet him. If he doesn’t greet in time
+#   (specified in the config file), Karfunkel rudely closes the
+#   connection.
+#3. The client sends a +Hello+ request. As with all sent data,
+#   this triggers the #receive_data method which in turn,
+#   when a _complete_ command has been received, calls
+#   the (private) #process_command method. (Complete commands
+#   are detected by receiving the END_OF_COMMAND byte, which
+#   should be a NUL byte.)
+#4. #process_command creates an instance of the
+#   Plugins::Core::Command class by parsing the received XML.
+#5. If the client hasn’t been authenticated yet (as is the case
+#   when sending the first request), #process_command checks
+#   wheather the first and only request is a +Hello+ request. If this
+#   isn’t the case, the connection is immediately terminated.
+#6. Otherwise, #process_command processes each received
+#   request in turn (which in case of the first request
+#   obviously includes the +Hello+ request) and calls their
+#   respective #execute! methods. For the +Hello+ request, it
+#   currently just accepts the connection, but it could include
+#   things like password authentication.
+#7. After processing the requests, process any received responses
+#   and delete the corresponding request from the list of
+#   waiting requests.
+#8. Go to 5.
+#9. On disconnect, the #unbind method is called by EventMachine,
+#   which removes the client from the list of connected clients
+#   and cancels the ping timer for this client.
+#
 #Whenever the user sends a complete command, #process_command
 #is triggered which instantiates an instance of one of the
-#classes in the Core::Request::Requests module. These are 
-#usually generated from the files in the 
+#classes in the Core::Request::Requests module. These are
+#usually generated from the files in the
 #*lib/open_ruby_rmk/karfunkel/plugins/core/requests*
 #directory, but further requests can be defined by calling
 #Karfunkel.define_request (defined by the Core plugin) or

@@ -135,6 +135,10 @@ module OpenRubyRMK
 
       #Add a constant referring to self as the one and only instance
       #of this class.
+      #
+      #Note I’m doing this rather than including Ruby’s Singleton module, because
+      #the Singleton module doesn’t allow arguments to be passed to
+      ##initialize. See http://redmine.ruby-lang.org/issues/5448.
       self.class.const_set(:THE_INSTANCE, self)
     end
 
