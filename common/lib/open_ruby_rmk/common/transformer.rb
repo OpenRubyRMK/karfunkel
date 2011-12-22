@@ -59,7 +59,7 @@ module OpenRubyRMK::Common
         raise(Errors::MalformedCommand, e.message)
       end
       
-      sender_node = doc.at("Karfunkel/sender/id") # Missing if this command contains the HELLO request
+      sender_node = doc.at("karfunkel/sender/id") # Missing if this command contains the HELLO request
       sender_id   = sender_node ? sender_node.content.to_i : -1
       cmd         = Command.new(sender_id)
 
@@ -125,7 +125,7 @@ module OpenRubyRMK::Common
     #  trans.convert!(cmd)
     def convert!(cmd)
       builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
-        xml.Karfunkel do # The root element
+        xml.karfunkel do # The root element
           if cmd.from_id
             # Build the <sender> block (except when +from_id+ is nil,
             # which is the case for commands containing the HELLO request)
@@ -157,7 +157,7 @@ module OpenRubyRMK::Common
             end
           end
 
-        end # <Karfunkel>
+        end # <karfunkel>
       end # Builder.new
 
       builder.to_xml
