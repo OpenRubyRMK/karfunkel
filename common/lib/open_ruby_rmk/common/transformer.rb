@@ -111,6 +111,15 @@ module OpenRubyRMK::Common
         cmd.notifications << note
       end
 
+      # Finally, a command containing a HELLO request
+      # is invalid if it contains anything else.
+      if cmd.requests.any?{|req| req.type == "Hello"}
+        case
+        when cmd.requests.count > 1 then raise(Errors::MalformedCommand, "Hello request sent along with something else")
+        when cmd.from_id != -1      then raise(Errors::MalformedCommand, "Client ID sent together with HELLO request")
+        end
+      end
+
       cmd
     end
 

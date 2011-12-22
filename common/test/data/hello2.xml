@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<karfunkel>
+  <!-- This is invalid -->
+  <sender><id>1111</id></sender>
+  <request type="Hello" id="0">
+    <os>Linux</os>
+  </request>
+</karfunkel>
