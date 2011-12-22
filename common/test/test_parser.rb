@@ -2,9 +2,10 @@ gem "test-unit"
 require "test/unit"
 require "pathname"
 
-require_relative "../lib/common"
+require_relative "../lib/open_ruby_rmk/common"
 
 class ParserTest < Test::Unit::TestCase
+  include OpenRubyRMK::Common
 
   DATA_DIR          = Pathname.new(__FILE__).dirname.expand_path + "data"
   
