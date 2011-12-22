@@ -13,7 +13,7 @@ module OpenRubyRMK::Common
     end
 
     def [](par)
-      @parameters[par.to_s] || raise(KeyError, "Parameter not found: #{par}!")
+      @parameters[par.to_s]
     end
 
     def []=(par, value)
@@ -21,7 +21,20 @@ module OpenRubyRMK::Common
     end
     
     def type
-      @request.type
+      if @request
+        @request.type
+      else
+        "error" # If no request has been defined, this must be an :error response
+      end
+    end
+
+    def eql?(other)
+      return false if !@request or !other.request # For the :error response
+      @request == other.request
+    end
+
+    def inspect
+      "#<#{self.class} #{type.upcase}>"
     end
 
   end

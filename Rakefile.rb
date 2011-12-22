@@ -54,7 +54,7 @@ VERSION_FILE   = ROOT_DIR + "CENTRAL_VERSION"
 HANNA_CSS_FILE = DOC_DIR + "css" + "style.css"
 
 VERSION    = File.read(VERSION_FILE).chomp
-COMPONENTS = %w[karfunkel]
+COMPONENTS = %w[karfunkel common]
 
 CLOBBER.include(DOC_DIR.to_s)
 COMPONENTS.each{|comp| CLOBBER.include("#{comp}/VERSION")}

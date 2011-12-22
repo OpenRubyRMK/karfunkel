@@ -78,11 +78,18 @@ module OpenRubyRMK::Common
       # Responses
       doc.root.xpath("response").each do |node|
         id      = node["id"].to_i
-        request = @waiting_requests.find{|req| req.id == id} # May be nil if a client sends an unwanted response!
-        @waiting_requests.delete(request)                    # Remove answered request from queue
-        warn("Skipping unmappable response with ID #{id}.") and next unless request
+        req_id  = node["answers"].to_i
+        request = @waiting_requests.find{|req| req.id == req_id} # May be nil if a client sends an unwanted response!
+        warn("Skipping unmappable response with ID #{id}.") and next unless request # TODO: ERROR response doesn’t answer anything
         
+        # Create the Response object and establish the dual-sided
+        # relationship of a request and its response
         response = Response.new(id, request)
+        request.responses << response
+
+        # If the request has completed, delete it from the list of
+        # outstanding requests.
+        @waiting_requests.delete(request) if node["type"] == "ok" or node["type"] == "finished"
         
         # Parameters
         node.children.each do |child|
