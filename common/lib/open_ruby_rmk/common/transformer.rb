@@ -111,21 +111,18 @@ module OpenRubyRMK::Common
         cmd.notifications << note
       end
 
-      # Finally, a command containing a HELLO request
-      # is invalid if it contains anything else.
-      if cmd.requests.any?{|req| req.type == "Hello"}
-        case
-        when cmd.requests.count > 1 then raise(Errors::MalformedCommand, "Hello request sent along with something else")
-        when cmd.from_id != -1      then raise(Errors::MalformedCommand, "Client ID sent together with HELLO request")
-        end
-      end
+      # Check wheather we constructed something useful
+      raise(Errors::MalformedCommand, "Command doesn't conform to the guidelines!") unless cmd.valid?
 
       cmd
     end
 
     # Takes a Command instance and turns it into its XML representation.
     #==Parameter
-    #[cmd]     The command instance.
+    #[cmd] The command instance.
+    #==Raises
+    #[Errors::MalformedCommand] Some impossible request/response combination
+    #                           was requested by the command.
     #==Return value
     #A UTF-8 encoded string of XML.
     #==Example
@@ -133,10 +130,13 @@ module OpenRubyRMK::Common
     #  cmd.requests << Request.new(3, 1, "Foo")
     #  trans.convert!(cmd)
     def convert!(cmd)
+      # Check wheather the user constructed something useful
+      raise(Errors::MalformedCommand, "Command doesn't conform to the guidelines!") unless cmd.valid?
+
       builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml|
         xml.karfunkel do # The root element
-          if cmd.from_id
-            # Build the <sender> block (except when +from_id+ is nil,
+          unless cmd.from_id == -1
+            # Build the <sender> block (except when +from_id+ is -1,
             # which is the case for commands containing the HELLO request)
             xml.sender do
               xml.id_ cmd.from_id
@@ -171,6 +171,42 @@ module OpenRubyRMK::Common
 
       builder.to_xml
     end # convert!
+
+    #This is true if the transformer’s internal state
+    #is clean, i.e. it could be exchanged with another Transformer
+    #instance without causing any harm.
+    #==Return value
+    #True or false.
+    #==Example
+    #  # Setup
+    #  trans1 = Transformer.new
+    #  trans2 = Transformer.new
+    #  trans1.clean? #=> true
+    #  
+    #  # Make a request to some other client
+    #  cmd = Command.new(11)
+    #  req = Request.new(11, 3, "foo")
+    #  cmd.requests << req
+    #  trans1.convert!
+    #  trans1.clean? #=> false
+    #  
+    #  # Client processes the response and answers
+    #  cmd = Command.new(12)
+    #  cmd.responses << Response.new(1, req)
+    #  xml = trans2.convert!(cmd)
+    #  
+    #  # Receive the response
+    #  trans1.parse!(xml)
+    #  trans1.clean? #=> true
+    def clean?
+      @waiting_requests.empty?
+    end
+    
+    #Human-readable description of form:
+    #  <OpenRubyRMK::Common::Transformer <clean or not clean>>
+    def inspect
+      "#<#{self.class} #{clean? ? 'clean' : 'not clean'}>"
+    end
 
   end
 
