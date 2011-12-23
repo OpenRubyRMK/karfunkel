@@ -3,9 +3,11 @@
 module OpenRubyRMK::Common
 
   #Main class for handling XML markup. Any valid Karfunkel-style XML
-  #can be turned into a Command instance by means of this class. Pass
-  #your commands’ bunches of XML to the #pass! method one at a time
-  #and you’ll be provided with one Command instance each.
+  #can be turned into a Command instance and vice-versa by means of
+  #this class. Pass your commands’ bunches of XML to the #parse! method
+  #one at a time and you’ll be provided with one Command instance each.
+  #The #convert! method allows you to turn your Command instances into
+  #send-ready XML markup.
   #
   #==About the internal state
   #Never use different transformer instances for the same connection. If
@@ -19,6 +21,12 @@ module OpenRubyRMK::Common
   #Then, when Karfunkel answers, it takes the response and
   #fills its +request+ attribute with the Request instance it previously
   #remembered.
+  #
+  #However, if you _really_ need to use different Transformer instances
+  #for your connection, you should ensure the #clean? method returns
+  #true. If so, the transformer’s internal state is clean and it’s
+  #safe to exchange the instance with some other. Transformers that
+  #have just been created and haven’t yet been used are always clean.
   class Transformer
 
     #List of requests that have been sent, but didn’t receive
