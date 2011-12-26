@@ -73,7 +73,7 @@ module OpenRubyRMK::Common
 
       # Requests
       doc.root.xpath("request").each do |node|
-        request = Request.new(sender_id, node["id"].to_i, node["type"])
+        request = Request.new(node["id"].to_i, node["type"])
 
         # Parameters
         node.children.each do |child|

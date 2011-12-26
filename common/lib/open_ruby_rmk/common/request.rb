@@ -2,14 +2,12 @@ module OpenRubyRMK::Common
 
   class Request
     
-    attr_reader :from_id
     attr_reader :id
     attr_reader :type
     attr_reader :responses
     attr_accessor :parameters
 
-    def initialize(from_id, id, type)
-      @from_id    = from_id
+    def initialize(id, type)
       @id         = id
       @type       = type
       @parameters = {}
@@ -30,7 +28,7 @@ module OpenRubyRMK::Common
     alias == eql?
 
     def running?
-      @responses.empty?
+      @responses.none?{|resp| resp.type == "ok" or resp.type == "finished"}
     end
 
     def inspect

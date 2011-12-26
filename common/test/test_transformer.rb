@@ -40,38 +40,39 @@ class TransformerTest < Test::Unit::TestCase
 
   def test_convert_normal_requests
     cmd = Command.new(11)
-    req = Request.new(11, 3, "foo")
+    req = Request.new(3, "foo")
     req["par1"] = "Parameter 1"
     req["par2"] = "Parameter 2"
     cmd.requests << req
     assert_equal(xml("1.xml"), @transformer.convert!(cmd))
 
     cmd = Command.new(11)
-    cmd.requests << Request.new(11, 77, "foo")
-    cmd.requests << Request.new(11, 78, "foo")
+    cmd.requests << Request.new(77, "foo")
+    cmd.requests << Request.new(78, "foo")
     assert_equal(xml("2.xml"), @transformer.convert!(cmd))
   end
 
   def test_convert_hello_request
     cmd = Command.new(-1) # Hello isn’t allowed to sent an ID
-    req = Request.new(-1, 0, "Hello")
+    req = Request.new(0, "Hello")
     req["os"] = "Linux"
     cmd.requests << req
     assert_equal(xml("hello1.xml"), @transformer.convert!(cmd))
 
     cmd = Command.new(12)
-    req = Request.new(12, 0, "Hello") # Invalid due to ID!
+    req = Request.new(0, "Hello") # Invalid due to sender ID given to command!
     cmd.requests << req
+    assert(!cmd.valid?, "Treated malformed command as valid")
     assert_raises(Errors::MalformedCommand) do
       @transformer.convert!(cmd)
     end
   end
 
-  def test_convert_responses
+  def test_parse_responses
     cmd = Command.new(11)
-    cmd.requests << Request.new(11, 1, "foo")
-    cmd.requests << Request.new(11, 2, "foo")
-    req = Request.new(11, 3, "foo") # We’re going to need this request later
+    cmd.requests << Request.new(1, "foo")
+    cmd.requests << Request.new(2, "foo")
+    req = Request.new(3, "foo") # We’re going to need this request later
     cmd.requests << req
 
     # Make the transformer remember the unanswered request
@@ -95,7 +96,7 @@ class TransformerTest < Test::Unit::TestCase
 
   def test_round_trip
     cmd = Command.new(11)
-    cmd.requests << Request.new(11, 3, "foo")
+    cmd.requests << Request.new(3, "foo")
 
     str     = @transformer.convert!(cmd)
     new_cmd = @transformer.parse!(str)
