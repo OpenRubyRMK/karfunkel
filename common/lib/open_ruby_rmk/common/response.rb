@@ -55,7 +55,8 @@ module OpenRubyRMK::Common
     #Creates a new instance of this class.
     #==Parameters
     #[id] A unique ID for this response.
-    #[status] One of the statuses explained in the class docs.
+    #[status]  One of the statuses explained in the class docs.
+    #          Automatically converted to a string by calling #to_s.
     #[request] The request you want to answer with this response.
     #          If you want to construct a ERROR response without
     #          a corresponding Request instance, you have to
@@ -68,7 +69,7 @@ module OpenRubyRMK::Common
     #  req = Request.new(333, "error", nil)
     def initialize(id, status, request)
       @id          = id
-      @status      = status
+      @status      = status.to_s
       @request     = request
       @parameters  = {}
     end
@@ -128,9 +129,11 @@ module OpenRubyRMK::Common
     #
     #Checks whether or not two responses are equal. Two responses
     #are considered equal if they belong to the same request
-    #and have the same ID.
+    #and have the same ID and status.
     def eql?(other)
-      @request == other.request && @id == other.id # Works even when @request is nil (for the :error response)
+      return nil unless other.respond_to? :id
+      @request == other.request && @id == other.id && # Works even when @request is nil (for the :error response)
+        @status == other.status
     end
     alias == eql?
 

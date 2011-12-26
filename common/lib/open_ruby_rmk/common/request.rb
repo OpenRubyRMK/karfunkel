@@ -127,12 +127,13 @@ module OpenRubyRMK::Common
     #  self == other → bool
     #
     #Checks if two requests are equal to each other. Two
-    #requests are considered equal if their ID is the same;
+    #requests are considered equal if their ID and type are the same;
     #as the aspect of clients sending and receiving requests
     #isn’t available in this context (only in Command instances)
     #this isn’t checked here.
     def eql?(other)
-      @id == other.id
+      return nil unless other.respond_to? :id
+      @id == other.id && @type == other.type
     end
     alias == eql?
 
@@ -147,7 +148,7 @@ module OpenRubyRMK::Common
     #  req.running? #=> false
     #  # By-reference magic! ;-)
     def running?
-      @responses.none?{|resp| resp.type == "ok" or resp.type == "finished"}
+      @responses.none?{|resp| resp.status == "ok" or resp.status == "finished"}
     end
 
     #Human-readable description of form:
