@@ -92,12 +92,12 @@ module OpenRubyRMK::Common
         
         # Create the Response object and establish the dual-sided
         # relationship of a request and its response
-        response = Response.new(id, request)
+        response = Response.new(id, node["status"], request)
         request.responses << response
 
         # If the request has completed, delete it from the list of
         # outstanding requests.
-        @waiting_requests.delete(request) if node["type"] == "ok" or node["type"] == "finished"
+        @waiting_requests.delete(request) if node["status"] == "ok" or node["status"] == "finished"
         
         # Parameters
         node.children.each do |child|
@@ -162,7 +162,7 @@ module OpenRubyRMK::Common
 
           # Responses
           cmd.responses.each do |response|
-            xml.response(type: response.request.type, id: request.id, status: response.status) do
+            xml.response(id: response.id, status: response.status, answers: response.mapped? ? response.request.id : -1) do
               response.parameters.each{|par, val| xml.send(par, val)}
             end
           end

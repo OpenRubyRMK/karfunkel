@@ -94,6 +94,17 @@ class TransformerTest < Test::Unit::TestCase
     assert_equal(cmd2.responses.find{|r| r.request == req}, req.responses.first)
   end
 
+  def test_convert_responses
+    # Simulate the request
+    cmd = @transformer.parse!(xml("4.xml"))
+    req = cmd.requests.first
+
+    # Now construct the response
+    cmd2 = Command.new(123)
+    cmd2 << Response.new(12, "ok", req)
+    assert_equal(xml("5.xml"), @transformer.convert!(cmd2))
+  end
+
   def test_round_trip
     cmd = Command.new(11)
     cmd.requests << Request.new(3, "foo")

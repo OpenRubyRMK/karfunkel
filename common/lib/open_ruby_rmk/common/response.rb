@@ -3,11 +3,13 @@ module OpenRubyRMK::Common
   class Response
 
     attr_reader :id
+    attr_reader :status
     attr_reader :request
     attr_accessor :parameters
 
-    def initialize(id, request)
+    def initialize(id, status, request)
       @id          = id
+      @status      = status
       @request     = request
       @parameters  = {}
     end
@@ -19,13 +21,9 @@ module OpenRubyRMK::Common
     def []=(par, value)
       @parameters[par.to_s] = value.to_s
     end
-    
-    def type
-      if @request
-        @request.type
-      else
-        "error" # If no request has been defined, this must be an :error response
-      end
+
+    def mapped?
+      !!@request
     end
 
     def eql?(other)
@@ -34,7 +32,7 @@ module OpenRubyRMK::Common
     end
 
     def inspect
-      "#<#{self.class} #{type.upcase}>"
+      "#<#{self.class} #{request.type.upcase}:#{@status}>"
     end
 
   end

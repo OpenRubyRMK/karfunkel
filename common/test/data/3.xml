@@ -3,6 +3,6 @@
   <sender>
     <id>11</id>
   </sender>
-  <response type="ok" answers="3"/>
-  <response type="processing" answers="1"/>
+  <response id="43" status="ok" answers="3"/>
+  <response id="42" status="processing" answers="1"/>
 </karfunkel>

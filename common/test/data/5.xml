@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<karfunkel>
+  <sender>
+    <id>123</id>
+  </sender>
+  <response id="12" status="ok" answers="3"/>
+</karfunkel>
