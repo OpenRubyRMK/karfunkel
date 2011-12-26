@@ -7,7 +7,7 @@ require_relative "../lib/open_ruby_rmk/common"
 class TransformerTest < Test::Unit::TestCase
   include OpenRubyRMK::Common
 
-  DATA_DIR          = Pathname.new(__FILE__).dirname.expand_path + "data"
+  DATA_DIR = Pathname.new(__FILE__).dirname.expand_path + "data"
 
   def setup
     @transformer = Transformer.new
@@ -67,10 +67,36 @@ class TransformerTest < Test::Unit::TestCase
     end
   end
 
+  def test_convert_responses
+    cmd = Command.new(11)
+    cmd.requests << Request.new(11, 1, "foo")
+    cmd.requests << Request.new(11, 2, "foo")
+    req = Request.new(11, 3, "foo") # We’re going to need this request later
+    cmd.requests << req
+
+    # Make the transformer remember the unanswered request
+    # (immediately after this the XML would be sent over
+    # the wire)
+    @transformer.convert!(cmd)
+
+    # Test whether the requests have been correctly remembered
+    assert_equal(3, @transformer.waiting_requests.count)
+
+    # Now simulate the response
+    cmd2 = @transformer.parse!(xml("3.xml"))
+
+    # Test if the requests have been correctly processed
+    assert_equal(2, @transformer.waiting_requests.count)
+    assert_equal(2, cmd2.responses.count)
+    assert(cmd2.responses.any?{|r| r.request == req}, "Expected response not found!")
+    assert_equal(1, req.responses.count)
+    assert_equal(cmd2.responses.find{|r| r.request == req}, req.responses.first)
+  end
+
   def test_round_trip
     cmd = Command.new(11)
     cmd.requests << Request.new(11, 3, "foo")
-    
+
     str     = @transformer.convert!(cmd)
     new_cmd = @transformer.parse!(str)
     new_str = @transformer.convert!(new_cmd)
