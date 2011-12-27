@@ -18,5 +18,5 @@ require_relative "common/transformer"
 require_relative "common/command"
 require_relative "common/request"
 require_relative "common/response"
-#require_relative "common/notification" # TODO
+require_relative "common/notification"
 

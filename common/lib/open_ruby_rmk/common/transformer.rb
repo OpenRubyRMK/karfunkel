@@ -109,7 +109,7 @@ module OpenRubyRMK::Common
 
       # Notifications
       doc.root.xpath("notification").each do |node|
-        note = Notification.new(sender_id, node["id"].to_i)
+        note = Notification.new(node["id"].to_i, node["type"])
 
         # Parameters
         node.children.each do |child|
@@ -169,7 +169,7 @@ module OpenRubyRMK::Common
 
           # Notifications
           cmd.notifications.each do |note|
-            xml.notification(type: note.type) do
+            xml.notification(id: note.id, type: note.type) do
               note.parameters.each{|par, val| xml.send(par, val)}
             end
           end

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<karfunkel>
+  <sender>
+    <id>11</id>
+  </sender>
+  <notification id="3" type="foo">
+    <par1>Parameter 1</par1>
+    <par2>Parameter 2</par2>
+  </notification>
+</karfunkel>

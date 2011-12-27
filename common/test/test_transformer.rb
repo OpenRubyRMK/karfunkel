@@ -7,6 +7,7 @@ require_relative "../lib/open_ruby_rmk/common"
 class TransformerTest < Test::Unit::TestCase
   include OpenRubyRMK::Common
 
+  #Directory to load sample data from.
   DATA_DIR = Pathname.new(__FILE__).dirname.expand_path + "data"
 
   def setup
@@ -38,6 +39,15 @@ class TransformerTest < Test::Unit::TestCase
     end
   end
 
+  def test_parse_notifications
+    cmd = @transformer.parse!(xml("6.xml"))
+    assert_equal(1, cmd.notifications.count)
+    note = cmd.notifications.first
+    assert_equal("foo", note.type)
+    assert_equal("Parameter 1", note["par1"])
+    assert_equal("Parameter 2", note["par2"])
+  end
+
   def test_convert_normal_requests
     cmd = Command.new(11)
     req = Request.new(3, "foo")
@@ -66,6 +76,15 @@ class TransformerTest < Test::Unit::TestCase
     assert_raises(Errors::MalformedCommand) do
       @transformer.convert!(cmd)
     end
+  end
+
+  def test_convert_notifications
+    cmd  = Command.new(11)
+    note = Notification.new(3, "foo")
+    note["par1"] = "Parameter 1"
+    note["par2"] = "Parameter 2"
+    cmd << note
+    assert_equal(xml("6.xml"), @transformer.convert!(cmd))
   end
 
   def test_parse_responses
