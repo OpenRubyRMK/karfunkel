@@ -9,7 +9,7 @@ module OpenRubyRMK::Common
   #
   #As it’s part of a Command instance, a request’s external representation
   #is a XML structure. The tag is named REQUEST and parameters may be
-  #passed via a PARAMETER tag inside the REQUEST tag.
+  #passed via a parameter tag inside the REQUEST tag.
   #
   #After you passed a request to your local Transformer instance,
   #the transformer remembers the request as "unanswered" until you

@@ -8,7 +8,7 @@ module OpenRubyRMK::Common
   #
   #As with requests and responses, they’re part of a Command instance and
   #their external representation is an XML structure, this time a tag
-  #named NOTIFICATION. Inside it, you will find zero or more PARAMETER
+  #named NOTIFICATION. Inside it, you will find zero or more parameter
   #tags that contain the real information this notification wants to
   #deliver.
   #
