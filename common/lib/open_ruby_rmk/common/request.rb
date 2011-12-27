@@ -132,7 +132,7 @@ module OpenRubyRMK::Common
     #isn’t available in this context (only in Command instances)
     #this isn’t checked here.
     def eql?(other)
-      return nil unless other.respond_to? :id
+      return nil unless other.respond_to?(:id) and other.respond_to?(:type)
       @id == other.id && @type == other.type
     end
     alias == eql?
@@ -152,9 +152,9 @@ module OpenRubyRMK::Common
     end
 
     #Human-readable description of form:
-    #  <OpenRubyRMK::Common::Reqiest <TYPE>>
+    #  <OpenRubyRMK::Common::Request <TYPE> (<id>)>
     def inspect
-      "<#{self.class} #{@type.upcase}>"
+      "<#{self.class} #{@type.upcase} (#@id)>"
     end
 
   end
