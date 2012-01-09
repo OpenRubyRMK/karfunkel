@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- mode: ruby; coding: utf-8 -*-
 #
 # This file is part of OpenRubyRMK.
 # 
@@ -17,26 +17,19 @@
 # You should have received a copy of the GNU General Public License
 # along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
-#===============================================================================
-# Require statements
-#===============================================================================
-
-#require "bundler/setup"
 gem "rdoc", ">= 3"
-require "psych"
 require "yaml"
 require "rake"
 require "rake/clean"
 require "rubygems/package_task"
 require "open-uri"
-require "net/ftp"
 require "pathname"
 require "rdoc/task"
 require "redcloth"
 
-#===============================================================================
+########################################
 # Variables
-#===============================================================================
+########################################
 #Environment variables influencing the rake tasks’ behaviours:
 #
 #[MAKE_JOBS] Number of jobs for any `make' commands.
@@ -59,16 +52,16 @@ COMPONENTS = %w[karfunkel common]
 CLOBBER.include(DOC_DIR.to_s)
 COMPONENTS.each{|comp| CLOBBER.include("#{comp}/VERSION")}
 
-#===============================================================================
+########################################
 #Load everything inside the rake/ directory.
-#===============================================================================
+########################################
 #Require doesn’t accept ".rake" files.
 
 Dir["#{RAKE_DIR}/**/*.rake"].each{|file| load(file)}
 
-#===============================================================================
+########################################
 # Task definitions
-#===============================================================================
+########################################
 
 namespace :all do
 
@@ -81,6 +74,13 @@ namespace :all do
       sh "rake gem"
       cp "pkg/openrubyrmk-#{component}-#{VERSION.gsub("-", ".")}.gem", PKG_DIR
       cd ".."
+    end
+  end
+
+  desc "Builds and then installs all component gems."
+  task :install_gems => :gems do
+    PKG_DIR.each_child do |gemfile|
+      sh "gem install --local #{gemfile}"
     end
   end
 
@@ -118,23 +118,32 @@ namespace :all do
 end
 
 gemspec = Gem::Specification.new do |s|
-  s.name = "openrubyrmk"
-  s.summary = "The free and open-source RPG creation program"
-  s.description =<<-DESCRIPTION
+
+  # General information
+  s.name                  = "openrubyrmk"
+  s.summary               = "The free and open-source RPG creation program"
+  s.description           =<<-DESCRIPTION
 This is a meta-gem that pulls in all components of the Open
 Ruby RMK, a free and open-source program for creating
 role-play games (RPG) written in Ruby. It features a server-
 client model that allows multiple persons to work on a
 single game via a network connection.
   DESCRIPTION
-  s.version = VERSION.gsub("-", ".")
-  s.author = "The OpenRubyRMK team"
-  s.email = "openrubyrmk@googlemail.com"
-  s.platform = Gem::Platform::RUBY
+  s.version               = VERSION.gsub("-", ".")
+  s.author                = "The OpenRubyRMK team"
+  s.email                 = "openrubyrmk@googlemail.com"
+  s.platform              = Gem::Platform::RUBY
   s.required_ruby_version = ">= 1.9.2"
+
+  # Dependencies
+  s.add_development_dependency("hanna-nouveau", ">= 0.2.4")
+
+  # Sub-gem dependencies
   COMPONENTS.each{|comp| s.add_dependency("openrubyrmk-#{comp}")}
-  s.has_rdoc = true
+
+  # RDoc options
+  s.has_rdoc         = true
   s.extra_rdoc_files = ["README.rdoc", "COPYING"]
-  s.rdoc_options << "-" << "OpenRubyRMK RDocs" << "-m" << "README.rdoc"
+  s.rdoc_options     << "-" << "OpenRubyRMK RDocs" << "-m" << "README.rdoc"
 end
 Gem::PackageTask.new(gemspec).define
