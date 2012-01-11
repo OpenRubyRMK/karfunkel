@@ -76,6 +76,13 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   #
   #Logs a FATAL level message. Do not use this, it's for internal use.
 
+  #(Hooked) Called when the plugin is activated. Monkeypatches
+  #the Plugin class to allow easier plugin writing, notably for
+  #processing requests.
+  def self.included(klass)
+    OpenRubyRMK::Karfunkel::Plugin.send(:include, OpenRubyRMK::Karfunkel::Plugin::Extensions)
+  end
+
   #(Hooked) Starts Karfunkel.
   #===Raises
   #[RuntimeError] Karfunkel is already running.
@@ -408,6 +415,7 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
 end
 
 # Require all the classes for this plugin
+require_relative "core/plugin_extensions"
 require_relative "core/protocol"
 require_relative "core/client"
 require_relative "core/requests_and_responses"
