@@ -162,7 +162,7 @@ module OpenRubyRMK
         begin
           Karfunkel::THE_INSTANCE.log_info("[#@client] Request: #{request.type}")
           plugin = Karfunkel.config[:plugins].find{|plugin| plugin.can_process_request?(request)}
-          plugin.process_request(request)
+          plugin.process_request(request, @client)
         rescue => e
           Karfunkel::THE_INSTANCE.log_exception(e)
           reject(e.message, request)
@@ -176,7 +176,7 @@ module OpenRubyRMK
         begin
           Karfunkel::THE_INSTANCE.log_info("[#@client] Received response to a #{response.request.type} request")
           plugin = Karfunkel.config[:plugins].find{|plugin| plugin.can_process_response?(response)}
-          plugin.process_response(response)
+          plugin.process_response(response, @client)
         rescue => e
           Karfunkel::THE_INSTANCE.log_exception(e)
           Karfunkel::THE_INSTANCE.log_error("[#@client] Failed to process response: #{response}")

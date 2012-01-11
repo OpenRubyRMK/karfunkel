@@ -114,6 +114,41 @@ module OpenRubyRMK
       end
 
       #call-seq:
+      #  extend_plugin(name){...}
+      #  extend_plugin(name){|plugin|...}
+      #
+      #This method is useful for splitting up your plugin into multiple
+      #files. As you have to close the block passed to ::new when switching
+      #to another file, you loose the DSL scope and would have to construct
+      #all the necessary things yourself without the plugin DSL. This method
+      #allows you to reenter the scope of your plugin after already having
+      #closed the block for ::new.
+      #
+      #The block semantics are the same as for ::new, i.e. if you define a
+      #block parameter, no scope changes happen, if you don’t, they do.
+      #==Parameters
+      #[name]   The name of the plugin you want to re-edit. Should be the exact
+      #         same name you passed to ::new.
+      #[plugin] (Blockargument) The plugin you wanted.
+      #==Raises
+      #[ArgumentError] +name+ is not a valid plugin name.
+      #==Example
+      #  OpenRubyRMK::Karfunkel::Plugin.extend_plugin(:foo) do
+      #    process_request(:FooBar){...}
+      #  end
+      def self.extend_plugin(name, &block)
+        if plugin = self[name] # Single = intended
+          if block.arity.zero?
+            plugin.instance_eval(&block)
+          else
+            block.call(plugin)
+          end
+        else
+          raise(ArgumentError, "Plugin not found: #{name}!")
+        end
+      end
+
+      #call-seq:
       #  new(name)                → a_plugin
       #  new(name){...}           → a_plugin
       #  new(name){|a_plugin|...} → a_plugin
@@ -163,6 +198,11 @@ module OpenRubyRMK
       def initialize(name, dont_register = false, &block)
         super()
         @name = name
+
+        #Include the OpenRubyRMK and Common namespaces into the plugin as this
+        #saves unnecessary typing for plugin authors.
+        include OpenRubyRMK
+        include OpenRubyRMK::Common # TODO: This is defined by the Core plugin!
         
         if block_given?
           if block.arity.zero?
@@ -199,10 +239,27 @@ module OpenRubyRMK
         "#<#{self.class} #@name>"
       end
 
+      def process_request!(req, client)
+        if can_process_request?(req)
+          #These two are needed for nice DSL methods such as #answer to work
+          @__current_request = req
+          @__current_client  = client
+          
+          #Invoke the processing method
+          send("process_#{req.type}_request", req, client)
+
+          #Reset the client/request cache
+          @__current_request = nil
+          @__current_client  = nil
+        else
+          raise(ArgumentError, "The #@name plugin can't process #{req.type} requests!")
+        end
+      end
+
       protected
 
       #call-seq:
-      #  process_request(type){|request|...}
+      #  process_request(type){|request, sender|...}
       #
       #Part of the Plugin DSL. Creates a new request type that gets available
       #when your plugin is included into Karfunkel. To be exact, this method
@@ -212,8 +269,9 @@ module OpenRubyRMK
       #[type]    A symbol for the request type you want to define. This must
       #          match exactly with the request XML’s TYPE attribute.
       #[request] (Blockargument) The Request instance we want to process.
+      #[sender]  (Blockargument] The Client instance that the request was sent by.
       #==Example
-      #  process_request :Foo do |request|
+      #  process_request :Foo do |request, sender|
       #    puts "I got a Foo request with ID #{request.id}!"
       #  end
       def process_request(type, &block)
@@ -223,7 +281,7 @@ module OpenRubyRMK
       end
       
       #call-seq:
-      #  process_response(type){|response|...}
+      #  process_response(type){|response, sender|...}
       #
       #Part of the Plugin DSL. Teaches Karfunkel how to process the given
       #response type. To be exact, this method defines a private method with
@@ -234,6 +292,7 @@ module OpenRubyRMK
       #           match exactly with the TYPE XML attribute of the request that
       #           triggered this response.
       #[response] The Response instance we want to process.
+      #[sender]   The Client instance that the response was sent by.
       #==Example
       #  process_response :Foo do |response|
       #    puts "I received a response to a Foo request that had the ID #{response.request.id}!"
@@ -244,6 +303,13 @@ module OpenRubyRMK
         private(sym)
       end
       
+      def answer(status, *args)
+        #TODO: This method uses methods defined by the Core plugin, although
+        #      the plugin may not be loaded!!
+        res = Common::Response.new(Karfunkel.generate_request_id, status, @__current_request)
+        Karfunkel.deliver_response(res, @__current_client)
+      end
+
     end
 
   end
