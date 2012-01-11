@@ -19,8 +19,8 @@
 
 #This is a client that sits on the other end of the connection.
 #Objects of this class are automatically instanciated by the
-#Core::Protocol module.
-class OpenRubyRMK::Karfunkel::Plugins::Core::Client
+#OpenRubyRMK::Karfunkel::Protocol module.
+class OpenRubyRMK::Karfunkel::Client
   
   #The operating system a client uses.
   attr_accessor :os
@@ -34,23 +34,21 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Client
   #PING request that sets it to false, whereas every
   #successful request makes it true.
   attr_accessor :available
-  #The requests that have been send TO the client.
-  attr_accessor :sent_requests
-  #Wheather or not this client has agreed to a shutdown
-  #request.
   attr_accessor :accepted_shutdown
   #The client's IP address.
   attr_reader :ip
   #The port the client uses for the connection.
   attr_reader :port
-  #The connection this client is tied to.
+  #The connection this client is tied to. This is an anonymous,
+  #EventMachine-generated class that mixes in the OpenRubyRMK::Karfunkel::Protocol
+  #module.
   attr_reader :connection
   
   #Creates a new Client instance. This method is called automatically
   #in Core::Protocol#post_init and isn’t intended to be used elsewhere.
   #==Parameters
   #[connection] The connection the client uses; usually only available
-  #             inside the Core::Protocol module as +self+.
+  #             inside the Protocol module as +self+.
   #==Return value
   #The newly created instance.
   #==Example
@@ -60,14 +58,11 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Client
     @authenticated          = false
     @accepted_shutdown      = false
     @available              = true
-    @sent_requests          = []
-    @outstanding_broadcasts = []
-    @outstanding_responses  = []
     if peer = @connection.get_peername
       @port, @ip = Socket.unpack_sockaddr_in(peer)
     else
       @port = "?"
-      @ip = "(unknown)"
+      @ip   = "(unknown)"
     end
   end
   
@@ -80,46 +75,6 @@ class OpenRubyRMK::Karfunkel::Plugins::Core::Client
   #explanation).
   def available?
     @available
-  end
-  
-  #Causes Karfunkel to send a request to this client.
-  #==Parameter
-  #[request] An instance of Core::Request.
-  #==Example
-  #  req = OpenRubyRMK::Karfunkel::Request::Requests::PingRequest.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, 12)
-  #  client.request(req)
-  def request(request)
-    OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("[#{self}] Delivering request: #{request.type}")
-    cmd = OpenRubyRMK::Karfunkel::Plugins::Core::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE) #FROM
-    cmd.requests << request
-    cmd.deliver!(self) #TO
-    @sent_requests << request
-  end
-  
-  #Causes Karfunkel to send a response to this client.
-  #==Parameter
-  #[response] An instance of Core::Notification.
-  #==Example
-  #  res = OpenRubyRMK::Karfunkel::Response.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, a_request, :ok)
-  #  client.response(res)
-  def response(response)
-    OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("[#{self}] Delivering response: #{response.status}")
-    cmd = OpenRubyRMK::Karfunkel::Plugins::Core::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE) #FROM
-    cmd.responses << response
-    cmd.deliver!(self) #TO
-  end
-
-  #Causes Karfunkel to send a notification to this client.
-  #==Parameter
-  #[note] An instance of Core::Notification.
-  #==Example
-  #  note = OpenRubyRMK::Karfunkel::Notification.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, :foo, :foo => "bar")  
-  #  client.notificiation(note)
-  def notification(note)
-    OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("[#{self}] Delivering notification: #{note.type}")
-    cmd = OpenRubyRMK::Karfunkel::Plugins::Core::Command.new(OpenRubyRMK::Karfunkel::THE_INSTANCE) #FROM
-    cmd.notifications << note
-    cmd.deliver!(self) #TO
   end
   
   #Human-readable description of form

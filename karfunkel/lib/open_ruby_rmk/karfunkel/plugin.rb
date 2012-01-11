@@ -82,6 +82,37 @@ module OpenRubyRMK
         @plugins << plugin
       end
 
+      #Checks whether or not a plugin with a specific name is available
+      #for loading.
+      #==Parameter
+      #[name] The name of your plugin, either a symbol or a string. Note
+      #       that this is case-sensitive.
+      #==Return value
+      #True or false.
+      #==Examples
+      #  Plugin.available?("Core") #=> true
+      #  Plugin.available?(:Foo)   #=> false
+      def self.available?(name)
+        name = name.to_s
+        @plugins.any?{|plugin| plugin.name.to_s == name}
+      end
+
+      #Searches through all registered plugins and returns the Plugin instance with
+      #the given name if one is found.
+      #==Parameter
+      #[name] The name of your plugin, either a symbol or a string. Note that
+      #       this is case-sensitive.
+      #==Return value
+      #If a matching plugin is found, an instance of this class. Otherwise,
+      #returns +nil+.
+      #==Examples
+      #  Plugin[:Core] #=> <OpenRubyRMK::Karfunkel::Plugin Core>
+      #  Plugin["Foo"] #=> nil
+      def self.[](name)
+        name = name.to_s
+        @plugins.find{|plugin| plugin.name.to_s == name}
+      end
+
       #call-seq:
       #  new(name)                → a_plugin
       #  new(name){...}           → a_plugin

@@ -21,14 +21,12 @@ require "pathname"
 require "rbconfig"
 require "logger"
 
+require_relative "karfunkel/plugin"
 require_relative "karfunkel/pluggable"
 require_relative "karfunkel/paths"
 require_relative "karfunkel/errors"
 
 module OpenRubyRMK
-
-  #The version of the OpenRubyRMK, read from the version file.
-  VERSION = OpenRubyRMK::Karfunkel::Paths::VERSION_FILE.read.chomp.freeze
 
   #This is OpenRubyRMK's server. Every GUI is just a client to his majesty Karfunkel.
   #
@@ -93,11 +91,10 @@ module OpenRubyRMK
   #that one in your own classes, you of course can do so.
   class Karfunkel
     extend Pluggable
-
-    #The namespace for all plugins.
-    module Plugins
-    end
     
+    #The version of the OpenRubyRMK, read from the version file.
+    VERSION = OpenRubyRMK::Karfunkel::Paths::VERSION_FILE.read.chomp.freeze
+
     #The configuration options from both the commandline and the
     #configuration file as a hash (whose keys are symbols).
     attr_reader :config
@@ -124,7 +121,7 @@ module OpenRubyRMK
       #This is where all configuration, i.e. both from commandline
       #options and from the configuration file, is stored in.
       @config = {}
-            
+
       #Setup the base things. Most of these call hook methods,
       #but aren’t themselves hooks.
       load_raw_config
@@ -145,13 +142,15 @@ module OpenRubyRMK
     #The very heart of the plugin mechanism. This plugs a
     #module into Karfunkel. Called from #parse_config, but you can
     #call it later if you want to include plugins not found
-    #by #parse_config or just delay plugin loading.
+    #by #load_plugins or just delay plugin loading.
     #==Parameter
-    #[mod] The plugin to include.
+    #[plugin] The Plugin instance to include.
     #==Example
-    #  Karfunkel::THE_INSTANCE.load_plugin(MyPlugin)
-    def load_plugin(mod)
-      self.class.send(:include, mod) #Mixins for the world! ;-)
+    #  # Load the first registered plugin
+    #  Karfunkel::THE_INSTANCE.load_plugin(Plugin.all.first)
+    def load_plugin(plugin)
+      self.class.send(:include, plugin) # Mixins for the world! ;-)
+      @config[:plugins] << plugin
     end
 
     pluggify do
@@ -245,14 +244,11 @@ module OpenRubyRMK
     def load_plugins
       @config[:plugins] = []
       
-      @__raw_config[:plugins].each do |modname|
-        modname = modname.capitalize
-        if self.class::Plugins.const_defined?(modname)
-          mod = self.class::Plugins.const_get(modname)
-          load_plugin(mod)
-          @config[:plugins] << mod
+      @__raw_config[:plugins].each do |plugname|
+        if plugin = Plugin[plugname] # Single = intended
+          load_plugin(plugin)
         else
-          raise("Plugin #{modname} couldn't be found!")
+          raise("Plugin #{plugname} not found!")
         end
       end
     end

@@ -6,8 +6,8 @@
 #To clarify: Each time a new client connects to Karfunkel,
 #an anonymous class created and instanciated by EventMachine
 #(whatever for) and this module (as specified in the
-#Core#start method) is mixed into that class. See also the
-#EventMachine documentation.
+#core-hooked Karfunkel#start method) is mixed into that class.
+#See also the EventMachine documentation.
 #
 #== How sending and receiving works
 #After the OpenRubyRMK::Karfunkel class was instanciated,
@@ -16,7 +16,7 @@
 #
 #1. A possible client tries to establish a connection. This
 #   causes the #post_init method to be called.
-#2. #post_init instanciates the Plugins::Core::Client class
+#2. #post_init instanciates the Karfunkel::Client class
 #   with the given information and adds the resulting instance
 #   to an internal array of connected clients. Then Karfunkel
 #   waits for the client to greet him. If he doesn’t greet in time
@@ -29,35 +29,29 @@
 #   are detected by receiving the END_OF_COMMAND byte, which
 #   should be a NUL byte.)
 #4. #process_command creates an instance of the
-#   Plugins::Core::Command class by parsing the received XML.
+#   OpenRubyRMK::Common::Command class by parsing the received XML.
 #5. If the client hasn’t been authenticated yet (as is the case
 #   when sending the first request), #process_command checks
 #   wheather the first and only request is a +Hello+ request. If this
 #   isn’t the case, the connection is immediately terminated.
 #6. Otherwise, #process_command processes each received
 #   request in turn (which in case of the first request
-#   obviously includes the +Hello+ request) and calls their
-#   respective #execute! methods. For the +Hello+ request, it
-#   currently just accepts the connection, but it could include
+#   obviously includes the +Hello+ request) and looks for a plugin
+#   that is able to handle requests of the given type. If one is found,
+#   the request is handed to the plugin for execution (Plugin#process_request).
+#   E.g., for the +Hello+ request, it finds the +Core+ plugin which
+#   currently just accepts the connection, but it could do
 #   things like password authentication.
 #7. After processing the requests, process any received responses
-#   and delete the corresponding request from the list of
-#   waiting requests.
+#   the same way requests are processed. Any requests completely
+#   answered by responses are automatically deleted from the list
+#   of remembered requests (see the Transformator class for
+#   information on this).
 #8. Go to 5.
 #9. On disconnect, the #unbind method is called by EventMachine,
 #   which removes the client from the list of connected clients
 #   and cancels the ping timer for this client.
-#
-#Whenever the user sends a complete command, #process_command
-#is triggered which instantiates an instance of one of the
-#classes in the Core::Request::Requests module. These are
-#usually generated from the files in the
-#*lib/open_ruby_rmk/karfunkel/plugins/core/requests*
-#directory, but further requests can be defined by calling
-#Karfunkel.define_request (defined by the Core plugin) or
-#by directly subclassing the Core::Request class and placing
-#the new subclass inside the Core::Request::Requests module.
-module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
+module OpenRubyRMK::Karfunkel::Protocol
     
   #This is the byte that terminates each command.
   END_OF_COMMAND = "\0".freeze
@@ -65,11 +59,14 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
   #The client that sits on the other end of the connection.
   #A Core::Client object.
   attr_reader :client
+  #The Transformer instance responsible for parsing and converting XML.
+  attr_reader :transformer
   
   #Called by EventMachine immediately after a connection try
   #was made.
   def post_init
-    @client = OpenRubyRMK::Karfunkel::Plugins::Core::Client.new(self)
+    @client      = OpenRubyRMK::Karfunkel::Client.new(self)
+    @transformer = OpenRubyRMK::Common::Transformer.new
     OpenRubyRMK::Karfunkel::THE_INSTANCE.clients << @client
     OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("Connection try from #{client}.")
     #We may get an incomplete command over the network, so we have
@@ -78,13 +75,6 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
     ##receive_data calls #process_command with the full command
     #and empties the @received_data instance variable.
     @received_data = ""
-    #Sometime Karfunkel needs to send requests as well, and these
-    #requests need an ID. This ID is counted up by means of incrementing
-    #this variable. See also the #next_request_id method.
-    @last_request_id = -1
-    #This is the mutex that ensures that the incrementing is stable
-    #across threads.
-    @last_request_id_mutex = Mutex.new
     #If the client doesn't authenticate within X seconds, disband
     #him.
     EventMachine.add_timer(OpenRubyRMK::Karfunkel::THE_INSTANCE.config[:greet_timeout]) do
@@ -98,7 +88,7 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
     #doesn’t answer, he’s disconnected.
     @ping_timer = EventMachine.add_periodic_timer(OpenRubyRMK::Karfunkel::THE_INSTANCE.config[:ping_interval]) do
       @client.available = false
-      @client.request(OpenRubyRMK::Karfunkel::Plugins::Core::Request::Requests::Ping.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, next_request_id))
+      OpenRubyRMK::Karfunkel::THE_INSTANCE.deliver_request(OpenRubyRMK::Common::Request.new(OpenRubyRMK::Karfunkel::THE_INSTANCE.generate_request_id, :Ping))
       #Now wait for the client to respond to the PING, and if
       #he doesn’t, disconnect.
       EventMachine.add_timer(OpenRubyRMK::Karfunkel::THE_INSTANCE.config[:ping_interval] - 1) do #-1, b/c another PING request could be sent otherwise
@@ -143,7 +133,7 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
   def process_command(command_xml)
     #First we parse the command.
     begin
-      command = OpenRubyRMK::Karfunkel::Plugins::Core::Command.from_xml(command_xml, @client)
+      command = @transformer.parse!(command_xml)
     rescue => e
       OpenRubyRMK::Karfunkel::THE_INSTANCE.log_exception(e)
       error(e.message)
@@ -169,7 +159,8 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
     command.requests.each do |request|
       begin
         OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("[#@client] Request: #{request.type}")
-        request.execute!
+        plugin = OpenRubyRMK::Karfunkel.config[:plugins].find{|plugin| plugin.can_process_request?(request)}
+        plugin.process_request(request)
       rescue => e
         OpenRubyRMK::Karfunkel::THE_INSTANCE.log_exception(e)
         reject(e.message, request)
@@ -177,11 +168,13 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
     end
     
     #And now we check the responses that Karfunkel’s clients send to us.
+    #See the Transformer class for information on how Request and Response
+    #instances are connected to each other.
     command.responses.each do |response|
       begin
         OpenRubyRMK::Karfunkel::THE_INSTANCE.log_info("[#@client] Received response to a #{response.request.type} request")
-        response.request.process_response(response)
-        @client.sent_requests.delete(response.request)
+        plugin = OpenRubyRMK::Karfunkel.config[:plugins].find{|plugin| plugin.can_process_response?(response)}
+        plugin.process_response(response)
       rescue => e
         OpenRubyRMK::Karfunkel::THE_INSTANCE.log_exception(e)
         OpenRubyRMK::Karfunkel::THE_INSTANCE.log_error("[#@client] Failed to process response: #{response}")
@@ -212,14 +205,13 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
   #Sends a +rejected+ response to the client.
   #===Parameters
   #[reason]  Reason why the client was rejected.
-  #[request] (nil) An optional Request object used to fill the
-  #          +type+ and +id+ attributes of the response.
+  #[request] The request that this response is supposed to answer.
   #
   #TODO: Don’t be lazy, Request.new only allows a +nil+ request for :error responses.
-  def reject(reason, request = nil)
-    r = OpenRubyRMK::Karfunkel::Plugins::Core::Response.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, request, :rejected)
+  def reject(reason, request)
+    r = OpenRubyRMK::Common::Response.new(OpenRubyRMK::Karfunkel::THE_INSTANCE.generate_request_id, :rejected, request)
     r[:reason] = reason
-    @client.response(r)
+    OpenRubyRMK::Karfunkel::THE_INSTANCE.deliver_response(r, @client)
   end
   
   #Sends an +error+ response to the client.
@@ -228,23 +220,15 @@ module OpenRubyRMK::Karfunkel::Plugins::Core::Protocol
   #[request]     (nil) An optional Request object used to fill the
   #              +type+ and +id+ attributes of the response.
   def error(description, request = nil)
-    r = OpenRubyRMK::Karfunkel::Plugins::Core::Response.new(OpenRubyRMK::Karfunkel::THE_INSTANCE, request, :error)
+    r = OpenRubyRMK::Common::Response.new(OpenRubyRMK::Karfunkel::THE_INSTANCE.generate_request_id, :error, request)
     r[:description] = description
-    @client.response(r)
-  end
-  
-  #Threadsafely increments the request ID and returns the next
-  #available ID.
-  def next_request_id
-    @last_request_id_mutex.synchronize do
-      @last_request_id += 1
-    end
+    OpenRubyRMK::Karfunkel::THE_INSTANCE.deliver_response(r, @client)
   end
   
   #Immediately cuts the connection to Karfunkel,
   #setting the client's availability status to false.
   def terminate!
-    @client.available = false
+    @client.available     = false
     @client.authenticated = false
     close_connection
   end
