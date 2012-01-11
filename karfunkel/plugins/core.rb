@@ -41,41 +41,6 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   #selected yet.
   attr_reader :selected_project
 
-  ##
-  # :method: log_debug
-  #call-seq:
-  #  log_debug(msg) ==> true
-  #
-  #Logs a DEBUG level message.
-  
-  ##
-  # :method: log_info
-  #call-seq:
-  #  log_info(msg) ==> true
-  #
-  #Logs an INFO level message.
-  
-  ##
-  # :method: log_warn
-  #call-seq:
-  #  log_warn(msg) ==> true
-  #
-  #Logs a WARN level message.
-  
-  ##
-  # :method: log_error
-  #call-seq:
-  #  log_error(msg) ==> true
-  #
-  #Logs an ERROR level message.
-  
-  ##
-  # :method: log_fatal
-  #call-seq:
-  #  log_fatal(msg) ==> true
-  #
-  #Logs a FATAL level message. Do not use this, it's for internal use.
-
   #(Hooked) Called when the plugin is activated. Monkeypatches
   #the Plugin class to allow easier plugin writing, notably for
   #processing requests.
@@ -181,12 +146,6 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
     @running
   end
   alias started? running?
-
-  %w[debug info warn error fatal unknown].each do |str|
-    define_method("log_#{str}") do |msg|
-      @log.send(str, msg)
-    end
-  end
   
   #Logs an exception.
   #==Parameters
