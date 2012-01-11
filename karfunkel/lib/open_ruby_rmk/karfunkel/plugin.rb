@@ -2,7 +2,7 @@
 
 module OpenRubyRMK
 
-  module Karfunkel
+  class Karfunkel
 
     #A plugin is nothing else than a normal Ruby module (note this class
     #actually *inherits* from Rubys standard +Module+ class!) with some
