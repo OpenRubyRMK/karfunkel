@@ -115,7 +115,6 @@ module OpenRubyRMK
 
       #call-seq:
       #  extend_plugin(name){...}
-      #  extend_plugin(name){|plugin|...}
       #
       #This method is useful for splitting up your plugin into multiple
       #files. As you have to close the block passed to ::new when switching
@@ -123,13 +122,9 @@ module OpenRubyRMK
       #all the necessary things yourself without the plugin DSL. This method
       #allows you to reenter the scope of your plugin after already having
       #closed the block for ::new.
-      #
-      #The block semantics are the same as for ::new, i.e. if you define a
-      #block parameter, no scope changes happen, if you don’t, they do.
       #==Parameters
       #[name]   The name of the plugin you want to re-edit. Should be the exact
       #         same name you passed to ::new.
-      #[plugin] (Blockargument) The plugin you wanted.
       #==Raises
       #[ArgumentError] +name+ is not a valid plugin name.
       #==Example
@@ -138,27 +133,20 @@ module OpenRubyRMK
       #  end
       def self.extend_plugin(name, &block)
         if plugin = self[name] # Single = intended
-          if block.arity.zero?
-            plugin.instance_eval(&block)
-          else
-            block.call(plugin)
-          end
+          plugin.instance_eval(&block)
         else
           raise(ArgumentError, "Plugin not found: #{name}!")
         end
       end
 
       #call-seq:
-      #  new(name)                → a_plugin
-      #  new(name){...}           → a_plugin
-      #  new(name){|a_plugin|...} → a_plugin
+      #  new(name)      → a_plugin
+      #  new(name){...} → a_plugin
       #
       #Creates a new (anonymous) module the same way Ruby’s <tt>Module.new</tt> does.
       #Addtionally, some initialization regarding Karfunkel’s plugin mechanism is
-      #done. If called with a block without block parameters, changes the scope into
-      #the newly created instance (+self+) so you can directly do your method definitions
-      #in there. If called with a block with parameters, doesn’t change the scope
-      #but rather yields +self+.
+      #done. If called with a block, changes the scope into the newly created instance
+      #(+self+) so you can directly do your method definitions in there. 
       #==Parameters
       #[name]          The name of your plugin, a symbol such as :MyPlugin. CamelCase names
       #                preferred, but not required. Do not confuse this with a Ruby module
@@ -168,7 +156,6 @@ module OpenRubyRMK
       #                available for activation via ::register. If this parameter is set
       #                to +true+, this won’t be done and you have to manually call ::register
       #                to make your plugin available for activation.
-      #[a_plugin]      (Blockargument) +self+.
       #==Return value
       #The newly created instance.
       #==Examples
@@ -178,11 +165,6 @@ module OpenRubyRMK
       #      super
       #      puts "I hooked Karfunkel's #start method!"
       #    end
-      #  end
-      #  
-      #  # Without scope changing
-      #  Plugin.new(:MyPlugin) do |plugin|
-      #    plugin.instance_eval{define_method(:start){puts("I hooked Karfunkel's #start method!")}}
       #  end
       #  
       #  # Without a block
@@ -195,19 +177,13 @@ module OpenRubyRMK
       #==Remarks
       #Note that creating an instance of this class doesn’t automactically
       #register your new plugin with Karfunkel.
-      def initialize(name, dont_register = false, &block)
+      def initialize(name, dont_register = false)
         super()
         @name = name
         
-        if block_given?
-          if block.arity.zero?
-            instance_eval(&block)
-          else
-            block.call(self)
-          end
-        end
-
         self.class.register(self) unless dont_register
+        
+        # Block functionality already provided by superclass method
       end
 
       #Human-readable description of form:
