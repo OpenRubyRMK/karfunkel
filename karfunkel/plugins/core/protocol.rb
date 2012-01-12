@@ -70,7 +70,7 @@ module OpenRubyRMK
       @client      = Karfunkel::Client.new(self)
       @transformer = Common::Transformer.new
       Karfunkel::THE_INSTANCE.clients << @client
-      Karfunkel::THE_INSTANCE.log_info("Connection try from #{client}.")
+      Karfunkel::THE_INSTANCE.log.info("Connection try from #{client}.")
       #We may get an incomplete command over the network, so we have
       #to collect the received data until the End Of Command marker,
       #which I defined to be a NUL byte, is encountered. Then
@@ -81,7 +81,7 @@ module OpenRubyRMK
       #him.
       EventMachine.add_timer(Karfunkel::THE_INSTANCE.config[:greet_timeout]) do
         if !@client.authenticated?
-          Karfunkel::THE_INSTANCE.log_warn("[#@client] Connection timeout for #{@client}.")
+          Karfunkel::THE_INSTANCE.log.warn("[#@client] Connection timeout for #{@client}.")
           terminate!
         end
       end
@@ -95,7 +95,7 @@ module OpenRubyRMK
         #he doesn’t, disconnect.
         EventMachine.add_timer(Karfunkel::THE_INSTANCE.config[:ping_interval] - 1) do #-1, b/c another PING request could be sent otherwise
           unless @client.available?
-            Karfunkel::THE_INSTANCE.log_warn("[#@client] No response to PING. Disconnecting #@client.")
+            Karfunkel::THE_INSTANCE.log.warn("[#@client] No response to PING. Disconnecting #@client.")
             terminate!
           end
         end
@@ -121,7 +121,7 @@ module OpenRubyRMK
     def unbind
       @ping_timer.cancel
       Karfunkel::THE_INSTANCE.clients.delete(@client)
-      Karfunkel::THE_INSTANCE.log_info("Connection to #{@client} closed.")
+      Karfunkel::THE_INSTANCE.log.info("Connection to #{@client} closed.")
     end
     
     private
@@ -151,7 +151,7 @@ module OpenRubyRMK
       begin
         check_authentication(command)
       rescue Common::Errors::AuthenticationError => e
-        Karfunkel::THE_INSTANCE.log_warn("[#@client] Authentication failed: #{e.message}")
+        Karfunkel::THE_INSTANCE.log.warn("[#@client] Authentication failed: #{e.message}")
         reject("Authentication failed.")
         terminate!
         return
@@ -160,7 +160,7 @@ module OpenRubyRMK
       #Then we execute all the requests
       command.requests.each do |request|
         begin
-          Karfunkel::THE_INSTANCE.log_info("[#@client] Request: #{request.type}")
+          Karfunkel::THE_INSTANCE.log.info("[#@client] Request: #{request.type}")
           plugin = Karfunkel.config[:plugins].find{|p| p.can_process_request?(request)}
           plugin.process_request(request, @client)
         rescue => e
@@ -174,12 +174,12 @@ module OpenRubyRMK
       #instances are connected to each other.
       command.responses.each do |response|
         begin
-          Karfunkel::THE_INSTANCE.log_info("[#@client] Received response to a #{response.request.type} request")
+          Karfunkel::THE_INSTANCE.log.info("[#@client] Received response to a #{response.request.type} request")
           plugin = Karfunkel.config[:plugins].find{|p| p.can_process_response?(response)}
           plugin.process_response(response, @client)
         rescue => e
           Karfunkel::THE_INSTANCE.log_exception(e)
-          Karfunkel::THE_INSTANCE.log_error("[#@client] Failed to process response: #{response}")
+          Karfunkel::THE_INSTANCE.log.error("[#@client] Failed to process response: #{response}")
         end
       end
     end
