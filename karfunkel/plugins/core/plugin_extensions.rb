@@ -103,7 +103,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Extensions
   #  end
   def process_response(type, &block)
     sym = :"process_#[type}_request"
-    define_private_method(sym, &block)
+    define_method(sym, &block)
     private(sym)
   end
 
@@ -155,3 +155,8 @@ module OpenRubyRMK::Karfunkel::Plugin::Extensions
   alias kf karfunkel
 
 end
+
+# Add plugin extensions to raw Karfunkel
+# (this file is loaded only when the Core plugin is being activated,
+# not when the plugins are required, so this is safe)
+OpenRubyRMK::Karfunkel::Plugin.send(:include, OpenRubyRMK::Karfunkel::Plugin::Extensions)

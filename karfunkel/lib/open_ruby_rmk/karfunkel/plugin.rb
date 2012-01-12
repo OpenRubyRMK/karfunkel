@@ -67,6 +67,10 @@ module OpenRubyRMK
     #removed from a modular composed piece of software.
     class Plugin < Module
 
+      #The name of this plugin. A symbol identical to what was
+      #passed to the ::new method.
+      attr_reader :name
+
       @plugins = []
 
       #All registered Plugin instance. Note a registered
@@ -178,8 +182,8 @@ module OpenRubyRMK
       #Note that creating an instance of this class doesn’t automactically
       #register your new plugin with Karfunkel.
       def initialize(name, dont_register = false)
+        @name = name # May be used in the block, must come before super()
         super()
-        @name = name
         
         self.class.register(self) unless dont_register
         
@@ -190,6 +194,11 @@ module OpenRubyRMK
       #  #<OpenRubyRMK::Karfunkel::Plugin <PluginName>>
       def inspect
         "#<#{self.class} #@name>"
+      end
+
+      #Returns the same as the +name+ attribute.
+      def to_s
+        @name
       end
 
     end #Plugin

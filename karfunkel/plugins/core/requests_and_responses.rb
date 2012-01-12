@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 OpenRubyRMK::Karfunkel::Plugin.extend_plugin(:Core) do
 
   process_request :Hello do |request, client|
@@ -13,6 +15,19 @@ OpenRubyRMK::Karfunkel::Plugin.extend_plugin(:Core) do
     answer :ok, :my_version     => Karfunkel::VERSION, 
                 :my_project     => kf.selected_project.to_s,
                 :my_clients_num => kf.clients.count
+  end
+
+  process_request :Ping do |request, client|
+    #If Karfunkel gets a PING request, we just answer it as OK and
+    #are done with it.
+    answer :ok
+  end
+
+  process_response :Ping do |response, client|
+    #Nothing is necessary here, because a client’s availability status
+    #is set automatically if it sends a reponse. I just place the
+    #method here, because without it we would get a NotImplementedError
+    #exception.
   end
 
 end

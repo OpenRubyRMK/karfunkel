@@ -26,7 +26,6 @@ require "open_ruby_rmk/common" # 'openrubyrmk-common' RubyGem
 #list unless you have written something equivalent.
 
 OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
-
   #This is the "client" id Karfunkel himself uses.
   ID = 0
 
@@ -45,7 +44,10 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   #the Plugin class to allow easier plugin writing, notably for
   #processing requests.
   def self.included(klass)
-    OpenRubyRMK::Karfunkel::Plugin.send(:include, OpenRubyRMK::Karfunkel::Plugin::Extensions)
+    require_relative "core/plugin_extensions"
+    require_relative "core/protocol"
+    require_relative "core/client"
+    require_relative "core/requests_and_responses"
   end
 
   #(Hooked) Starts Karfunkel.
@@ -71,7 +73,7 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
 
     @log.info("Loaded plugins: #{@config[:plugins].map(&:to_s).join(', ')}")
     @log.info("A new story may begin now. Karfunkel waits with PID #$$ on port #{@config[:port]} for you...")
-    EventMachine.start_server("localhost", @config[:port], Karfunkel::Protocol)
+    EventMachine.start_server("localhost", @config[:port], OpenRubyRMK::Karfunkel::Protocol)
     @running = true
   end
 
@@ -372,9 +374,3 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   end
 
 end
-
-# Require all the classes for this plugin
-require_relative "core/plugin_extensions"
-require_relative "core/protocol"
-require_relative "core/client"
-require_relative "core/requests_and_responses"
