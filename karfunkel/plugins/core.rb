@@ -89,7 +89,7 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
     #There’s no sense to wait for clients when no clients are connected.
     return stop! if @clients.empty?
     
-    req = Request.new(generate_request_id, :Shutdown)
+    req = OpenRubyRMK::Common::Request.new(generate_request_id, :Shutdown)
     req[:requestor] = requestor.id
     @clients.each do |client|
       client.accepted_shutdown = false #Clear any previous answers
@@ -254,9 +254,9 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   #notification, you can use the respective #deliver_* methods of
   #this class which internally call this method.
   def deliver(cmd, to)
-    to = @clients.find{|c| c.id == to} unless to.kind_of?(Karfunkel::Client)
+    to = @clients.find{|c| c.id == to} unless to.kind_of?(OpenRubyRMK::Karfunkel::Client)
     raise("Client with ID #{to} couldn't be found!") unless to
-    to.connection.write(to.connection.transformator.convert!(cmd))
+    to.connection.send_data(to.connection.transformer.convert!(cmd) + OpenRubyRMK::Karfunkel::Protocol::END_OF_COMMAND)
   end
 
   #Convenience method for creating a command consisting of a
@@ -268,7 +268,7 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   #  req = Common::Request.new(123, "Foo")
   #  Karfunkel.deliver_request(req, 9)
   def deliver_request(req, to)
-    cmd = Command.new(ID)
+    cmd = OpenRubyRMK::Common::Command.new(ID)
     cmd << req
     deliver(cmd, to)
   end
@@ -282,7 +282,7 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   #  res = Common::Response.new(123, "OK", somerequest)
   #  Karfunkel.deliver_response(res, 456)
   def deliver_response(res, to)
-    cmd = Command.new(ID)
+    cmd = OpenRubyRMK::Common::Command.new(ID)
     cmd << res
     deliver(cmd, to)
   end
@@ -296,7 +296,7 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   #  note = Common::Notification.new(123, "foo")
   #  Karfunkel.deliver_notification(note)
   def deliver_notification(note)
-    cmd = Command.new(ID)
+    cmd = OpenRubyRMK::Common::Command.new(ID)
     cmd << note
     @clients.each do |client|
       deliver(cmd, client)

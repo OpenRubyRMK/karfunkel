@@ -161,8 +161,13 @@ module OpenRubyRMK
       command.requests.each do |request|
         begin
           Karfunkel::THE_INSTANCE.log.info("[#@client] Request: #{request.type}")
-          plugin = Karfunkel.config[:plugins].find{|p| p.can_process_request?(request)}
-          plugin.process_request(request, @client)
+          plugin = Karfunkel::THE_INSTANCE.config[:plugins].find{|p| p.can_process_request?(request)}
+          if plugin
+            plugin.process_request(request, @client)
+          else
+            Karfunkel::THE_INSTANCE.log.warn("[#@client] No plugin understands this request type: #{request.type}. Rejecting.")
+            reject("Unknown request type #{request.type}. I'm sorry I can't help you.", request)
+          end
         rescue => e
           Karfunkel::THE_INSTANCE.log_exception(e)
           reject(e.message, request)
@@ -175,7 +180,7 @@ module OpenRubyRMK
       command.responses.each do |response|
         begin
           Karfunkel::THE_INSTANCE.log.info("[#@client] Received response to a #{response.request.type} request")
-          plugin = Karfunkel.config[:plugins].find{|p| p.can_process_response?(response)}
+          plugin = Karfunkel::THE_INSTANCE.config[:plugins].find{|p| p.can_process_response?(response)}
           plugin.process_response(response, @client)
         rescue => e
           Karfunkel::THE_INSTANCE.log_exception(e)

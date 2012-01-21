@@ -9,7 +9,7 @@
 #This module is (via monkeypatch) mixed into OpenRubyRMK::Karfunkel::Plugin
 #when the +Core+ plugin is activated.
 module OpenRubyRMK::Karfunkel::Plugin::Extensions
-  # Simplify typing for plugin authors
+  # Simplify typing (not reached through down to instances of Plugin instances)
   include OpenRubyRMK
   include OpenRubyRMK::Common
   
@@ -25,9 +25,9 @@ module OpenRubyRMK::Karfunkel::Plugin::Extensions
     # and #process_response.
     
     if req.kind_of?(Request)
-      respond_to?(req.type, true)
+      respond_to?(:"process_#{req.type}_request", true)
     else
-      respond_to?(req, true)
+      respond_to?(:"process_#{req}_request", true)
     end
   end
 
