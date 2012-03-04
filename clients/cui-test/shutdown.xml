@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <Karfunkel>
-  <request type="Shutdown" id="<%= @request_id %>" />
+  <request type="shutdown" id="<%= @request_id %>" />
 </Karfunkel>

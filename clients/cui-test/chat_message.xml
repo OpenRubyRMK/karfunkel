@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <Karfunkel>
-  <request type="ChatMessage" id="<%= @request_id %>">
+  <request type="chat_message" id="<%= @request_id %>">
     <% if info[:target] %>
     <target><%= info[:target] %></target>
     <% end %>

@@ -13,4 +13,8 @@ module OpenRubyRMK::Common::Errors
   class MalformedCommand < OpenRubyRMKError
   end
 
+  # Raised when authentication failed.
+  class AuthenticationError < OpenRubyRMKError
+  end
+
 end

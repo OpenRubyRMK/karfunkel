@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <Karfunkel>
-  <request type="Hello" id="<%= @request_id %>">
+  <request type="hello" id="<%= @request_id %>">
     <os>Linux</os>
   </request>
 </Karfunkel>

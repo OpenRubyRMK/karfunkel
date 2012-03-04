@@ -23,7 +23,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Extensions
   def can_process_request?(req)
     # The methods tested for here are defined via #process_request
     # and #process_response.
-    
+
     if req.kind_of?(Request)
       respond_to?(:"process_#{req.type}_request", true)
     else

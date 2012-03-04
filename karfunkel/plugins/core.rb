@@ -32,6 +32,10 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   #An array containing all clients to whom Karfunkel holds
   #connections. Client objects.
   attr_reader :clients
+  #The instance of CommandProcessor that Karfunkel uses in order
+  #to forward incoming requests and responses to the respective
+  #plugins.
+  attr_reader :processor
   #An array of all currently loaded projects.
   attr_reader :projects
   #The Logger instance used by the log_* methods.
@@ -45,6 +49,8 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   #processing requests.
   def self.included(klass)
     require_relative "core/plugin_extensions"
+    require_relative "core/command_helpers"
+    require_relative "core/command_processor"
     require_relative "core/protocol"
     require_relative "core/client"
     require_relative "core/requests_and_responses"
@@ -59,6 +65,7 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
     super
     raise(RuntimeError, "Karfunkel is already running!") if @running
 
+    @processor          = OpenRubyRMK::Karfunkel::CommandProcessor.new
     @preparing_shutdown = false
     @clients            = []
     @projects           = []

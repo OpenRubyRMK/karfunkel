@@ -54,6 +54,7 @@ module OpenRubyRMK
   #   which removes the client from the list of connected clients
   #   and cancels the ping timer for this client.
   module Karfunkel::Protocol
+    include Karfunkel::CommandHelpers
     
     #This is the byte that terminates each command.
     END_OF_COMMAND = "\0".freeze
@@ -90,7 +91,7 @@ module OpenRubyRMK
       #doesn’t answer, he’s disconnected.
       @ping_timer = EventMachine.add_periodic_timer(Karfunkel::THE_INSTANCE.config[:ping_interval]) do
         @client.available = false
-        Karfunkel::THE_INSTANCE.deliver_request(Common::Request.new(Karfunkel::THE_INSTANCE.generate_request_id, :Ping))
+        Karfunkel::THE_INSTANCE.deliver_request(Common::Request.new(Karfunkel::THE_INSTANCE.generate_request_id, :Ping), @client.id)
         #Now wait for the client to respond to the PING, and if
         #he doesn’t, disconnect.
         EventMachine.add_timer(Karfunkel::THE_INSTANCE.config[:ping_interval] - 1) do #-1, b/c another PING request could be sent otherwise
@@ -138,98 +139,29 @@ module OpenRubyRMK
         command = @transformer.parse!(command_xml)
       rescue => e
         Karfunkel::THE_INSTANCE.log_exception(e)
-        error(e.message)
+        error(@client, e.message)
         return
       end
       
       #We received data from the client, so he’s available!
       #This is enough to answer a PING request.
       @client.available = true
-      
-      #Ensure the user is allowed to demand requests. If not, try to
-      #authenticate him.
-      begin
-        check_authentication(command)
-      rescue Common::Errors::AuthenticationError => e
-        Karfunkel::THE_INSTANCE.log.warn("[#@client] Authentication failed: #{e.message}")
-        reject("Authentication failed.")
-        terminate!
-        return
+
+      # If the client is not yet authenticated, he’s only allowed
+      # to send the HELLO request. Check whether he does so
+      # (raises AuthenticationError otherwise).
+      unless client.authenticated?
+        Karfunkel::THE_INSTANCE.processor.check_authentication(@client, command)
       end
-      
-      #Then we execute all the requests
-      command.requests.each do |request|
-        begin
-          Karfunkel::THE_INSTANCE.log.info("[#@client] Request: #{request.type}")
-          plugin = Karfunkel::THE_INSTANCE.config[:plugins].find{|p| p.can_process_request?(request)}
-          if plugin
-            plugin.process_request(request, @client)
-          else
-            Karfunkel::THE_INSTANCE.log.warn("[#@client] No plugin understands this request type: #{request.type}. Rejecting.")
-            reject("Unknown request type #{request.type}. I'm sorry I can't help you.", request)
-          end
-        rescue => e
-          Karfunkel::THE_INSTANCE.log_exception(e)
-          reject(e.message, request)
-        end
-      end
-      
-      #And now we check the responses that Karfunkel’s clients send to us.
-      #See the Transformer class for information on how Request and Response
-      #instances are connected to each other.
-      command.responses.each do |response|
-        begin
-          Karfunkel::THE_INSTANCE.log.info("[#@client] Received response to a #{response.request.type} request")
-          plugin = Karfunkel::THE_INSTANCE.config[:plugins].find{|p| p.can_process_response?(response)}
-          plugin.process_response(response, @client)
-        rescue => e
-          Karfunkel::THE_INSTANCE.log_exception(e)
-          Karfunkel::THE_INSTANCE.log.error("[#@client] Failed to process response: #{response}")
-        end
-      end
-    end
-    
-    #Checks if the user is authenticated, and if so, immediately
-    #returns. If not, this method verifies that +command+ contains
-    #a single +Hello+ request and nothing else. Note that this
-    #method just detects structural errors, because the actual
-    #authentication takes place during the execution of the
-    #+Hello+ request.
-    def check_authentication(command)
-      return if @client.authenticated?
-      #OK, not authenticated. This means, the first request the client
-      #sends must be HELLO, and no further requests in this command are
-      #allowed.
-      if command.requests.count > 1
-        raise(Common::Errors::AuthenticationError.new(@client), "Client #@client tried to execute requests together with HELLO!")
-      elsif command.requests.first.type != "Hello"
-        raise(Common::Errors::AuthenticationError.new(@client), "Client #@client tried to send another request than a HELLO!")
-      end
-      #Good, no malicious attempts so far. Return and let the HelloRequest
-      #class check credentials, etc.
-    end
-    
-    #Sends a +rejected+ response to the client.
-    #===Parameters
-    #[reason]  Reason why the client was rejected.
-    #[request] The request that this response is supposed to answer.
-    #
-    #TODO: Don’t be lazy, Request.new only allows a +nil+ request for :error responses.
-    def reject(reason, request)
-      r = Common::Response.new(Karfunkel::THE_INSTANCE.generate_request_id, :rejected, request)
-      r[:reason] = reason
-      Karfunkel::THE_INSTANCE.deliver_response(r, @client)
-    end
-    
-    #Sends an +error+ response to the client.
-    #===Parameters
-    #[description] Explanation on what went wrong.
-    #[request]     (nil) An optional Request object used to fill the
-    #              +type+ and +id+ attributes of the response.
-    def error(description, request = nil)
-      r = Common::Response.new(Karfunkel::THE_INSTANCE.generate_request_id, :error, request)
-      r[:description] = description
-      Karfunkel::THE_INSTANCE.deliver_response(r, @client)
+
+      # Real command processing
+      Karfunkel::THE_INSTANCE.processor.process_command(@client, command)
+    rescue Common::Errors::AuthenticationError => e
+      Karfunkel::THE_INSTANCE.log.warn("[#@client] Authentication failed: #{e.message}")
+      reject(@client, "Authentication failed.", command.requests.first) # TODO: Should pass the request the really caused the error, not just the first
+    rescue => e
+      Karfunkel::THE_INSTANCE.log.fatal("[#@client] FATAL: Unhandled exception!")
+      raise # Reraise
     end
     
     #Immediately cuts the connection to Karfunkel,

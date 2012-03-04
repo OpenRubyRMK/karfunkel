@@ -2,7 +2,7 @@
 
 OpenRubyRMK::Karfunkel::Plugin.extend_plugin(:Core) do
 
-  process_request :Hello do |request, client|
+  process_request :hello do |request, client|
     answer :rejected, :reason => "Already authenticated" and return if client.authenticated?
     logger.debug "Trying to authenticate '#{client}'..."
 
@@ -17,13 +17,13 @@ OpenRubyRMK::Karfunkel::Plugin.extend_plugin(:Core) do
                 :my_clients_num => kf.clients.count
   end
 
-  process_request :Ping do |request, client|
+  process_request :ping do |request, client|
     #If Karfunkel gets a PING request, we just answer it as OK and
     #are done with it.
     answer :ok
   end
 
-  process_response :Ping do |response, client|
+  process_response :ping do |response, client|
     #Nothing is necessary here, because a client’s availability status
     #is set automatically if it sends a reponse. I just place the
     #method here, because without it we would get a NotImplementedError

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <Karfunkel>
-  <response type="Shutdown" id="<%= info[:shutdown_id] %>" status="ok" />
+  <response type="shutdown" id="<%= info[:shutdown_id] %>" status="ok" />
 </Karfunkel>
