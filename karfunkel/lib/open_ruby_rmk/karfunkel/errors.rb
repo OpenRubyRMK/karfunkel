@@ -30,6 +30,10 @@ module OpenRubyRMK
     #Superclass of every error specific to OpenRubyRMK.
     class OpenRubyRMKError < StandardError
     end
+
+    #Raised when errors in the configuration file are detected.
+    class ConfigurationError < OpenRubyRMKError
+    end
     
     #Something was wrong with a mapset file.
     class InvalidMapsetError < OpenRubyRMKError

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of OpenRubyRMK.
 # 
-# Copyright © 2010,2011 OpenRubyRMK Team
+# Copyright © 2012 OpenRubyRMK Team
 # 
 # OpenRubyRMK is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,8 +24,9 @@ require "open_ruby_rmk/common" # 'openrubyrmk-common' RubyGem
 #Karfunkel. It provides the basic functionality of Karfunkel and
 #hence shouldn’t be removed from your configuration’s plugin
 #list unless you have written something equivalent.
+module OpenRubyRMK::Karfunkel::Plugin::Core
+  include OpenRubyRMK::Karfunkel::Plugin
 
-OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   #This is the "client" id Karfunkel himself uses.
   ID = 0
 
@@ -64,6 +65,7 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
   def start
     super
     raise(RuntimeError, "Karfunkel is already running!") if @running
+    create_logger
 
     @processor          = OpenRubyRMK::Karfunkel::CommandProcessor.new
     @preparing_shutdown = false
@@ -75,7 +77,6 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
     @client_id_generator_mutex  = Mutex.new #Never generate duplicate client IDs.
     @request_id_generator_mutex = Mutex.new #Same for request IDs.
 
-    create_logger
     Thread.abort_on_exception = true if debug_mode?
 
     @log.info("Loaded plugins: #{@config[:plugins].map(&:to_s).join(', ')}")
@@ -155,7 +156,15 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
     @running
   end
   alias started? running?
+
+  #Processes a request and acts accordingly.
+  def process_request!(req)
+  end
   
+  #Processes a response and acts accordingly.
+  def process_response!(res)
+  end
+
   #Logs an exception.
   #==Parameters
   #[exception] The exception to log.
@@ -317,66 +326,45 @@ OpenRubyRMK::Karfunkel::Plugin.new(:Core) do
     super
     
     op.on("-d", "--[no-]debug",
-          "Show debugging information on run") do |bool|
+          "Show debugging information on run. Assumes -L0.") do |bool|
       @config[:debug_mode] = true
     end
     
     op.on("-L", "--loglevel LEVEL",
           "Set the logging level to LEVEL.") do |level|
-      @config[:loglevel] = level
+      @config[:log_level] = level
     end
-  end
-  
-  #Hooked. Adds the interpretation of the following configuration
-  #file directives:
-  #* :port
-  #* :greet_timeout
-  #* :loglevel
-  #* :ping_interval
-  #* :logdir
-  #* :log_format
-  def parse_config(hsh)
-    super
-    hsh.each_pair do |k, v|
-      case k
-      when :port          then @config[:port]          = v
-      when :greet_timeout then @config[:greet_timeout] = v
-      when :loglevel      then @config[:loglevel]      = v
-      when :ping_interval then @config[:ping_interval] = v
-      when :logdir        then @config[:logdir]        = Pathname.new(v)
-      when :log_format    then @config[:log_format]    = v
+
+    op.on("-n", "--changed",
+          "Print out all config options different from the",
+          "default values and exits") do
+      @config.each_changed_pair do |option, value|
+        puts "#{option} => #{value.kind_of?(Proc) ? '<Codeblock>' : value}"
       end
+      exit
     end
   end
 
   #Creates the logger.
   def create_logger
     if debug_mode?
-      $stdout.sync       = $stderr.sync = true
-      @log               = Logger.new($stdout)
-      @log.level         = Logger::DEBUG
-      @config[:loglevel] = 0 #Makes no sense otherwise
-      @config[:logdir]   = "(none)" #Makes no sense otherwise
+      $stdout.sync        = $stderr.sync = true
+      @log                = Logger.new($stdout)
+      @log.level          = Logger::DEBUG
+      @config[:log_level] = 0 #Makes no sense otherwise
     else
-      log_dir = @config[:logdir] ||= Paths::LOG_DIR
-      log_dir.mkpath unless log_dir.directory?
-      @log = Logger.new(log_dir + "karfunkel.log", 5, 1048576) #1 MiB
-      @log.level = @config[:loglevel]
+      @log                = Logger.new($stdout)
+      @log.level          = @config[:log_level]
+      @log.formatter      = @config[:log_format]
     end
 
-    @log = Logger.new($stdout)
-    @log.level = Logger::DEBUG
-    @log.formatter = lambda do |severity, time, progname, msg| 
-      timestr = time.strftime(@config[:log_format])
-      sprintf(timestr.gsub(/&(\w+)/, '%{\1}'), :sev => severity.chars.first, :pid => $$, :msg => msg) + "\n"
-    end
-    
+    @log.info("Starting up.")
     @log.info("This is Karfunkel, version #{OpenRubyRMK::Karfunkel::VERSION}.")
     if debug_mode?
       @log.warn("Running in DEBUG mode!")
       sleep 1 #Give time to read the above
       @log.debug("The configuration is as follows:")
-      @config.each_pair{|k, v| @log.debug("-| #{k} => #{v}")}
+      @config.each_pair{|k, v| @log.debug("#{k} => #{v.kind_of?(Proc) ? '<Codeblock>' : v}")}
     end
   end
 

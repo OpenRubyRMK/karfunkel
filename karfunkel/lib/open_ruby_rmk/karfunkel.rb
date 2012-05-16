@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of OpenRubyRMK.
 # 
-# Copyright © 2010 OpenRubyRMK Team
+# Copyright © 2012 OpenRubyRMK Team
 # 
 # OpenRubyRMK is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ require_relative "karfunkel/plugin"
 require_relative "karfunkel/pluggable"
 require_relative "karfunkel/paths"
 require_relative "karfunkel/errors"
+require_relative "karfunkel/configuration"
 
 module OpenRubyRMK
 
@@ -89,6 +90,24 @@ module OpenRubyRMK
   #normally isn’t possible in Ruby) can be found inside the
   #OpenRubyRMK::Karfunkel::Pluggable module. If you want to use
   #that one in your own classes, you of course can do so.
+  #
+  #== Sub-plugins
+  #
+  #Beside Karfunkel itself, you can hook into some other classes
+  #inside the Karfunkel namespace. This can be achieved by creating
+  #a module named after the class you want to hook into, but inside
+  #your plugin’s main module. So, if you wish to hook into the
+  #OpenRubyRMK::Karfunkel::Configuration class, you can do so by
+  #defining a plugin submodule
+  #OpenRubyRMK::Karfunkel::Plugin::MyPlugin::Configuration
+  #and overwrite the hook methods there in the same mannor you do
+  #for the main Karfunkel class. These "sub-plugins" are automatically
+  #recognised by #load_plugin and included in the proper classes.
+  #
+  #Following is a list of classes you may hook into by the sub-plugin
+  #mechanism:
+  #
+  #* OpenRubyRMK::Karfunkel::Configuration
   class Karfunkel
     extend Pluggable
     
@@ -98,6 +117,14 @@ module OpenRubyRMK
     #The configuration options from both the commandline and the
     #configuration file as a hash (whose keys are symbols).
     attr_reader :config
+    #The list of enabled plugins. Ruby Module instances.
+    attr_reader :plugins
+
+    #The one and only instance of Karfunkel, set after the call to ::new.
+    #This is the same as directly referencing the THE_INSTANCE constant.
+    def self.instance
+      THE_INSTANCE
+    end
 
     #Creates the one and only instance of Karfunkel. Yes, you
     #*cannot* call this method more than once per program, because
@@ -117,40 +144,51 @@ module OpenRubyRMK
     #track of the instance therefore.
     def initialize(argv)
       raise("There can only be one instance of Karfunkel!") if self.class.const_defined?(:THE_INSTANCE)
-      
-      #This is where all configuration, i.e. both from commandline
-      #options and from the configuration file, is stored in.
-      @config = {}
+      self.class.const_set(:THE_INSTANCE, self)
+
+      # List of loaded plugins.
+      @plugins = []
+      # Configuration instance.
+      @config = Configuration.new
 
       #Setup the base things. Most of these call hook methods,
       #but aren’t themselves hooks.
-      load_raw_config
       load_plugins
-      parse_config(@__raw_config)
+      load_config
       load_argv(argv)
       setup_signal_handlers
+    end
 
-      #Add a constant referring to self as the one and only instance
-      #of this class.
-      #
-      #Note I’m doing this rather than including Ruby’s Singleton module, because
-      #the Singleton module doesn’t allow arguments to be passed to
-      ##initialize. See http://redmine.ruby-lang.org/issues/5448.
-      self.class.const_set(:THE_INSTANCE, self)
+    #Evaluates the block in the context of the Configuration object
+    #this object holds. This method is only called from the
+    #configuraton file.
+    #==Raises
+    #[Errors::ConfigurationError]
+    #  On any errors in the config.
+    def configure(&block) # :nodoc:
+      @config.instance_eval(&block)
+      @config.check!
     end
 
     #The very heart of the plugin mechanism. This plugs a
-    #module into Karfunkel. Called from #parse_config, but you can
+    #module into Karfunkel. Called from #load_plugins, but you can
     #call it later if you want to include plugins not found
     #by #load_plugins or just delay plugin loading.
     #==Parameter
-    #[plugin] The Plugin instance to include.
+    #[plugin] The module to include.
     #==Example
     #  # Load the first registered plugin
     #  Karfunkel::THE_INSTANCE.load_plugin(Plugin.all.first)
     def load_plugin(plugin)
-      self.class.send(:include, plugin) # Mixins for the world! ;-)
-      @config[:plugins] << plugin
+      # First include the plugin’s main module.
+      self.class.send(:include, plugin)
+
+      # If it contains sub-plugins for other hookable classes, include
+      # them where they belong.
+      Configuration.send(:include, plugin.const_get(:Configuration)) if plugin.const_defined?(:Configuration)
+
+      # Remember we loaded this particular plugin.
+      @plugins << plugin
     end
 
     pluggify do
@@ -196,18 +234,6 @@ module OpenRubyRMK
         end
       end
 
-      #*HOOK*. This methods specifies how to handle configuration
-      #directives in the configuration file. Note that the :plugin
-      #directive is special, see #load_plugins in this file’s sourecode
-      #for further explanation.
-      #
-      #This method doesn’t do anything by default.
-      #==Parameter
-      #[hsh] The content of the configuration file in form of a hash.
-      #      Note that the keys are symbols, not strings.
-      def parse_config(hsh)
-      end
-
       #*HOOK*. This method is intended to set up signal handlers
       #for the server (i.e. SIGTERM and the like). However, by
       #default it does nothing.
@@ -225,32 +251,34 @@ module OpenRubyRMK
       parse_argv(op)
       op.parse!(argv)
     end
-    
-    #Reads in the configuration file and converts the keys from strings
-    #to symbols, but doesn’t interpret it.
-    def load_raw_config
-      unless Paths::CONFIG_FILE.file? and Paths::CONFIG_FILE.readable?
-        raise("Can't read the configuration file at #{Paths::CONFIG_FILE}!")
-      end
-      @__raw_config = YAML.load_file(Paths::CONFIG_FILE.to_s)
-      @__raw_config = Hash[@__raw_config.map{|k, v| [k.to_sym, v]}] #Symbolify the keys
-    end
 
-    #This method loads all the plugins found by #load_config and populates
-    #the @config variable with them. This behaviour should be
-    #in #parse_config as that’s the method supposed to fill @config (together
-    #with #parse_argv), but that would cause a chicken-egg-problem, because
-    #plugins are allowed to do their own configuration file parsing.
+    #This method loads all the plugins listed in the plugins file
+    #and populates the @plugins variable with them.
     def load_plugins
-      @config[:plugins] = []
-      
-      @__raw_config[:plugins].each do |plugname|
+      unless Paths::PLUGINS_FILE.file? and Paths::PLUGINS_FILE.readable?
+        raise("Can't read the plugins file at #{Paths::PLUGINS_FILE}!")
+      end
+
+      File.open(Paths::PLUGINS_FILE).each_line do |plugname|
+        next if plugname.strip.empty?     # Ignore empty lines
+        next if plugname.start_with?("#") # Ignore comment lines
+
         if plugin = Plugin[plugname] # Single = intended
           load_plugin(plugin)
         else
-          raise("Plugin #{plugname} not found!")
+          raise(Errors::ConfigurationError, "Plugin #{plugname} not found!")
         end
       end
+    end
+
+    #Evaluates the main configuration file (but doesn’t interpret
+    #it, which is responsibility of the plugins).
+    #Raises Errors::ConfigurationError if there’s an error evaluating the
+    #file (this includes SyntaxErrors and similar, which are also rescued).
+    def load_config
+      load(Paths::CONFIG_FILE, true) # 2nd parameter: Wrap in anonymous module
+    rescue Exception => e            # Config file may have syntax errors
+      raise(Errors::ConfigurationError, "Configuration error: #{e.message}")
     end
 
   end
