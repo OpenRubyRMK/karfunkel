@@ -139,7 +139,7 @@ module OpenRubyRMK
         command = @transformer.parse!(command_xml)
       rescue => e
         Karfunkel::THE_INSTANCE.log_exception(e)
-        error(@client, e.message)
+        error(@client, :message => e.message)
         return
       end
       
@@ -147,18 +147,30 @@ module OpenRubyRMK
       #This is enough to answer a PING request.
       @client.available = true
 
-      # If the client is not yet authenticated, he’s only allowed
-      # to send the HELLO request. Check whether he does so
-      # (raises AuthenticationError otherwise).
-      unless client.authenticated?
-        Karfunkel::THE_INSTANCE.processor.check_authentication(@client, command)
+      # Process the requests
+      command.requests.each do |req|
+        begin
+          Karfunkel.instance.log.info("[#@client] Request: #{req.type}")
+          reject(@client, req, :reason => "Not authenticated") and next if !client.authenticated? and !req.type == :hello
+          Karfunkel.handle_request(client, req)
+        rescue => e
+          Karfunkel.instance.log_exception(e)
+          reject(@client, req, :reason => e.message)
+        end
       end
 
-      # Real command processing
-      Karfunkel::THE_INSTANCE.processor.process_command(@client, command)
-    rescue Common::Errors::AuthenticationError => e
-      Karfunkel::THE_INSTANCE.log.warn("[#@client] Authentication failed: #{e.message}")
-      reject(@client, "Authentication failed.", command.requests.first) # TODO: Should pass the request the really caused the error, not just the first
+      # Process the responses
+      commands.responses.each do |res|
+        begin
+          Karfunkel.instance.log.info("[#@client] Response: #{res.req.type}")
+          log.warn("[#@client] Ignoring unauthenticated response") and next if !client.authenticated?
+          Karfunkel.instance.handle_response(client, res)
+        rescue => e
+          Karfunkel.instance.log_exception(e)
+          # Responses don’t need an answer
+        end
+      end
+
     rescue => e
       Karfunkel::THE_INSTANCE.log.fatal("[#@client] FATAL: Unhandled exception!")
       raise # Reraise

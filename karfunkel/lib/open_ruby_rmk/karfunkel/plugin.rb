@@ -17,6 +17,7 @@ module OpenRubyRMK
       #When a module mixes in Plugin, this module is mixed
       #into its singleton class (#extend).
       module ClassMethods
+        include OpenRubyRMK::Karfunkel::CommandHelpers
 
         #call-seq:
         #  name() → a_string
@@ -32,6 +33,32 @@ module OpenRubyRMK
         end
         alias to_s name
 
+        protected
+
+        ########################################
+        # Plugin DSL
+
+        #Defines a handler for the given request type.
+        def process_request(type, &block)
+          Karfunkel.instance.define_request_handler(type, &block)
+        end
+
+        #Defines a handler for the given response type.
+        def process_response(type, &block)
+          Karfunkel.instance.define_response_handler(type, &block)
+        end
+
+        #Your direct access to Karfunkel’s Logger instance.
+        def log
+          Karfunkel.instance.log
+        end
+
+        #Shortcut equivalent to:
+        #  OpenRubyRMK::Karfunkel.instance
+        def kf
+          Karfunkel.instance
+        end
+
       end
 
       @plugins = []
@@ -44,8 +71,10 @@ module OpenRubyRMK
         @plugins << mod
       end
 
-      #All registered Plugin instance. Note a registered
-      #plugin != an activated plugin.
+      #All registered plugins. Note a registered
+      #plugin != an activated plugin. The activated
+      #plugins are available through Karfunkel#plugins.
+      #Enabling a plugin is possible with Karfunkel#load_plugin.
       def self.all
         @plugins
       end
@@ -74,8 +103,8 @@ module OpenRubyRMK
       #If a matching plugin is found, an instance of this class. Otherwise,
       #returns +nil+.
       #==Examples
-      #  Plugin[:Core] #=> <OpenRubyRMK::Karfunkel::Plugin Core>
-      #  Plugin["Foo"] #=> nil
+      #  Plugin[:core] #=> <OpenRubyRMK::Karfunkel::Plugin Core>
+      #  Plugin["foo"] #=> nil
       def self.[](name)
         name = name.to_s
         @plugins.find{|plugin| plugin.name == name}

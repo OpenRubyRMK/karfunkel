@@ -16,30 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
-module OpenRubyRMK::Karfunkel::Plugin::Core
+module OpenRubyRMK::Karfunkel::Plugin::Base
+  include OpenRubyRMK::Karfunkel::Plugin
 
-  process_request :hello do |request, client|
-    answer :rejected, :reason => "Already authenticated" and return if client.authenticated?
-    logger.debug "Trying to authenticate '#{client}'..."
+  process_request :hello do |c, r|
+    answer :rejected, :reason => "Already authenticated" and return if c.authenticated?
+    logger.debug "Trying to authenticate '#{}'..."
 
     #TODO: Here one could add password checks and other nice things
-    client.id            = kf.generate_client_id
-    client.authenticated = true
+    c.id            = kf.generate_client_id
+    c.authenticated = true
     
-    logger.info "[#{client}] Authenticated."
+    logger.info "[#{c}] Authenticated."
     
-    answer :ok, :my_version     => Karfunkel::VERSION, 
-                :my_project     => kf.selected_project.to_s,
-                :my_clients_num => kf.clients.count
+    answer c, r, :ok, :my_version => Karfunkel::VERSION, 
+                 :my_project      => kf.selected_project.to_s,
+                 :my_clients_num  => kf.clients.count
   end
 
-  process_request :ping do |request, client|
+  process_request :ping do |c, r|
     #If Karfunkel gets a PING request, we just answer it as OK and
     #are done with it.
-    answer :ok
+    answer c, r, :ok
   end
 
-  process_response :ping do |response, client|
+  process_response :ping do |c, r|
     #Nothing is necessary here, because a client’s availability status
     #is set automatically if it sends a reponse. I just place the
     #method here, because without it we would get a NotImplementedError

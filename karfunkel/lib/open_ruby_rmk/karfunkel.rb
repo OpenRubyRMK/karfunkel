@@ -20,27 +20,34 @@ require "bundler/setup"
 require "pathname"
 require "rbconfig"
 require "logger"
+require "eventmachine"
+require "nokogiri"
+require "open_ruby_rmk/common" # `openrubyrmk-common' RubyGem
 
+require_relative "karfunkel/paths"
+require_relative "karfunkel/command_helpers"
 require_relative "karfunkel/plugin"
 require_relative "karfunkel/pluggable"
-require_relative "karfunkel/paths"
 require_relative "karfunkel/errors"
 require_relative "karfunkel/configuration"
+require_relative "karfunkel/client"
+require_relative "karfunkel/protocol"
 
 module OpenRubyRMK
 
-  #This is OpenRubyRMK's server. Every GUI is just a client to his majesty Karfunkel.
+  #This is OpenRubyRMK’s server. Every GUI is just a
+  #client to His Majesty Karfunkel.
   #
-  #Karfunkel is completely modular. That means, if you try to run
-  #Karfunkel without any plugins (not even _core_) enabled, you
-  #will see him exiting quite fast. To clarify: <b>Any action
-  #Karfunkel is capable of is defined by plugins</b>. The bare
-  #Karfunkel class defined here consists of just the bare minimum
-  #that allows Karfunkel to actually _load_ plugins and give hook
-  #methods where plugins can easily intercept. These methods are
-  #marked in this documentation with *HOOK* at the beginning.
+  #This class defines the basic functionality needed for
+  #receiving and sending requests via an underlying EventMachine
+  #reactor.
   #
-  #== Writing a plugin
+  #== Plugins
+  #
+  #Karfunkel’s capabilities can easily extended by a set of
+  #plugins, i.e. Ruby modules that are mixed into Karfunkel
+  #himself and into other classes inside the +Karfunkel+
+  #namespace.
   #
   #Writing a plugin is as easy as creating a module inside the
   #OpenRubyRMK::Karfunkel::Plugins namespace. As described above,
@@ -57,7 +64,7 @@ module OpenRubyRMK
   #  end
   #
   #Note the call to +super+: This is important, because otherwise the
-  #code of other plugins, maybe even _core_, would not be run.
+  #code of other plugins, maybe even _base_, would not be run.
   #
   #When you’ve finished writing your plugin, save it into the
   #*lib/open_ruby_rmk/karfunkel/plugins* directory. On startup,
@@ -68,8 +75,8 @@ module OpenRubyRMK
   #+MyPlugin+ that resides in a file called *my_plugin.rb* in
   #the above directory, you can then easily add a subdirectory
   #*plugins/my_plugin/* that is completely under your control,
-  #Karfunkel’s loading won’t interfere with yours. See the
-  #_core_ plugin for an example.
+  #Karfunkel’s loading won’t interfer with yours. See the
+  #_base_ plugin for an example.
   #
   #Note however that your plugin (as the name suggests) is
   #_included_ into the OpenRubyRMK::Karfunkel class. Therefore,
@@ -114,11 +121,29 @@ module OpenRubyRMK
     #The version of the OpenRubyRMK, read from the version file.
     VERSION = OpenRubyRMK::Karfunkel::Paths::VERSION_FILE.read.chomp.freeze
 
+    #This is the "client" ID Karfunkel himself uses.
+    #TODO: Make this a configuration directive.
+    ID = 0
+
     #The configuration options from both the commandline and the
     #configuration file as a hash (whose keys are symbols).
     attr_reader :config
     #The list of enabled plugins. Ruby Module instances.
     attr_reader :plugins
+    #An array containing all clients to whom Karfunkel holds
+    #connections. Client objects.
+    attr_reader :clients
+    #The instance of CommandProcessor that Karfunkel uses in order
+    #to forward incoming requests and responses to the respective
+    #plugins.
+    attr_reader :processor
+    #An array of all currently loaded projects.
+    attr_reader :projects
+    #The Logger instance used by the log_* methods.
+    attr_reader :log
+    #The currently selected project or +nil+ if no project has been
+    #selected yet.
+    attr_reader :selected_project
 
     #The one and only instance of Karfunkel, set after the call to ::new.
     #This is the same as directly referencing the THE_INSTANCE constant.
@@ -150,13 +175,22 @@ module OpenRubyRMK
       @plugins = []
       # Configuration instance.
       @config = Configuration.new
+      # Hold procs to handle incomming requests and responses
+      @request_procs  = {}
+      @response_procs = {}
 
-      #Setup the base things. Most of these call hook methods,
-      #but aren’t themselves hooks.
-      load_plugins
+      # Load the plugin files (this does NOT enable the plugins!)
+      OpenRubyRMK::Karfunkel::Paths::PLUGIN_DIR.each_child do |path|
+        require(path) if path.to_s.end_with?(".rb")
+      end
+
+      # Setup the base things. Most of these call hook methods,
+      # but aren’t themselves hooks.
+      load_plugins # Enables the plugins listed in the config file
       load_config
       load_argv(argv)
       setup_signal_handlers
+      create_logger
     end
 
     #Evaluates the block in the context of the Configuration object
@@ -191,18 +225,303 @@ module OpenRubyRMK
       @plugins << plugin
     end
 
+    #Logs an exception.
+    #==Parameters
+    #[exception] The exception to log.
+    #[level]     (:error) The level to log the exception at. One of:
+    #            * :debug
+    #            * :info
+    #            * :warn
+    #            * :error
+    #            * :fatal
+    #            Do not use :fatal, it’s for internal use.
+    #==Example
+    #  begin
+    #    #Do something
+    #  rescue => e
+    #    OpenRubyRMK::Karfunkel::THE_INSTANCE.log_exception(e, :warn)
+    #  end
+    #==Remarks
+    #If the log level has been set to :debug, a backtrace will
+    #also be logged.
+    def log_exception(exception, level = :error)
+      @log.send(level, "#{exception.class.name}: #{exception.message}")
+      exception.backtrace.each do |trace|
+        @log.debug(trace)
+      end
+    end
+
+    #Generates a new and unused client ID. 
+    #==Return value
+    #An integer.
+    #==Example
+    #  p OpenRubyRMK::Karfunkel::THE_INSTANCE.generate_client_id #=> 1
+    #  p OpenRubyRMK::Karfunkel::THE_INSTANCE.generate_client_id #=> 2
+    def generate_client_id
+      @id_generator_mutex.synchronize do
+        @last_id += 1
+      end
+    end
+
+    #Generates a new and unused ID for use with requests sent
+    #by Karfunkel.
+    #==Return value
+    #An integer.
+    def generate_request_id
+      @request_id_generator_mutex.synchronize do
+        @last_req_id ||= 1
+        @last_req_id += 1
+      end
+    end
+    
+    #Sets the active project.
+    #==Parameter
+    #[project] A OpenRubyRMK::Kafunkel::ProjectManagement::Project instance.
+    #==Raises
+    #[ArgumentError] The project wasn’t registed with Karfunkel.
+    #==Example
+    #  proj = OpenRubyRMK::Karfunkel::PM::Project.load("myproj.rmk")
+    #  OpenRubyRMK::Karfunkel::THE_INSTANCE.projects << proj
+    #  OpenRubyRMK::Karfunkel::THE_INSTANCE.select_project(proj)
+    def select_project(project)
+      if @projects.include?(project)
+        @selected_project = project
+      else
+        raise(ArgumentError, "The project #{project} is not available.")
+      end
+    end
+
+    #Makes a project selected by it’s +index+ in the +projects+ array
+    #the active project.
+    #==Parameter
+    #[index] The index in the #projects array.
+    #==Raises
+    #[IndexError] Invalid index given.
+    #==Example
+    #  OpenRubyRMK::Karfunkel::THE_INSTANCE.select_project_by_index(3)
+    def select_project_by_index(index)
+      proj = @projects[index]
+      raise(IndexError, "No project with index #{index}!") if proj.nil?
+      @selected_project = proj
+    end
+    
+    #Returns Karfunkel's own client ID. The value of the ID constant, which
+    #is normally 0.
+    def id
+      ID
+    end
+    
+    #Human-readeble description.
+    def inspect
+      "#<#{self.class} I AM KARFUNKEL. THEE IS NOTHING.>"
+    end
+
+    #Short description
+    def to_s
+      "Karfunkel"
+    end
+
+    #Sends a command to the given client.
+    #==Parameters
+    #[cmd] The OpenRubyRMK::Common::Command instance to deliver.
+    #[to]  The target client, either a Client instance or an integer
+    #       that is interpreted as the client ID.
+    #==Example
+    #  cmd = Common::Command.new(123)
+    #  cmd << Common::Request.new(456, "Foo")
+    #  Karfunkel::THE_INSTANCE.deliver(cmd, 4)
+    #==Remarks
+    #To send a command just containing a single request, response or
+    #notification, you can use the respective #deliver_* methods of
+    #this class which internally call this method.
+    def deliver(cmd, to)
+      to = @clients.find{|c| c.id == to} unless to.kind_of?(OpenRubyRMK::Karfunkel::Client)
+      raise("Client with ID #{to} couldn't be found!") unless to
+      to.connection.send_data(to.connection.transformer.convert!(cmd) + OpenRubyRMK::Karfunkel::Protocol::END_OF_COMMAND)
+    end
+
+    #Convenience method for creating a command consisting of a
+    #singe request. The constructed command is passed to #deliver.
+    #==Parameters
+    #[req] The Request instance to add to the command.
+    #[to]  See #deliver for explanation.
+    #==Example
+    #  req = Common::Request.new(123, "Foo")
+    #  Karfunkel.deliver_request(req, 9)
+    def deliver_request(req, to)
+      cmd = OpenRubyRMK::Common::Command.new(ID)
+      cmd << req
+      deliver(cmd, to)
+    end
+
+    #Convenience method for creating a command consisting of a
+    #single response. The constructed command is passed to #deliver.
+    #==Parameters
+    #[res] The Response instance to add to the command.
+    #[to]  See #deliver for explanation.
+    #==Example
+    #  res = Common::Response.new(123, "OK", somerequest)
+    #  Karfunkel.deliver_response(res, 456)
+    def deliver_response(res, to)
+      cmd = OpenRubyRMK::Common::Command.new(ID)
+      cmd << res
+      deliver(cmd, to)
+    end
+
+    #Convenience method for creating a command consisting of a
+    #single notification. The constructed command is passed
+    #to #deliver once for each client.
+    #==Parameter
+    #[note] The Notification instance to add to the command.
+    #==Example
+    #  note = Common::Notification.new(123, "foo")
+    #  Karfunkel.deliver_notification(note)
+    def deliver_notification(note)
+      cmd = OpenRubyRMK::Common::Command.new(ID)
+      cmd << note
+      @clients.each do |client|
+        deliver(cmd, client)
+      end
+    end
+
+    #true if Karfunkel is running in debug mode.
+    def debug_mode?
+      @config[:debug_mode]
+    end
+    
+    #true if the server has already been started.
+    def running?
+      @running
+    end
+
     pluggify do
 
-      #*HOOK*. This method starts Karfunkel. By default, it doesn’t
-      #do anything, it’s behaviour is defined entirely through
-      #plugins.
+      #*HOOK*. This method starts Karfunkel. By default, it starts
+      #EventMachine’s server.
+      #==Raises
+      #[RuntimeError] Karfunkel is already running.
       def start
+        raise(RuntimeError, "Karfunkel is already running!") if @running
+        @log.info("Starting up.")
+
+        @log.info("This is Karfunkel, version #{OpenRubyRMK::Karfunkel::VERSION}.")
+        if debug_mode?
+          @log.warn("Running in DEBUG mode!")
+          sleep 1 #Give time to read the above
+          @log.debug("The configuration is as follows:")
+          @config.each_pair{|k, v| @log.debug("#{k} => #{v.kind_of?(Proc) ? '<Codeblock>' : v}")}
+        end
+
+        @preparing_shutdown = false
+        @clients            = []
+        @projects           = []
+        @selected_project   = nil
+        @last_id            = 0
+
+        @client_id_generator_mutex  = Mutex.new #Never generate duplicate client IDs.
+        @request_id_generator_mutex = Mutex.new #Same for request IDs.
+
+        Thread.abort_on_exception = true if debug_mode?
+
+        @log.info("Loaded plugins: #{@plugins.map(&:to_s).join(', ')}")
+        @log.info("A new story may begin now. Karfunkel waits with PID #$$ on port #{@config[:port]} for you...")
+        EventMachine.start_server("localhost", @config[:port], OpenRubyRMK::Karfunkel::Protocol)
+        @running = true
       end
       
-      #*HOOK*. This method stops Karfunkel. However, by default it
-      #(as well as #start) doesn’t do anything yet, it’s behaviour
-      #is entirely defined through plugins.
-      def stop
+      #*HOOK*. This method stops Karfunkel and disconnects all
+      #clients.
+      #==Raises
+      #[RuntimeError] Karfunkel isn’t running.
+      def stop(requestor = self)
+        raise(RuntimeError, "Karfunkel is not running!") unless @running
+        @log.info("Regular shutdown requested by #{requestor} (ID #{requestor.id}), informing connected clients.")
+        
+        #There’s no sense in waiting for clients when no clients are connected.
+        return stop! if @clients.empty?
+        
+        req = OpenRubyRMK::Common::Request.new(generate_request_id, :Shutdown)
+        req[:requestor] = requestor.id
+        @clients.each do |client|
+          client.accepted_shutdown = false #Clear any previous answers
+          client.request(req)
+        end
+      end
+
+      #*HOOK*. Handles an incomming request. By default, calls the
+      #handler registered for the request’s type or errors out
+      #if no handler is defined.
+      #
+      #If you just want to add new request types to Karfunkel in your
+      #plugin, you should use the convenience methods
+      #Plugin::ClassMethods#process_request and its response pedant
+      #Plugin::ClassMethods#process_response. This hook only exists
+      #to achieve an effect similar to so-called "middleware" in
+      #popular application servers such as Rack[http://rack.rubyforge.org],
+      #i.e. you can use this hook to inspect or even modify *all* requests
+      #Karfunkel receives. If you want to modify the request, you should
+      #advertise loading your plugin after other plugins, because those
+      #loaded later are first called when processing a request.
+      #
+      #==Parameters
+      #[client] The client that sent the request. A Client instance.
+      #[req]    The request. A Request instance.
+      #
+      #==Raises
+      #[Errors::UnknownRequestType]
+      #  No handler defined for the request’s type
+      #
+      #==Example
+      #The following is a super-simple example plugin that demonstrates
+      #how to block any requests from clients not from the local network
+      #(usually the 192.168.0.0/16 network block). Note that it is
+      #not possible to use the convenience methods for delivering
+      #responses by default as they’re only available on the module
+      #level of a plugin, but not in the final Karfunkel instance. Hence
+      #we have to construct and deliver the response manually by direct
+      #use of the Response class and Karfunkel’s delivery methods.
+      #
+      #  module MyPlugin
+      #    include OpenRubyRMK::Karfunkel::Plugin
+      #
+      #    def handle_request(client, req)
+      #      unless client.ip.start_with?("192.168.")
+      #        res = Common::Response.new(generate_request_id, :rejected, req)
+      #        res[:reason] = "Not from the local network."
+      #        deliver_response(req, client)
+      #        # Note the missing call to super here! We have
+      #        # already definitely answered the request here,
+      #        # so no further processing is neither needed nor
+      #        # desirable.
+      #      else
+      #        # Request from local network, everything OK.
+      #        super
+      #      end
+      #    end
+      #  end
+      def handle_request(client, req)
+        raise(Errors::UnknownRequestType.new(req, "Can't handle '#{req.type}' requests!")) unless can_handle_request?(req)
+
+        @request_procs[req.type].call(client, req)
+      end
+
+      #*HOOK*. Handles an incoming response. By default, calls the
+      #response handler registered for responses of a specific type.
+      #If no handler is found, errors out.
+      #
+      #This hook is not intended to register new response handlers.
+      #See #handle_request for a full discussion on this.
+      #==Parameters
+      #[client] The client the response came from. A Client instance.
+      #[res]    The response the client sent. A Response instance.
+      #==Raises
+      #[Errors::UnknownResponseType]
+      #  There’s no handler registered for responses to requests
+      #  of this type.
+      def handle_response(client, res)
+        raise(Errors::UnknownResponseType.new(res, "Can't handle responses to '#{req.type}' requests!")) unless can_handle_response?(res)
+
+        @response_procs[res.request.type].call(client, res)
       end
       
       protected
@@ -232,14 +551,129 @@ module OpenRubyRMK
           puts "This is OpenRubyRMK's Karfunkel, version #{OpenRubyRMK::VERSION}."
           exit
         end
+
+        op.on("-d", "--[no-]debug",
+              "Show debugging information on run. Assumes -L0.") do |bool|
+          @config[:debug_mode] = true
+        end
+        
+        op.on("-L", "--loglevel LEVEL",
+              "Set the logging level to LEVEL.") do |level|
+          @config[:log_level] = level
+        end
+
+        op.on("-n", "--changed",
+              "Print out all config options different from the",
+              "default values and exit.") do
+          @config.each_changed_pair do |option, value|
+            puts "#{option} => #{value.kind_of?(Proc) ? '<Codeblock>' : value}"
+          end
+          exit
+        end
       end
 
-      #*HOOK*. This method is intended to set up signal handlers
-      #for the server (i.e. SIGTERM and the like). However, by
-      #default it does nothing.
+      #*HOOK*. Sets up handlers for the following UNIX process signals:
+      #[SIGINT]  Request a shutdown, asking all clients for agreement.
+      #[SIGTERM] Force a shutdown, don’t ask the clients.
+      #[SIGUSR1] Only available in debug mode. Enter IRB on the server side.
       def setup_signal_handlers
+        Signal.trap("SIGINT") do
+          @log.info("Cought SIGINT, going to shutdown...")
+          stop
+        end
+        Signal.trap("SIGTERM") do
+          @log.info("Cought SIGTERM, forcing shutdown...")
+          stop!
+        end
+        Signal.trap("SIGUSR1") do
+          if debug_mode?
+            @log.debug("Cought SIGUSR1, loading IRB...")
+            ARGV.clear #If there’s something in, IRB will run amok
+            require "irb"
+            IRB.start
+            @log.debug("Finished IRB.")
+          end
+        end
       end
-      
+
+    end # pluggify
+
+    #Immediately stops Karfunkel, forcibly disconnecting
+    #all clients. The clients are not notified about
+    #the server shutdown. Use this method with care.
+    #Doesn’t call the plugins registered to the #stop hook as
+    #well.
+    def stop!
+      raise("Karfunkel is not running!") unless @running
+      EventMachine.stop_event_loop
+      @running = false
+    end
+
+    #true if Karfunkel or one of its plugins is capable to
+    #process a request of the given type.
+    #==Parameter
+    #[type] The name of the request type to handle or a Request
+    #       instance.
+    #==Return value
+    #Either true or false.
+    def can_handle_request?(type)
+      type = type.type if type.kind_of?(OpenRubyRMK::Common::Request)
+      @request_procs.has_key?(type)
+    end
+
+    #true if Karfunkel or one of its plugins is capable to
+    #process a response to a request of the given type.
+    #==Parameter
+    #[type] The name of the response’s request type to handle or a Response
+    #       instance.
+    #==Return value
+    #Either true or false.
+    def can_handle_response?(type)
+      type = type.request.type if type.kind_of?(OpenRubyRMK::Common::Response)
+      @response_procs.has_key?(type)
+    end
+
+    #call-seq:
+    #  define_request_handler(type){|request, client|...}
+    #
+    #Define a callback to be invoked when a request of the
+    #given type occurs.
+    #==Parameters
+    #[type]    The type of the request.
+    #[request] (*Block*) The current request to process.
+    #[client]  (*Block*) The client sending the +request+.
+    #==Raises
+    #[Errors::PluginError]
+    #  If you tried to define multiple handlers for a single
+    #  request type.
+    def define_request_handler(type, &handler)
+      # Only one request handler per request type is allowed
+      # in order to avoid confusion.
+      raise(Errors::PluginError, "Duplicate definition of request handler '#{type}'!") if can_handle_request?(type)
+
+      @request_procs[type] = handler
+    end
+
+    #call-seq:
+    #  define_response_handler(type){|response, client|...}
+    #
+    #Define a callback to be invoked when a response to a request
+    #of the given type occurs.
+    #==Parameters
+    #[type] The type of the request this response belongs to.
+    #[response] (*Block*) The Response object representing the
+    #           current response.
+    #[client]   (*Block*) The client making the +response+.
+    #==Raises
+    #[Errors::PluginError]
+    #  If you tried to define multiple handlers for responses
+    #  of a specific type.
+    def define_response_handler(type, &handler)
+      # Only one response handler per response type is
+      # allowed in order to avoid confusion.
+      raise(Errors::PluginError, "Duplicate definition of response handler '#{type}'!") if can_handle_response?(type)
+
+      @response_procs[type] = handler
     end
     
     private
@@ -281,14 +715,22 @@ module OpenRubyRMK
       raise(Errors::ConfigurationError, "Configuration error: #{e.message}")
     end
 
+    #Creates the logger.
+    def create_logger
+      @log                  = Logger.new($stdout)
+
+      if debug_mode?
+        $stdout.sync        = $stderr.sync = true
+        @log.level          = Logger::DEBUG
+        @config[:log_level] = 0 #Makes no sense otherwise
+      else
+        @log                = Logger.new($stdout)
+        @log.level          = @config[:log_level]
+      end
+
+      @log.formatter        = @config[:log_format]
+    end
+
   end
 
-end
-
-#Load the plugin modules (loaded after the above definitions,
-#because things like the VERSION constant aren’t defined otherwise
-#and a plugin can’t make use of them). This doesn’t include subdirectories,
-#because plugins may store their own further classes in subdirectories.
-OpenRubyRMK::Karfunkel::Paths::PLUGIN_DIR.each_child do |path|
-  require(path)
 end

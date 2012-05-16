@@ -34,7 +34,11 @@ module OpenRubyRMK
     #Raised when errors in the configuration file are detected.
     class ConfigurationError < OpenRubyRMKError
     end
-    
+
+    #Raises when something plugin-related has gone wrong.
+    class PluginError < OpenRubyRMKError
+    end
+
     #Something was wrong with a mapset file.
     class InvalidMapsetError < OpenRubyRMKError
     end
@@ -44,29 +48,27 @@ module OpenRubyRMK
     
     class MalformedCommand < InvalidCommand
     end
-    
-    class RequestNotFound < InvalidCommand
-      
-      attr_reader :type
-      attr_reader :request_id
-      
-      def initialize(type, request_id)
-        @type = type
-        @request_id = request_id
+
+    class RequestTypeNotFound < InvalidCommand
+
+      attr_reader :request
+
+      def initialize(request, message)
+        super(message)
+        @request = request
       end
-      
+
     end
-    
-    class ResponseNotFound < InvalidCommand
-      
-      attr_reader :type
-      
-      def initialize(msg, type, request_id)
-        super(msg)
-        @type = type
-        @request_id = id
+
+    class ResponseTypeNotFound < InvalidCommand
+
+      attr_reader :response
+
+      def initialize(response, message)
+        super(message)
+        @response = response
       end
-      
+
     end
     
     class InvalidParameter < MalformedCommand
