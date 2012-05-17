@@ -92,9 +92,9 @@ module OpenRubyRMK
 
     [:reject, :error, :ok, :processing, :failed, :finished].each do |sym|
       define_method(sym) do |client, request, hsh|
-        Common::Response.new(Karfunkel.instance.generate_request_id, sym, request)
+        res = Common::Response.new(Karfunkel.instance.generate_request_id, sym, request)
         hsh.each_pair{|k, v| res[k] = v}
-        Karfunkel.instance.deliver_response(request, client)
+        Karfunkel.instance.deliver_response(res, client)
       end
     end
 

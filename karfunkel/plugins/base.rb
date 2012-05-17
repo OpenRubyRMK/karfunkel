@@ -21,17 +21,18 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
   process_request :hello do |c, r|
     answer :rejected, :reason => "Already authenticated" and return if c.authenticated?
-    logger.debug "Trying to authenticate '#{}'..."
+    log.debug "Trying to authenticate '#{}'..."
 
     #TODO: Here one could add password checks and other nice things
     c.id            = kf.generate_client_id
     c.authenticated = true
     
-    logger.info "[#{c}] Authenticated."
+    log.info "[#{c}] Authenticated."
     
-    answer c, r, :ok, :my_version => Karfunkel::VERSION, 
+    answer c, r, :ok, :my_version => OpenRubyRMK::Karfunkel::VERSION,
                  :my_project      => kf.selected_project.to_s,
-                 :my_clients_num  => kf.clients.count
+                 :my_clients_num  => kf.clients.count,
+                 :your_id         => c.id
   end
 
   process_request :ping do |c, r|
@@ -45,6 +46,13 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #is set automatically if it sends a reponse. I just place the
     #method here, because without it we would get a NotImplementedError
     #exception.
+  end
+
+  # If we get this, a SHUTDOWN request has been answered.
+  process_response :shutdown do |c, r|
+    c.accepted_shutdown = r.status == "ok" ? true : false
+    # If all clients have accepted, stop the server
+    OpenRubyRMK::Karfunkel.instance.stop! if OpenRubyRMK::Karfunkel.instance.clients.all?(&:accepted_shutdown)
   end
 
 end

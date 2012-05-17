@@ -40,12 +40,12 @@ module OpenRubyRMK
 
         #Defines a handler for the given request type.
         def process_request(type, &block)
-          Karfunkel.instance.define_request_handler(type, &block)
+          Karfunkel.instance.define_request_handler(type.to_s, &block) # to_s b/c the XML data has no symbols, just strings
         end
 
         #Defines a handler for the given response type.
         def process_response(type, &block)
-          Karfunkel.instance.define_response_handler(type, &block)
+          Karfunkel.instance.define_response_handler(type.to_s, &block) # to_s b/c the XML data has no symbols, just strings
         end
 
         #Your direct access to Karfunkel’s Logger instance.
@@ -53,11 +53,15 @@ module OpenRubyRMK
           Karfunkel.instance.log
         end
 
+        #call-seq:
+        #  karfunkel() → OpenRubyRMK::Karfunkel.instance
+        #  kf()        → OpenRubyRMK::Karfunkel.instance
         #Shortcut equivalent to:
         #  OpenRubyRMK::Karfunkel.instance
-        def kf
+        def karfunkel
           Karfunkel.instance
         end
+        alias kf karfunkel
 
       end
 

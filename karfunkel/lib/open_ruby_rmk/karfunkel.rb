@@ -179,6 +179,9 @@ module OpenRubyRMK
       @request_procs  = {}
       @response_procs = {}
 
+      @client_id_generator_mutex  = Mutex.new #Never generate duplicate client IDs.
+      @request_id_generator_mutex = Mutex.new #Same for request IDs.
+
       # Load the plugin files (this does NOT enable the plugins!)
       OpenRubyRMK::Karfunkel::Paths::PLUGIN_DIR.each_child do |path|
         require(path) if path.to_s.end_with?(".rb")
@@ -258,7 +261,7 @@ module OpenRubyRMK
     #  p OpenRubyRMK::Karfunkel::THE_INSTANCE.generate_client_id #=> 1
     #  p OpenRubyRMK::Karfunkel::THE_INSTANCE.generate_client_id #=> 2
     def generate_client_id
-      @id_generator_mutex.synchronize do
+      @client_id_generator_mutex.synchronize do
         @last_id += 1
       end
     end
@@ -418,10 +421,7 @@ module OpenRubyRMK
         @selected_project   = nil
         @last_id            = 0
 
-        @client_id_generator_mutex  = Mutex.new #Never generate duplicate client IDs.
-        @request_id_generator_mutex = Mutex.new #Same for request IDs.
-
-        Thread.abort_on_exception = true if debug_mode?
+        Thread.abort_on_exception = debug_mode?
 
         @log.info("Loaded plugins: #{@plugins.map(&:to_s).join(', ')}")
         @log.info("A new story may begin now. Karfunkel waits with PID #$$ on port #{@config[:port]} for you...")
@@ -440,11 +440,11 @@ module OpenRubyRMK
         #There’s no sense in waiting for clients when no clients are connected.
         return stop! if @clients.empty?
         
-        req = OpenRubyRMK::Common::Request.new(generate_request_id, :Shutdown)
+        req = OpenRubyRMK::Common::Request.new(generate_request_id, :shutdown)
         req[:requestor] = requestor.id
         @clients.each do |client|
           client.accepted_shutdown = false #Clear any previous answers
-          client.request(req)
+          deliver_request(req, client)
         end
       end
 
@@ -519,7 +519,7 @@ module OpenRubyRMK
       #  There’s no handler registered for responses to requests
       #  of this type.
       def handle_response(client, res)
-        raise(Errors::UnknownResponseType.new(res, "Can't handle responses to '#{req.type}' requests!")) unless can_handle_response?(res)
+        raise(Errors::UnknownResponseType.new(res, "Can't handle responses to '#{res.request.type}' requests!")) unless can_handle_response?(res)
 
         @response_procs[res.request.type].call(client, res)
       end

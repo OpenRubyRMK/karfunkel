@@ -27,6 +27,9 @@ module OpenRubyRMK::Common
   #true. If so, the transformer’s internal state is clean and it’s
   #safe to exchange the instance with some other. Transformers that
   #have just been created and haven’t yet been used are always clean.
+  #
+  #Use of this class it threadsafe, all code changing the internal
+  #state is guarded with a mutex.
   class Transformer
 
     #List of requests that have been sent, but didn’t receive
@@ -36,6 +39,7 @@ module OpenRubyRMK::Common
     #Creates a new instance.
     def initialize
       @waiting_requests = []
+      @mutex            = Mutex.new
     end
 
     #Takes a string of Karfunkel XML markup and parses it.
@@ -84,27 +88,32 @@ module OpenRubyRMK::Common
       end
 
       # Responses
-      doc.root.xpath("response").each do |node|
-        id      = node["id"].to_i
-        req_id  = node["answers"].to_i
-        request = @waiting_requests.find{|req| req.id == req_id} # May be nil if a client sends an unwanted response!
-        warn("Skipping unmappable response with ID #{id}.") and next unless request # TODO: ERROR response doesn’t answer anything
-        
-        # Create the Response object and establish the dual-sided
-        # relationship of a request and its response
-        response = Response.new(id, node["status"], request)
-        request.responses << response
+      # These alter the internal state, hence must be guarded
+      # against multithread access to prevent race conditions
+      # in @waiting_requests.
+      @mutex.synchronize do
+        doc.root.xpath("response").each do |node|
+          id      = node["id"].to_i
+          req_id  = node["answers"].to_i
+          request = @waiting_requests.find{|req| req.id == req_id} # May be nil if a client sends an unwanted response!
+          warn("Skipping unmappable response with ID #{id}.") and next unless request # TODO: ERROR response doesn’t answer anything
+          
+          # Create the Response object and establish the dual-sided
+          # relationship of a request and its response
+          response = Response.new(id, node["status"], request)
+          request.responses << response
 
-        # If the request has completed, delete it from the list of
-        # outstanding requests.
-        @waiting_requests.delete(request) if node["status"] == "ok" or node["status"] == "finished"
-        
-        # Parameters
-        node.children.each do |child|
-          response[child.name] = child.content
+          # If the request has completed, delete it from the list of
+          # outstanding requests.
+          @waiting_requests.delete(request) if node["status"] == "ok" or node["status"] == "finished"
+          
+          # Parameters
+          node.children.each do |child|
+            response[child.name] = child.content
+          end
+
+          cmd.responses << response
         end
-
-        cmd.responses << response
       end
 
       # Notifications
@@ -152,11 +161,15 @@ module OpenRubyRMK::Common
           end
           
           # Requests
-          cmd.requests.each do |request|
-            @waiting_requests << request # Remember we’re waiting for a response
-            
-            xml.request(type: request.type, id: request.id) do
-              request.parameters.each{|par, val| xml.send(par, val)}
+          # These alter the internal state, hence they must be guarded
+          # against race conditions on @waiting_requests.
+          @mutex.synchronize do
+            cmd.requests.each do |request|
+              @waiting_requests << request # Remember we’re waiting for a response
+              
+              xml.request(type: request.type, id: request.id) do
+                request.parameters.each{|par, val| xml.send(par, val)}
+              end
             end
           end
 

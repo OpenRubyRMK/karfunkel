@@ -49,7 +49,7 @@ module OpenRubyRMK
     class MalformedCommand < InvalidCommand
     end
 
-    class RequestTypeNotFound < InvalidCommand
+    class UnknownRequestType < InvalidCommand
 
       attr_reader :request
 
@@ -60,7 +60,7 @@ module OpenRubyRMK
 
     end
 
-    class ResponseTypeNotFound < InvalidCommand
+    class UnknownResponseType < InvalidCommand
 
       attr_reader :response
 
@@ -70,7 +70,18 @@ module OpenRubyRMK
       end
 
     end
-    
+
+    class UnknownNotificationType < InvalidCommand
+
+      attr_reader :notification
+
+      def initialize(note, message)
+        super(message)
+        @notification = note
+      end
+
+    end
+
     class InvalidParameter < MalformedCommand
     end
     

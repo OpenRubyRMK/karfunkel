@@ -34,6 +34,15 @@ VERSION      = File.read(VERSION_FILE).chomp rescue "0.0.0" #May be clobbered
 DEPENDENCIES = %w[eventmachine minitar chunky_png nokogiri]
 DEVEL_DEPS   = %w[hanna-nouveau ocra]
 
+desc "Run the test suite."
+task :test do
+  cd "test"
+  Dir["test_*.rb"].each do |file|
+    require(File.expand_path(file))
+    OpenRubyRMK::Karfunkel::TestCase.run!
+  end
+end
+
 gemspec = Gem::Specification.new do |spec|
   spec.name = "openrubyrmk-karfunkel"
   spec.summary = "The OpenRubyRMK server"

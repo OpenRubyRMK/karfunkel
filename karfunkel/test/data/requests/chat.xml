@@ -1,6 +1,0 @@
-<request type="ChatMessage" id="<%= @request_id %>">
-  <% if info[:target] %>
-    <target><%= info[:target] %></target>
-  <% end %>
-  <message><%= info[:message] %></message>
-</request>

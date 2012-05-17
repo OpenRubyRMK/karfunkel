@@ -91,7 +91,7 @@ module OpenRubyRMK
       #doesn’t answer, he’s disconnected.
       @ping_timer = EventMachine.add_periodic_timer(Karfunkel::THE_INSTANCE.config[:ping_interval]) do
         @client.available = false
-        Karfunkel::THE_INSTANCE.deliver_request(Common::Request.new(Karfunkel::THE_INSTANCE.generate_request_id, :Ping), @client.id)
+        Karfunkel::THE_INSTANCE.deliver_request(Common::Request.new(Karfunkel::THE_INSTANCE.generate_request_id, :ping), @client.id)
         #Now wait for the client to respond to the PING, and if
         #he doesn’t, disconnect.
         EventMachine.add_timer(Karfunkel::THE_INSTANCE.config[:ping_interval] - 1) do #-1, b/c another PING request could be sent otherwise
@@ -152,7 +152,7 @@ module OpenRubyRMK
         begin
           Karfunkel.instance.log.info("[#@client] Request: #{req.type}")
           reject(@client, req, :reason => "Not authenticated") and next if !client.authenticated? and !req.type == :hello
-          Karfunkel.handle_request(client, req)
+          Karfunkel.instance.handle_request(client, req)
         rescue => e
           Karfunkel.instance.log_exception(e)
           reject(@client, req, :reason => e.message)
@@ -160,9 +160,9 @@ module OpenRubyRMK
       end
 
       # Process the responses
-      commands.responses.each do |res|
+      command.responses.each do |res|
         begin
-          Karfunkel.instance.log.info("[#@client] Response: #{res.req.type}")
+          Karfunkel.instance.log.info("[#@client] Response: #{res.request.type} (#{res.status})")
           log.warn("[#@client] Ignoring unauthenticated response") and next if !client.authenticated?
           Karfunkel.instance.handle_response(client, res)
         rescue => e
@@ -170,6 +170,9 @@ module OpenRubyRMK
           # Responses don’t need an answer
         end
       end
+
+      # TODO: Process notifications? Shouldn’t be necessary
+      # as only Karfunkel himself sends notifications...
 
     rescue => e
       Karfunkel::THE_INSTANCE.log.fatal("[#@client] FATAL: Unhandled exception!")
