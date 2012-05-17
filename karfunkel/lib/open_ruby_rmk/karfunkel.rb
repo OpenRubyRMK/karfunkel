@@ -340,7 +340,7 @@ module OpenRubyRMK
     def deliver(cmd, to)
       to = @clients.find{|c| c.id == to} unless to.kind_of?(OpenRubyRMK::Karfunkel::Client)
       raise("Client with ID #{to} couldn't be found!") unless to
-      to.connection.send_data(to.connection.transformer.convert!(cmd) + OpenRubyRMK::Karfunkel::Protocol::END_OF_COMMAND)
+      to.connection.send_data(to.connection.transformer.convert!(cmd) + OpenRubyRMK::Common::Command::END_OF_COMMAND)
     end
 
     #Convenience method for creating a command consisting of a

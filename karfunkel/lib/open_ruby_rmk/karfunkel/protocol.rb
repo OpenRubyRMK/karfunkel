@@ -55,10 +55,7 @@ module OpenRubyRMK
   #   and cancels the ping timer for this client.
   module Karfunkel::Protocol
     include Karfunkel::CommandHelpers
-    
-    #This is the byte that terminates each command.
-    END_OF_COMMAND = "\0".freeze
-    
+
     #The client that sits on the other end of the connection.
     #A Core::Client object.
     attr_reader :client
@@ -111,8 +108,8 @@ module OpenRubyRMK
       #...until we get the End Of Command marker. Then we know that
       #the command is completed and we can process it.
       #Empty the command cache afterwards.
-      if @received_data.end_with?(END_OF_COMMAND)
-        process_command(@received_data.sub(/#{END_OF_COMMAND}$/, ""))
+      if @received_data.end_with?(Common::Command::END_OF_COMMAND)
+        process_command(@received_data.sub(/#{Common::Command::END_OF_COMMAND}$/, ""))
         @received_data.clear
       end
     end
