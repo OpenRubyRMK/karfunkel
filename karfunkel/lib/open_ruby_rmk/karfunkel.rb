@@ -22,7 +22,13 @@ require "rbconfig"
 require "logger"
 require "eventmachine"
 require "nokogiri"
-require "open_ruby_rmk/common" # `openrubyrmk-common' RubyGem
+
+begin
+  require "open_ruby_rmk/common"
+rescue LoadError
+  # Gem not available, assuming development environment
+  require_relative "../../../common/lib/open_ruby_rmk/common"
+end
 
 require_relative "karfunkel/paths"
 require_relative "karfunkel/command_helpers"

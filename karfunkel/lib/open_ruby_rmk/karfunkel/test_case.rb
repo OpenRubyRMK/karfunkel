@@ -10,7 +10,7 @@ rescue LoadError
   require_relative "../../../../common/lib/open_ruby_rmk/common"
 end
 
-module OpenRubyRMK::Karfunkel; end # :nodoc:
+class OpenRubyRMK::Karfunkel; end # :nodoc:
 
 #A client for Karfunkel specifally designed to test his networking
 #facilities. This is a protocol module for use with EventMachine
@@ -22,7 +22,6 @@ module OpenRubyRMK::Karfunkel; end # :nodoc:
 #but it might nevertheless prove useful.
 module OpenRubyRMK::Karfunkel::TestClient
   include OpenRubyRMK::Common
-  include OpenRubyRMK::Karfunkel
 
   #The Common::Transformer instance used for messing with
   #the protocol’s XML.
@@ -53,10 +52,10 @@ module OpenRubyRMK::Karfunkel::TestClient
     @id              = -1
 
     # Let the testcase know the client that runs it
-    TestClient.current_test_case.client = self
+    OpenRubyRMK::Karfunkel::TestClient.current_test_case.client = self
 
     # Allow the testcase to be initialised
-    TestClient.current_test_case.execute_at(:startup)
+    OpenRubyRMK::Karfunkel::TestClient.current_test_case.execute_at(:startup)
   end
 
   #Called by EventMachine when Karfunkel sent data to us.
@@ -64,16 +63,16 @@ module OpenRubyRMK::Karfunkel::TestClient
   def receive_data(data)
     cmd = @transformer.parse!(data)
 
-    cmd.requests.each     {|request|  TestClient.current_test_case.submit_request(request)  }
-    cmd.responses.each    {|response| TestClient.current_test_case.submit_response(response)}
-    cmd.notifications.each{|note|     TestClient.current_test_case.submit_notification(note)}
+    cmd.requests.each     {|request|  OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_request(request)  }
+    cmd.responses.each    {|response| OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_response(response)}
+    cmd.notifications.each{|note|     OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_notification(note)}
   end
 
   #Called by EventMachine when the connection to Karfunkel has
   #been closed. Don’t call this manually.
   def unbind
-    TestClient.current_test_case.execute_at(:shutdown)
-    TestClient.current_test_case.client = nil
+    OpenRubyRMK::Karfunkel::TestClient.current_test_case.execute_at(:shutdown)
+    OpenRubyRMK::Karfunkel::TestClient.current_test_case.client = nil
   end
 
   #Threadsafely generate a request ID you can use for sending

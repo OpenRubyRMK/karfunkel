@@ -36,36 +36,10 @@
 #The source where we download gems from
 source "http://rubygems.org"
 
-#Generally needed gems for all components
+gem "nokogiri"
+gem "eventmachine", ">= 1.0.0.beta.4"
 
-
-#Gems only needed for Karfunkel, the server
-group :karfunkel do
-  gem "nokogiri"
-  gem "eventmachine", ">= 1.0.0.beta.4"
-  #gem "minitar"
-end
-
-#Gems only needed for the GUI client
-group :gui do
-  #gem "wxruby-ruby19", ">= 2.0.0"
-  #gem "r18n-desktop"
-  #gem "chunky_png"
-end
-
-#Gems only needed to run the created games
-group :game do
-  #gem "gosu"
-  #gem "chingu"
-end
-
-#Gems only needed for developing and testing the OpenRubyRMK
 group :development do
-  gem "rdoc", ">= 3.4"
-  #gem "hanna-nouveau"
-  gem "rake"
-  gem "ocra", :platforms => :mswin
-  gem "test-unit"
-  #gem "RedCloth", :require => "redcloth"
+  gem "paint"
+  #gem "ocra", :platforms => :mswin
 end
-
