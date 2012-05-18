@@ -613,6 +613,7 @@ module OpenRubyRMK
       raise("Karfunkel is not running!") unless @running
       EventMachine.stop_event_loop
       @running = false
+      @log.info("Server halted.")
     end
 
     #true if Karfunkel or one of its plugins is capable to

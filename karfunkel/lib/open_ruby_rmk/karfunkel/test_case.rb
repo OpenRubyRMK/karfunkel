@@ -2,15 +2,7 @@
 require "minitest/unit"
 require "eventmachine"
 require "paint"
-
-begin
-  require "open_ruby_rmk/common" # `openrubyrmk-common' RubyGem
-rescue LoadError
-  # No gem, assuming development environment in project dir
-  require_relative "../../../../common/lib/open_ruby_rmk/common"
-end
-
-class OpenRubyRMK::Karfunkel; end # :nodoc:
+require_relative "../karfunkel"
 
 #A client for Karfunkel specifally designed to test his networking
 #facilities. This is a protocol module for use with EventMachine
@@ -73,6 +65,9 @@ module OpenRubyRMK::Karfunkel::TestClient
   def unbind
     OpenRubyRMK::Karfunkel::TestClient.current_test_case.execute_at(:shutdown)
     OpenRubyRMK::Karfunkel::TestClient.current_test_case.client = nil
+
+    # When we’ve been disconnected, there’s nothing more to do for us.
+    EventMachine.stop_event_loop
   end
 
   #Threadsafely generate a request ID you can use for sending
@@ -225,24 +220,6 @@ class OpenRubyRMK::Karfunkel::TestCase
     @test_cases ||= []
   end
 
-  #Iterates through all registered testcases (see ::test_cases)
-  #runs them one by one. For each testcase, a new connection to
-  #Karfunkel will be established.
-  #
-  #Karfunkel itself must be started prior to calling this method.
-  #==Parameters
-  #[host] ("localhost") Where to find Karfunkel.
-  #[port] (3141) The port on +host+ to connect to.
-  def self.run!(host = "localhost", port = 3141)
-    @test_cases.each do |testcase|
-      OpenRubyRMK::Karfunkel::TestClient.current_test_case = testcase
-      puts Paint["=== Running testcase '#{testcase.name}' ===", :cyan]
-      EventMachine.run do
-        EventMachine.connect(host, port, OpenRubyRMK::Karfunkel::TestClient)
-      end
-    end
-  end
-
   #Create a new instance of this class. The block is evaluated
   #in the context of the newly created instance, so feel free
   #to call this class’ instance methods without receiver.
@@ -335,6 +312,34 @@ class OpenRubyRMK::Karfunkel::TestCase
     puts Paint["ERROR", :yellow]
     puts Paint["#{e.class}: #{e.message}", :yellow]
     puts Paint[e.backtrace.join("\n\t"), :yellow]
+  end
+
+  #Runs this testcase.
+  #
+  #Karfunkel itself must be started prior to calling this method.
+  #==Parameters
+  #[host] ("localhost") Where to find Karfunkel.
+  #[port] (3141) The port on +host+ to connect to.
+  def run!
+    raise("Another testcase is running!") if OpenRubyRMK::Karfunkel::TestClient.current_test_case
+
+    pid = nil
+    File.open("karfunkel.log", "w+") do |logfile|
+      # Spawn server
+      pid = spawn("#{OpenRubyRMK::Karfunkel::Paths::BIN_DIR.join("karfunkel")} -d > karfunkel.log")
+      # Wait until ready
+      sleep 1 while logfile.gets !~ /PID/ # Log message when ready contains this word
+    end
+
+    # Run testcase
+    OpenRubyRMK::Karfunkel::TestClient.current_test_case = self
+    puts Paint["=== Running testcase '#@name' ===", :cyan]
+    EventMachine.run do
+      EventMachine.connect("localhost", 3141, OpenRubyRMK::Karfunkel::TestClient)
+    end
+
+    # If the server hasn’t exited yet, kill him.
+    Process.kill("KILL", pid)
   end
 
   protected

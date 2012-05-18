@@ -29,8 +29,7 @@ desc "Run the test suite."
 task :test do
   cd "test"
   Dir["test_*.rb"].each do |file|
-    require(File.expand_path(file))
-    OpenRubyRMK::Karfunkel::TestCase.run!
+    ruby file
   end
 end
 

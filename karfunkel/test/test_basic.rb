@@ -21,4 +21,4 @@ OpenRubyRMK::Karfunkel::TestCase.new("Basic functionality") do
     response req, :ok
   end
 
-end
+end.run!
