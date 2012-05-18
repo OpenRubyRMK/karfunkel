@@ -323,10 +323,9 @@ class OpenRubyRMK::Karfunkel::TestCase
   def run!
     raise("Another testcase is running!") if OpenRubyRMK::Karfunkel::TestClient.current_test_case
 
-    pid = nil
     File.open("karfunkel.log", "w+") do |logfile|
       # Spawn server
-      pid = spawn("#{OpenRubyRMK::Karfunkel::Paths::BIN_DIR.join("karfunkel")} -d > karfunkel.log")
+      spawn("#{OpenRubyRMK::Karfunkel::Paths::BIN_DIR.join("karfunkel")} -d > karfunkel.log")
       # Wait until ready
       sleep 1 while logfile.gets !~ /PID/ # Log message when ready contains this word
     end
@@ -337,9 +336,6 @@ class OpenRubyRMK::Karfunkel::TestCase
     EventMachine.run do
       EventMachine.connect("localhost", 3141, OpenRubyRMK::Karfunkel::TestClient)
     end
-
-    # If the server hasn’t exited yet, kill him.
-    Process.kill("KILL", pid)
   end
 
   protected

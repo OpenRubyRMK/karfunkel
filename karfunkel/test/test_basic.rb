@@ -11,14 +11,30 @@ OpenRubyRMK::Karfunkel::TestCase.new("Basic functionality") do
     id = res[:your_id].to_i
     assert_includes(1..Float::INFINITY, id)
     @client.id = id
+
+    # Remember #request doesn’t wait for the response!
+    request :invalidrequesttype
   end
+
+  test_response :invalidrequesttype do |req|
+    assert_equal("reject", req.status)
+    request :shutdown
+  end
+
+  test_request :shutdown do |req|
+    response req, :ok
+  end
+
+  ########################################
+  # General requests/responses unrelated
+  # to the main comunication flow
 
   test_request :ping do |req|
     response req, :ok
   end
 
-  test_request :shutdown do |req|
-    response req, :ok
+  test_response :ping do |res|
+    # Nothing to do here
   end
 
 end.run!
