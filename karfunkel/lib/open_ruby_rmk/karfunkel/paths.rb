@@ -47,6 +47,8 @@ module OpenRubyRMK
       CONFIG_DIR = INSTALL_DIR + "config"
       #Here are the executable files to be found.
       BIN_DIR = INSTALL_DIR + "bin"
+      #Where temporary stuff (like the PID file) is stored.
+      TMP_DIR = INSTALL_DIR + "tmp"
       #This is the path of Karfunkel's configuration file.
       CONFIG_FILE = CONFIG_DIR + "main.conf"
       #Where to find the plugin list.

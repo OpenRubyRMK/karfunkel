@@ -145,7 +145,8 @@ class OpenRubyRMK::Karfunkel::Configuration
         :log_level     => 1,
         :log_format    => lambda{|sev, time, progname, msg| time.strftime("%d/%m/%Y %H:%M:%S [#{sev.chars.first}] #{msg}\n")},
         :ping_interval => 20,
-        :greet_timeout => 5
+        :greet_timeout => 5,
+        :pid_file      => OpenRubyRMK::Karfunkel::Paths::TMP_DIR + "karfunkel.pid"
       }
     end
 

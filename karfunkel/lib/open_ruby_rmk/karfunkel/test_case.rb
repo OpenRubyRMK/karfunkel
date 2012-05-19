@@ -333,8 +333,15 @@ class OpenRubyRMK::Karfunkel::TestCase
     # Run testcase
     OpenRubyRMK::Karfunkel::TestClient.current_test_case = self
     puts Paint["=== Running testcase '#@name' ===", :cyan]
-    EventMachine.run do
-      EventMachine.connect("localhost", 3141, OpenRubyRMK::Karfunkel::TestClient)
+    begin
+      EventMachine.run do
+        EventMachine.connect("localhost", 3141, OpenRubyRMK::Karfunkel::TestClient)
+      end
+    ensure
+      pid_file = OpenRubyRMK::Karfunkel::Paths::TMP_DIR + "karfunkel.pid"
+      if pid_file.file?
+        Process.kill("SIGTERM", File.read(pid_file).to_i)
+      end
     end
   end
 

@@ -418,6 +418,8 @@ module OpenRubyRMK
 
         Thread.abort_on_exception = debug_mode?
 
+        write_pidfile
+
         @log.info("Loaded plugins: #{@plugins.map(&:to_s).join(', ')}")
         @log.info("A new story may begin now. Karfunkel waits with PID #$$ on port #{@config[:port]} for you...")
         EventMachine.start_server("localhost", @config[:port], OpenRubyRMK::Karfunkel::Protocol)
@@ -601,6 +603,8 @@ module OpenRubyRMK
     def stop!
       raise("Karfunkel is not running!") unless @running
       EventMachine.stop_event_loop
+      @log.debug("Deleting PID file #{@config[:pid_file]}")
+      @config[:pid_file].delete
       @running = false
       @log.info("Server halted.")
     end
@@ -725,6 +729,21 @@ module OpenRubyRMK
       end
 
       @log.formatter        = @config[:log_format]
+    end
+
+    #Create the PID file as specified in the configuration. Fail fatally
+    #when the file already exists.
+    def write_pidfile
+      # Ensure it is a Pathname instance
+      @config[:pid_file] = Pathname.new(@config[:pid_file])
+
+      if @config[:pid_file].file?
+        @log.fatal("PID file #{@config[:pid_file]} exists. Delete it if this is a stale file.")
+        exit 2
+      end
+      @log.debug("Creating PID file #{@config[:pid_file]}")
+      @config[:pid_file].dirname.mkpath unless @config[:pid_file].dirname.directory?
+      File.open(@config[:pid_file], "w"){|f| f.write($$)}
     end
 
   end
