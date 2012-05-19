@@ -26,7 +26,7 @@ module OpenRubyRMK
     #respective Project objects. This module just contains information about
     #Karfunkel's main directory structure.
     module Paths
-      
+
       #If we're running on Windows, use rubyw
       windows_add = RUBY_PLATFORM =~ /mswin|mingw/ ? "w" : ""
       #Path to the Ruby executable.
@@ -49,8 +49,11 @@ module OpenRubyRMK
       BIN_DIR = INSTALL_DIR + "bin"
       #This is the path of Karfunkel's configuration file.
       CONFIG_FILE = CONFIG_DIR + "main.conf"
-      # Where to find the plugin list.
+      #Where to find the plugin list.
       PLUGINS_FILE = CONFIG_DIR + "plugins.conf"
+      #Compressed tarball containing the layout for a new
+      #project.
+      SKELETON_FILE = CONFIG_DIR + "skeleton.tgz"
       #From this directory all files are loaded automatically. It’s
       #inteded for plugins.
       PLUGIN_DIR = INSTALL_DIR + "plugins"

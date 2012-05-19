@@ -2,6 +2,7 @@ GEM
   remote: http://rubygems.org/
   specs:
     eventmachine (1.0.0.beta.4)
+    minitar (0.5.3)
     nokogiri (1.5.2)
     paint (0.8.4)
 
@@ -10,5 +11,6 @@ PLATFORMS
 
 DEPENDENCIES
   eventmachine (>= 1.0.0.beta.4)
+  minitar
   nokogiri
   paint

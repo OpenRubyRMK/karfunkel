@@ -139,17 +139,8 @@ module OpenRubyRMK
     #An array containing all clients to whom Karfunkel holds
     #connections. Client objects.
     attr_reader :clients
-    #The instance of CommandProcessor that Karfunkel uses in order
-    #to forward incoming requests and responses to the respective
-    #plugins.
-    attr_reader :processor
-    #An array of all currently loaded projects.
-    attr_reader :projects
     #The Logger instance used by the log_* methods.
     attr_reader :log
-    #The currently selected project or +nil+ if no project has been
-    #selected yet.
-    attr_reader :selected_project
 
     #The one and only instance of Karfunkel, set after the call to ::new.
     #This is the same as directly referencing the THE_INSTANCE constant.
@@ -423,8 +414,6 @@ module OpenRubyRMK
 
         @preparing_shutdown = false
         @clients            = []
-        @projects           = []
-        @selected_project   = nil
         @last_id            = 0
 
         Thread.abort_on_exception = debug_mode?

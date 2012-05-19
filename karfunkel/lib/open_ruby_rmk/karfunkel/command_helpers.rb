@@ -23,11 +23,11 @@ module OpenRubyRMK
   module Karfunkel::CommandHelpers
 
     ##
-    # :method: reject
+    # :method: rejected
     #call-seq:
-    #  reject(client, request, hsh)
+    #  rejected(client, request, hsh)
     #
-    #Like #ok, but for the +reject+ status.
+    #Like #ok, but for the +rejected+ status.
 
     ##
     # :method: error
@@ -90,7 +90,7 @@ module OpenRubyRMK
       end
     end
 
-    [:reject, :error, :ok, :processing, :failed, :finished].each do |sym|
+    [:rejected, :error, :ok, :processing, :failed, :finished].each do |sym|
       define_method(sym) do |client, request, hsh|
         res = Common::Response.new(Karfunkel.instance.generate_request_id, sym, request)
         hsh.each_pair{|k, v| res[k] = v}

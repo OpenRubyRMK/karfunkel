@@ -148,11 +148,11 @@ module OpenRubyRMK
       command.requests.each do |req|
         begin
           Karfunkel.instance.log.info("[#@client] Request: #{req.type}")
-          reject(@client, req, :reason => "Not authenticated") and next if !client.authenticated? and !req.type == :hello
+          rejected(@client, req, :reason => "Not authenticated") and next if !client.authenticated? and !req.type == :hello
           Karfunkel.instance.handle_request(client, req)
         rescue => e
           Karfunkel.instance.log_exception(e)
-          reject(@client, req, :reason => e.message)
+          rejected(@client, req, :reason => e.message)
         end
       end
 

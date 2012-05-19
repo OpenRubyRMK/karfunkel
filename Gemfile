@@ -38,6 +38,7 @@ source "http://rubygems.org"
 
 gem "nokogiri"
 gem "eventmachine", ">= 1.0.0.beta.4"
+gem "minitar"
 
 group :development do
   gem "paint"

@@ -16,11 +16,40 @@
 # You should have received a copy of the GNU General Public License
 # along with OpenRubyRMK.  If not, see <http://www.gnu.org/licenses/>.
 
+#The base plugin providing Karfunkel with the necessary infrastructure
+#to act properly. It defines things like how to act upon a +shutdown+
+#request and the project management things. Unless you really know
+#what you’re doing, you want this plugin to be enabled.
 module OpenRubyRMK::Karfunkel::Plugin::Base
   include OpenRubyRMK::Karfunkel::Plugin
 
+  #Load the project management classes when then
+  #plugin is activated.
+  def self.included(*)
+    require "zlib"
+    require "archive/tar/minitar"
+    require_relative "base/project"
+  end
+
+  ########################################
+  # Server control and authentication
+
+  #All loaded projects as an array.
+  attr_reader :projects
+  #The currently selected project. +nil+ if no project
+  #is selected currently.
+  attr_reader :selected_project
+
+  #*Hooked*. Sets up basic project management
+  #infrastructure.
+  def start
+    super
+    @projects         = []
+    @selected_project = nil
+  end
+
   process_request :hello do |c, r|
-    answer :rejected, :reason => "Already authenticated" and return if c.authenticated?
+    answer :rejected, :reason => "Already authenticated" and break if c.authenticated?
     log.debug "Trying to authenticate '#{c}'..."
 
     #TODO: Here one could add password checks and other nice things
@@ -59,6 +88,42 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     c.accepted_shutdown = r.status == "ok" ? true : false
     # If all clients have accepted, stop the server
     OpenRubyRMK::Karfunkel.instance.stop! if OpenRubyRMK::Karfunkel.instance.clients.all?(&:accepted_shutdown)
+  end
+
+  ########################################
+  # Project management
+
+  process_request :load_project do |c, r|
+    answer(c, r, :rejected, :reason => "Directory not found: #{r[:path]}") and break unless File.directory?(r[:path])
+
+    @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.load(r[:path])
+    answer c, r, :ok, :message => "Project loaded successfully."
+  end
+
+  process_request :new_project do |c, r|
+    answer(c, r, :rejected, :reason => "Already exists: #{r[:path]}") and break if File.exists?(r[:path])
+
+    @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.new(r[:path])
+    answer c, r, :ok, :message => "Project created successfully.", :id => @project.id
+  end
+
+  process_request :close_project do |c, r|
+    proj = @projects.find{|p| p.id == r[:id].to_i}
+    answer :reject, :reason => "Project #{r[:id]} not found." and break unless proj
+
+    @selected_project = nil if @selected_project == proj
+    @projects.delete(proj)
+    answer :ok, :message => "Project closed successfully."
+  end
+
+  process_request :delete_project do |c, r|
+    proj = @projects.find{|p| p.id == r[:id].to_i}
+    answer :reject, :reason => "Project #{r[:id]} not found." and break unless proj
+
+    @selected_project = nil if @selected_project == proj
+    @projects.delete(proj)
+    proj.delete!
+    answer :ok, :message => "Project closed and deleted successfully."
   end
 
 end
