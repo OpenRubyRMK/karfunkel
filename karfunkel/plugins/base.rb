@@ -111,6 +111,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     proj = @projects.find{|p| p.id == r[:id].to_i}
     answer :reject, :reason => "Project #{r[:id]} not found." and break unless proj
 
+    @selected_project.save
     @selected_project = nil if @selected_project == proj
     @projects.delete(proj)
     answer :ok, :message => "Project closed successfully."
@@ -124,6 +125,11 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     @projects.delete(proj)
     proj.delete!
     answer :ok, :message => "Project closed and deleted successfully."
+  end
+
+  process_request :save_project do |c, r|
+    @selected_project.save
+    answer c, r, :ok, :message => "Project saved successfully."
   end
 
 end

@@ -14,10 +14,47 @@ module OpenRubyRMK
     #you really get when including +Plugin+.
     module Plugin
 
+      #Additional helpers for plugin writers. The methods defined here
+      #are mainly shortcuts and are not necessary for writing working
+      #plugins, but ease the process a bit.
+      #
+      #This module is independent from the plugin’s main module
+      #(i.e. the one including <tt>OpenRubyRMK::Karfunkel::Plugin</tt>)
+      #and can therefore be used in plugin helper classes.
+      #The plugin’s main module doesn’t have to explicitely
+      #include this, this is done automatically by the
+      #+ClassMethods+ module which in turn will automatically be added to
+      #your main plugin module (via the #included hook).
+      #
+      #Note that this module therefore is only available on the module
+      #level of a plugin, hence not in the hook methods of Karfunkel.
+      #But as you’re in Karfunkel’s scope there anyway, there’s no
+      #need for the shortcutes defined here. For example, when hooking
+      #Karfunkel’s +stop+ method you can access the logger directly
+      #by simply calling +logger+ directly.
+      module Helpers
+
+        #Your direct interface to the server log. A Ruby
+        #+Logger+ instance. Equivalent to:
+        #  OpenRubyRMK::Karfunkel.instance.logger
+        def logger
+          Karfunkel.instance.logger
+        end
+
+        #Shortcut for:
+        #  OpenRubyRMK::Karfunkel.instance
+        def karfunkel
+          Karfunkel.instance
+        end
+        alias kf karfunkel
+
+      end
+
       #When a module mixes in Plugin, this module is mixed
       #into its singleton class (#extend).
       module ClassMethods
         include OpenRubyRMK::Karfunkel::CommandHelpers
+        include OpenRubyRMK::Karfunkel::Plugin::Helpers
 
         #call-seq:
         #  name() → a_string
@@ -48,22 +85,12 @@ module OpenRubyRMK
           Karfunkel.instance.define_response_handler(type.to_s, &block) # to_s b/c the XML data has no symbols, just strings
         end
 
-        #Your direct access to Karfunkel’s Logger instance.
-        def log
-          Karfunkel.instance.log
-        end
-
-        #call-seq:
-        #  karfunkel() → OpenRubyRMK::Karfunkel.instance
-        #  kf()        → OpenRubyRMK::Karfunkel.instance
-        #Shortcut equivalent to:
-        #  OpenRubyRMK::Karfunkel.instance
-        def karfunkel
-          Karfunkel.instance
-        end
-        alias kf karfunkel
-
       end
+
+      ########################################
+      # Module methods for Plugin.
+      # These are *not* added to modules
+      # including Plugin!
 
       @plugins = []
 
