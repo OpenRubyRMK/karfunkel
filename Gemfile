@@ -43,5 +43,6 @@ gem "ruby-tmx"
 
 group :development do
   gem "paint"
+  gem "turn"
   #gem "ocra", :platforms => :mswin
 end

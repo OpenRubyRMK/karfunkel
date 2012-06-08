@@ -28,6 +28,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   def self.included(*)
     require "zlib"
     require "archive/tar/minitar"
+    require "tiled_tmx"
     require_relative "base/project"
   end
 
@@ -130,6 +131,29 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   process_request :save_project do |c, r|
     @selected_project.save
     answer c, r, :ok, :message => "Project saved successfully."
+  end
+
+  ########################################
+  # Map management
+
+  process_request :new_map do |c, r|
+    map = Base::Map.new(@selected_project, r["name"]) # If no name is given, nil passed -> default value -> auto-generated name
+  end
+
+  process_request :delete_map do |c, r|
+    id = Integer(r["id"]) # Raises if id is not given
+
+    parent_map = catch(:found) do
+      @selected_project.root_maps.each do |root_map|
+        root_map.traverse(true) do |map|
+          throw :found, map if map.has_child?(id)
+        end
+      end
+      answer :reject, :reason => "Map #{id} not found" and return
+    end
+
+    parent_map.delete(id)
+    answer :ok, :message => "Map #{id} and all child maps deleted."
   end
 
 end

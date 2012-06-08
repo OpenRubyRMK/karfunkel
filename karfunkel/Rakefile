@@ -25,12 +25,27 @@ require "rdoc/task"
 require "pathname"
 require_relative "lib/open_ruby_rmk/karfunkel"
 
-desc "Run the test suite."
-task :test do
-  cd "test"
-  Dir["test_*.rb"].each do |file|
-    ruby file
+namespace :test do
+
+  desc "Run the unit tests."
+  task :unit do
+    cd "test/unit"
+    Dir["test_*.rb"].each do |file|
+      ruby file
+    end
   end
+
+  desc "Run the functional server tests."
+  task :functional do
+    cd "test"
+    Dir["test_*.rb"].each do |file|
+      ruby file
+    end
+  end
+
+  desc "Run the complete test suite."
+  task :all => [:unit, :functional]
+
 end
 
 Rake::RDocTask.new do |rt|
@@ -40,7 +55,7 @@ Rake::RDocTask.new do |rt|
   rt.main      = "README.rdoc"
 end
 
-# GEMSPEC is defiend in `karfunkel.gemspec'
+# GEMSPEC is defined in `karfunkel.gemspec'
 load "karfunkel.gemspec"
 Gem::PackageTask.new(GEMSPEC).define
 
