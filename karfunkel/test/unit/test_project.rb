@@ -44,7 +44,7 @@ class ProjectTest < Test::Unit::TestCase
   end
 
   def teardown
-    @tmpdir.rmtree if @tmpdir.directory? # Migh be removed from a test
+    @tmpdir.rmtree if @tmpdir.directory? # Might be removed from a test
   end
 
   def test_paths
