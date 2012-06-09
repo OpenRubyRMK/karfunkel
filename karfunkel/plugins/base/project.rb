@@ -5,6 +5,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   #Class for managing an OpenRubyRMK project.
   class Project
     include OpenRubyRMK::Karfunkel::Plugin::Helpers
+    include OpenRubyRMK::Karfunkel::Plugin::Base::Invalidatable
     extend  OpenRubyRMK::Karfunkel::Plugin::Helpers
 
     #Struct encapsulating all the path information for a
@@ -12,10 +13,10 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     Paths = Struct.new(:root, :rmk_file, :data_dir, :maps_dir, :maps_file) do
       def initialize(root) # :nodoc:
         self.root      = Pathname.new(root).expand_path
-        self.rmk_file  = root     + "bin" + "#{self.root.basename}.rmk"
-        self.data_dir  = root     + "data"
-        self.maps_dir  = data_dir + "maps"
-        self.maps_file = maps_dir + "maps.xml"
+        self.rmk_file  = self.root + "bin" + "#{self.root.basename}.rmk"
+        self.data_dir  = self.root + "data"
+        self.maps_dir  = data_dir  + "maps"
+        self.maps_file = maps_dir  + "maps.xml"
       end
     end
 
@@ -60,12 +61,13 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
       proj = allocate
       proj.instance_eval do
-        @paths   = Paths.new(path)
-        @mutexes = Mutexes.new
-        @id      = self.class.generate_project_id
-        @config  = YAML.load_file(@paths.rmk_file.to_s)
+        @paths       = Paths.new(path)
+        @mutexes     = Mutexes.new
+        @id          = self.class.generate_project_id
+        @config      = YAML.load_file(@paths.rmk_file.to_s)
+        @root_maps   = []
+        @last_map_id = 0 # Set by #load_map apropriately
 
-        @root_maps = []
         xml = Nokogiri::XML(File.read(@paths.maps_file))
         xml.root.xpath("map").each do |node|
           @root_maps << load_map(self, node)
@@ -84,12 +86,13 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #==Return value
     #A new instance of this class representing the created project.
     def initialize(path)
-      @paths     = Paths.new(path)
-      @mutexes   = Mutexes.new
-      @id        = self.class.generate_project_id
+      @paths       = Paths.new(path)
+      @mutexes     = Mutexes.new
+      @id          = self.class.generate_project_id
       create_skeleton
-      @config    = YAML.load_file(@paths.rmk_file.to_s)
-      @root_maps = []
+      @config      = YAML.load_file(@paths.rmk_file.to_s)
+      @root_maps   = []
+      @last_map_id = 0
 
       logger.info "Created project: #{@paths.root}"
     end
@@ -104,7 +107,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       logger.info "Deleted project: #{@paths.root}"
 
       # 3. Commit suicide
-      instance_variables.each{|ivar| instance_variable_set(ivar, nil)}
+      invalidate!
     end
 
     def save
@@ -119,6 +122,13 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       end
 
       # TODO: What other things to save?
+    end
+
+    #Threadsafely generates a new and unused map ID.
+    def generate_map_id
+      @mutexes.map_id.synchronize do
+        @last_map_id += 1
+      end
     end
 
     private
@@ -139,7 +149,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #
     #Used by #save.
     def save_map(map, node)
-      map.save(@paths.maps_dir.join("%04d.tmx" % map.id))
+      map.save
 
       node.map(name: map.name, id: map.id) do |child_node|
         map.children.each{|child_map| convert_map_to_xml(child_map, child_node)}
@@ -154,8 +164,14 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
                      node["name"],
                      @paths.maps_dir.join("%04d.tmx" % node["id"].to_i))
 
+      # Ensure that the map ID generator doesn’t yield
+      # IDs already used by the last run.
+      @mutexes.map_id.synchronize do
+        @last_map_id = map.id if @last_map_id < map.id
+      end
+
       node.xpath("map").each do |child_node|
-        map.add_child(load_map(project, child_node))
+        load_map(project, map, child_node).parent = map
       end
 
       map

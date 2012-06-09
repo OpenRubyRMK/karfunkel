@@ -31,7 +31,7 @@ namespace :test do
   task :unit do
     cd "test/unit"
     Dir["test_*.rb"].each do |file|
-      ruby file
+      load(file)
     end
   end
 

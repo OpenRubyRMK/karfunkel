@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+# File coping with maps. Note the bidirectional relationship
+# between a map and its parent map -- both know about each
+# other, one via #children, the other one via #parent. When
+# modifying these relationships, *always* remember updating
+# *both* sides of the relationship to prevent fatal errors!
+# There are four places where the relationship is affected:
+#
+# * Map creation (#initialize).
+#   Parent gains a new child, child sets parent.
+# * Map loading (::load).
+#   Same as above.
+# * Reparenting (#parent=)
+#   Old relationship is dissolved, new one established.
+# * Deletion (#delete).
+#   Parent looses a child, child is destroyed.
 
 module OpenRubyRMK::Karfunkel::Plugin::Base
 
@@ -20,26 +35,26 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #An (unsorted) array of child maps of this map.
     attr_reader :children
 
+    #The parent map or +nil+ if this is a root map.
+    attr_reader :parent
+
     #The Project instance this map belongs to.
     attr_reader :project
 
     #Loads a map from the XML file at the given +path+.
     #This is the same as ruby-tmx’ +load_xml+ method, but
     #includes a log message.
-    #==Parameter
-    #[path] The location of the XML file to load.
+    #==Parameters
+    #[project] The project this map is intended for.
+    #[name]    The name for the map.
+    #[path]    The location of the XML file to load.
     #==Return value
     #An instance of this class.
     #==Remarks
-    #Note this method does not know about map hierarchies,
-    #because this isn’t possible with the native TMX format
-    #which we don’t want to break. Instead, the map
-    #hierarchies are stored in a separate file named *maps.xml*
-    #which is loaded by Project::load and inspected for child
-    #maps, which then are added to the map loaded by this method
-    #by means of #add_child. To conclude, when you load a map
-    #with this method, it’s +children+ attribute will be an
-    #empty array.
+    #The TMX map files don’t know about map hierarchies,
+    #meaning that this method will give you a parent-
+    #and childless root map. Call #parent= on the returned
+    #instance to assign it its place in the map hierarchy.
     def self.load(project, name, path)
       logger.debug "Loading map from #{path}"
       obj = load_xml(path)
@@ -48,6 +63,8 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
         @id       = File.basename(path).to_s.to_i # Pathname("foo/0004.tmx") -> Pathname("0004.tmx") -> "0004.tmx" -> 4
         @name     = name
         @children = []
+        @parent   = nil
+        @mutex    = Mutex.new
       end
 
       obj
@@ -55,8 +72,9 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
     #Creates a new instance of this class.
     #==Parameters
-    #[name] The name of the map.
-    #[*args] Passed on to <tt>TiledTmx::Map.new</tt>.
+    #[project] The project to add this map to.
+    #[name]    The name of the map.
+    #[*args]   Passed on to <tt>TiledTmx::Map.new</tt>.
     #==Return value
     #An instance of this class.
     #==Remarks
@@ -65,25 +83,65 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #project</b>, i.e. OpenRubyRMK::Karfunkel#active_project.
     #If you want to create a map for another project, you
     #have to activate it first.
+    #
+    #Calling this method gives you a parentless map, i.e.
+    #a root map. You then have to call #parent= to assign
+    #a parent map.
     def initialize(project, name = nil, *args)
       logger.info "Creating a new map"
       super(*args)
       @project  = project
-      @id       = generate_id
+      @id       = @project.generate_map_id
       @name     = name || "Map_#@id"
       @children = []
+      @parent   = nil
+      @mutex    = Mutex.new
+
+      #Create the map file
+      save
     end
 
+    #Equality test. Two maps are considered equal if their
+    #IDs are the same.
     def eql?(other)
       return false unless other.respond_to?(:project) and other.respond_to?(:id)
 
       @project == other.project && @id == other.id
+    end
+    alias == eql?
+
+    #Ruby hook called by +dup+ and +clone+. For this class,
+    #it generates a new map ID instead of copying that one
+    #from the old map (which would cause heavy confusion!)
+    #and forbids child maps to be copied (a map can only
+    #have *one* parent!).
+    def initialize_copy(other)
+      @id       = @project.generate_map_id
+      @children = []
     end
 
     #Human-readable description of form:
     #  #<OpenRubyRMK::Karfunkel::Plugins::Base::Project <mapname> (<id>) with <num> children>
     def inspect
       "#<#{self.class} #@name (#@id) with #{@children.count} children>"
+    end
+
+    #Correctly dissolves the relationship between this
+    #map and its old parent (if any), then establishes
+    #the new relationship to the new parent.
+    def parent=(map)
+      # Unless we’re a root map, delete us from the
+      # old parent.
+      @parent.children.delete(self) if @parent
+
+      @mutex.synchronize do
+        # Unless we’re made a root map now, add us to the
+        # new parent.
+        map.children << self if map
+
+        # Update our side of the relationship.
+        @parent = map
+      end
     end
 
     #Checks whether a map is somewhere an ancestor of
@@ -94,7 +152,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #==Return value
     #Either +true+ or +false+.
     def ancestor?(map)
-      id = map.respond_to?(:to_int) ? map.to_int : map
+      id = map.kind_of?(self.class) ? map.id : map
 
       traverse do |child|
         return true if child.id == id
@@ -111,49 +169,15 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #==Return value
     #A truth value.
     def has_child?(map)
-      id = map.respond_to?(:to_int) ? map.to_int : map
+      id = map.kind_of?(self.class) ? map.id : map
       @children.find{|map| map.id == id}
     end
 
-    #Add a child map.
-    #==Parameter
-    #[map] An instance of this class.
-    #==Raises
-    #[ArgumentError] +map+ equals +self+.
-    #==Return value
-    #+map+.
-    def add_child(map)
-      raise(ArgumentError, "Someone can't be his own father!") if map == self
-
-      @children << map
-    end
-
-    #Same as #add_child, but returns +self+ to allow method
-    #chaining.
-    #==Parameter
-    #[map] The map to add.
-    #==Raises
-    #[ArgumentError] You tried to add +self+ as a child.
-    #==Return value
-    #+self+.
-    def <<(map)
-      add_child(map)
-      self
-    end
-
-    #Delete a <b>child map</b>.
-    #==Parameter
-    #[map] Either the ID or the Map instance to delete.
-    #==Raises
-    #[ArgumentError] The given map is not a direct child of this map.
-    def delete(map)
-      id = map.respond_to?(:to_int) ? map.to_int : map
-      raise(ArgumentError, "Child map not found: #{map}!") unless has_child?(id)
-
-      # Deleting a child frees its ID, hence ensure that
-      # no IDs are generated while a child is being deleted
-      # (and the other way round, of course).
-      @project.mutexes.map_id.synchronize{@children.delete_if{|child| child.id == id}}
+    #Checks whether this is a root map and if so,
+    #returns true, otherwise false. A root map is
+    #a map without a parent map.
+    def root?
+      @parent.nil?
     end
 
     #call-seq:
@@ -177,28 +201,28 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       end
     end
 
-    #Same as ruby-tmx’ +to_xml+, but with a log message.
-    #==Parameter
-    #[path] Where to save the XML to.
-    def save(path)
-      logger.debug "Saving map to #{path}"
-      to_xml(path)
+    #Path where this map gets saved to.
+    def path
+      @project.paths.maps_dir.join("%04d.tmx" % @id)
     end
 
-    private
+    #Dissolves the relationship between this map and its
+    #parent (if any), removes the map file and recursively
+    #repeats this process for its child maps.
+    #==Remarks
+    #If this map was a root map previously, ensure that
+    #you remove it from the list of root maps now.
+    def delete
+      self.parent = nil # Grabs the mutex on its own
+      self.path.delete
+      @children.each{|child| child.delete}
+    end
 
-    #Finds the first unused map ID and returns it.
-    def generate_id
-      @project.mutexes.map_id.synchronize do
-        ids = []
-        @project.root_maps.each do |root_map|
-          root_map.traverse.each{|map| ids << map.id}
-        end
-
-        1.upto(Float::INFINITY) do |id|
-          return id unless ids.include?(id)
-        end
-      end
+    #Calls ruby-tmx’ +to_xml+, logs the call and writes the
+    #result out to a file derived from the map’s project.
+    def save
+      logger.debug "Saving map to #{path}"
+      File.open(path, "w"){|f| f.write(to_xml)} # FIXME: Ensure this works with a future version of ruby-tmx, this is subject to change
     end
 
   end
