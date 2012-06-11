@@ -49,7 +49,7 @@ namespace :test do
 end
 
 Rake::RDocTask.new do |rt|
-  rt.rdoc_dir  = "doc"
+  rt.rdoc_dir  = "doc/html"
   rt.rdoc_files.include("lib/**/*.rb", "plugins/**/*.rb", "**/*.rdoc", "COPYING")
   rt.title     = "OpenRubyRMK RDocs"
   rt.main      = "README.rdoc"

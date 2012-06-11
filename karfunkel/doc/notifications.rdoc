@@ -1,0 +1,20 @@
+= List of Notifications
+
+This file contains the list of standard notifications delivered by
+Karfunkel if the default plugins are active. User-written plugins may
+add additional notifications, so be sure to read those plugins’
+documentations.
+
+[map_added]
+  A new map was added to the project. This notifications includes both
+  an +id+ and a +name+ field, containg the newly created map’s ID and
+  name, respectively.
+[map_deleted]
+  A map (<b>and all its child maps!</b>) was removed from the
+  project. Find the deleted map’s ID in the +id+ field.
+[tileset_added]
+  New tileset was added by someone. Find the new tileset’s name in the
+  +name+ field.
+[tileset_deleted]
+  A tileset was deleted by someone. Find the deleted tileset’s name in
+  the +name+ field.

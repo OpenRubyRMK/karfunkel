@@ -51,7 +51,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   end
 
   process_request :hello do |c, r|
-    answer :rejected, :reason => "Already authenticated" and break if c.authenticated?
+    answer :rejected, :reason => :already_authenticated and break if c.authenticated?
     log.debug "Trying to authenticate '#{c}'..."
 
     #TODO: Here one could add password checks and other nice things
@@ -82,6 +82,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   process_request :shutdown do |c, r|
     # Trying to stop the server will issue requests
     # to all connected clients asking them to agree
+    answer c, r, :processing
     OpenRubyRMK::Karfunkel.instance.stop(c)
   end
 
@@ -102,9 +103,6 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     answer c, r, :ok, :id => @projects.last.id
   end
 
-  ##
-  #==Parameter
-  #[path] Path to a directory which will become the project’s root directory.
   process_request :new_project do |c, r|
     answer(c, r, :rejected, :reason => :already_exists) and break if File.exists?(r[:path])
 
@@ -141,8 +139,8 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   # Tileset stuff
 
   process_request :new_tileset do |c, r|
-    answer c, r, :reject, :reason => :missing_parameter and return unless r["picture"]
-    answer c, r, :reject, :reason => :missing_parameter and return unless r["name"]
+    answer c, r, :reject, :reason => :missing_parameter, :name => "picture"  and return unless r["picture"]
+    answer c, r, :reject, :reason => :missing_parameter, :name, => "name"    and return unless r["name"]
 
     # Make all names obey the same format. No spaces, lowercase.
     name = r["name"].gsub(" ", "_").downcase
@@ -174,8 +172,8 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
   process_request :new_map do |c, r|
     map = Base::Map.new(@selected_project, r["name"]) # If no name is given, nil passed -> default value -> auto-generated name
-    broadcast :map_added, :id => map.id
-    answer c, r, :ok
+    broadcast :map_added, :id => map.id, :name => map.name
+    answer c, r, :ok, :id => map.id
   end
 
   process_request :delete_map do |c, r|

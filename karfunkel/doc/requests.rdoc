@@ -1,0 +1,194 @@
+= List of requests
+
+This is a grouped list of all requests that may be sent to Karfunkel
+by default. Further requests may be added by plugins other than
++base+. Each request may be rejected, in which case the response type
+is set to +rejected+ and the response includes a field called +reason+
+which in turn contains a very short string describing what was
+wrong. Any additional fields sent are documented for their respective
+request.
+
+The +rejected+ response will not be mentioned all over the
+descriptions again as it applies to all requests in the same way. See
+the file rejects.rdoc for a list of all standard rejection reasons.
+
+Some requests cause subsequent notifications to inform the other
+connected clients on what is happening. Such requests have a section
+called _Notifications_ which briefly lists which notifications are
+issued. You can then look them up in the notifications.rdoc file.
+
+== Map management
+
+One of the most important aspects of creating games with the ORR is
+map design. Sou you probably want to know how to get Karfunkel to do
+the map modifications you want him to do.
+
+Maps are unique within their specific project, i.e. each map gets
+assigned an ID which you can use to uniquely identify this map within
+a given project (usually the active one). Additionally, maps may have
+a name, but this is neither required (a default name is automatically
+computed for you from the ID if you leave it out) nor does the name
+need to be unique in any way.
+
+=== delete_map
+Removes a map and all its child maps from the project.
+==== Parameters
+[id]
+  The ID of the map to delete.
+==== Responses
+[ok]
+  Success.
+
+=== new_map
+Creates a new and empty map.
+==== Parameters
+[name (Optional)]
+  The name you want to assign to the map.
+==== Responses
+[ok]
+  Success. Includes a field called +id+ containing the ID the map got
+  assigned.
+==== Notifications
+* map_added
+
+== Project management
+
+Requests related to project management. Karfunkel is capable of
+managing multiple projects at once, but can only work actively with
+one single project, called the _active_ or _selected_ one. Each
+project is assigned an ID in order to later identify a specific
+project.
+
+=== close_project
+Instructs Karfunkel to remove the project with the given ID from the
+list of managed projects. Note that this doesn’t delete the project
+(use +delete_project+ for this).
+==== Parameters
+[id]
+  The ID of the project to close.
+==== Responses
+[ok]
+  Success.
+
+=== delete_project
+Closes the project with the given ID and deletes it irreversibly (the
+project directory will be deleted). Think twice before requesting
+this.
+==== Parameters
+[id]
+  The ID of the project to destroy.
+==== Responses
+[ok]
+  Success.
+
+=== load_project
+Loads a project from a given directory. The path must exist on the
+server.
+==== Parameters
+[path]
+  The path to the project’s root directory.
+==== Responses
+[ok]
+  Success. Includes an additional +id+ field containing the ID that
+  the project has been assigned.
+
+=== new_project
+Creates a new project root directory from the default +skeleton.tgz+
+file in the server’s +config+ directory.
+==== Parameters
+[path]
+  Where to create the new project directory.
+==== Responses
+[ok]
+  Sucess. Includes an additional +id+ field containing the ID that
+  the project has been assigned.
+
+=== save_project
+Saves the active project and all its maps and options out to
+disk. Call this before leaving!
+==== Responses
+[ok]
+  Sucess.
+
+== Server management
+
+This section describes requests controlling Karfunkel’s
+behaviour. They are not specific to any project and apply globally to
+all connections and projects.
+
+=== hello
+The very first thing you want to sent to Karfunkel. Only if Karfunkel
+accepts this request, you will be able to sent further requests.
+
+Note that this request is subject to change and authentication methods
+will be added to it sometime in the future.
+==== Responses
+[ok]
+  You have been accepted as a project member. The response includes
+  several informative fields:
+  [my_version]
+    The OpenRubyRMK version the server is running.
+  [my_project]
+    The active project.
+  [my_clients_num]
+    The number of connections the server currently has, including
+    you.
+  [your_id]
+    Your personal identification number. You must use it for any
+    further requests you send to Karfunkel, else your requests will
+    get rejected.
+
+=== ping
+NOOP request. Does nothing except triggering a response from the
+server. You can use this to check your connection. On the other way
+round, Karfunkel may occasionally send this request to *you* to check
+whether you are still alive, and you’d be better off responding with
++ok+, because otherwise you will be disconnected after a certain time
+(which is configurable in Karfunkel’s configuration file).
+==== Response
+[ok]
+  PONG
+
+=== shutdown
+Special command requesting Karfunkel to halt and disconnect all
+clients. Issuing this request doesn’t immediately cause Karfunkel to
+exit, but rather causes him to now himself send +shutdown+ requests to
+each connected clients. If all clients respond to this request with
++ok+ then and only then the server will halt.
+==== Responses
+[ok]
+  Client querying is in process. By no means this is to be interpreted
+  as a success message.
+
+== Tileset management
+
+Maps are composed by the fields defined by tilesets. Requests to
+manage these beasts are documented here.
+
+=== delete_tileset
+Removes the named tileset from the server.
+==== Parameters
+[name] The filename (without directory) of the tileset to delete.
+==== Responses
+[ok]
+  Success.
+==== Notifications
+* tileset_deleted
+
+=== new_tileset
+Upload a new tileset to the server. In the interest of your network
+connection, you probably don’t want to create several-MiB tilesets.
+==== Parameters
+[picture]
+  The actual picture data in PNG (Portable Network Graphics) format
+  and encoded in Base64 to prevent loss of binary stuff.
+[name]
+  The filename for the tileset. Something along the lines of
+  +my_tileset.png+. No need for directory names.
+
+  Note that trying to upload a tileset with an already existing name
+  will cause Karfunkel to reject your request.
+==== Responses
+[ok] Success.
+==== Notifications
+* tileset_added

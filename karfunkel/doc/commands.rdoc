@@ -1,0 +1,168 @@
+= About commands and how the server works
+
+This file describes the general layout of the (XML) commands that can
+be send to an OpenRubyRMK server and how Karfunkel, the server,
+responds to them. As a general convention throughout this file, I use
+the hash sign # to denote comments. These are *not* valid XML, so do
+not use them inside your requests. If you want to embed a comment into
+your request (for whatever reason), use the normal XML comment syntax
+<tt><!-- YOUR_COMMENT_HERE --></tt>.
+
+Please also note that Karfunkel acts case-sensitive, i.e. a "HELLO"
+request is not the same as a "hello" request, Karfunkel will only
+accept the latter one.  For use in text the uppercase variant to
+distinguish it from a normal words is not a problem, but if possible
+you should use teletyped notation for that purpose, i.e. +hello+.
+
+== Vocabulary
+
+[Karfunkel]
+  OpenRubyRMK's server.
+[Command]
+  The whole bunch of XML sent, and received, to, by and from Karfunkel
+  at one time.
+[Request]
+  The part of a command that indicates what you want Karfunkel to do.
+[Response]
+  Karfunkel’s opinion and reports about your requests. This is also
+  part of a command.
+[Notification]
+  Purely informative message you don't have to respond to. Part of
+  a command.
+
+==How to connect
+
+1. First, you need to have a connection to Karfunkel, which shouldn’t be that
+   hard to get, just connect to the port where you run Karfunkel (it’s port
+   3141 by default).
+2. When this is done, Karfunkel waits for your application to greet him and
+   won’t respond until you did (he's quite perticular about this). Send him the
+   <tt>hello</tt> command (described below) and wait. If you don’t greet him
+   within a few seconds, he'll just cut your connection and go away.
+3. If Karfunkel hadn’t had a bad day, he will notice your efforts and respond
+   accordingly. Gather the important things from the response and you’re done.
+4. Send whatever command you want.
+
+==Basic structure of a command
+
+===Requests
+
+This is the basic structure of a request you send to Karfunkel (exception is
+the +hello+ request which misses the <sender> tag at the toplevel as you don't
+have an ID at that moment):
+
+  <?xml version="1.0" encoding="UTF-8"?> #XML definition
+  <karfunkel> #This is the root. It's ALWAYS <karfunkel>.
+    
+    # The SENDER block contains information on the one who sent the request.
+    # Answers have to go to the client with the ID specified here.
+    <sender>
+      <id>6</id> # This is the ID you get from Karfunkel via a HELLO request.
+    </sender>
+    
+    # The request type you send. One of the various ones available.
+    # The ID is an index you are expected to increment (or vary in another
+    # unique algorithm) for each request; answers to requests get the same
+    # IDs as their respective requests. NEVER use an ID more than once.
+    <request type="open_project" id="12">
+      # The request's body differs from request to request. Look into
+      # each request's documentation in order to find out what goes here.
+      # Generally, any "parameters", as one would call it in OO programming,
+      # go here.
+    </request>
+    
+    # You may put any number of requests here and Karfunkel will handle them
+    # one-by-one, sending a response for each request in any order. So use
+    # your request ID to distinguish which request caused which response.
+  </karfunkel>
+
+===Responses
+
+Whenever you send a request to Karfunkel, he responds in some way. His
+responses always have the following structure:
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <karfunkel> #As always. This is the root.
+    <sender>
+      <id>0</id> #0 is Karfunkel's own ID
+    </sender>
+    
+    # A response to a request. The type is the same as your request's, and the
+    # ID as well. Furthermore a status tag allows you to check how Karfunkel
+    # proceeded with your request; you can find a list of possible stati below.
+    <response type="open_project" id="12" status="finished"> 
+      # A response's body differs from response to response. Look into each
+      # response's documentation in order to find out what goes here.
+    </response>
+    
+  </karfunkel>
+
+These are the possible stati your request can get assigned:
+
+[ok]         Generic response for requests that don't need much processing,
+             notably informational ones.
+[finished]   Your request has been executed and finished sucessfully.
+[failed]     For whatever reason, Karfunkel was willing, but not able to
+             process your request.
+[processing] The request is being processed at the moment. Stay tuned, you may
+             get a +finished+ response soon!
+[rejected]   No good. Whatever you wanted Karfunkel to do, he won't do it.
+             Normally he's smart enough to tell you why he didn't like your
+             request.
+
+Especially in the case of long-running operations, a request can cause
+multiple responses from Karfunkel. For example, opening a project
+causes Karfunkel to immediately send a +processing+ response with the
+ID of your request. After some time, when the project has fully been
+loaded, he will contact you again, sending you the +finished+ response
+with the same ID as the previous +processing+ response (which is in
+turn the same ID you assigned to your request).
+
+There's one special response that you can get: The +error+
+response. This is sent by Karfunkel if he didn't unterstand anything
+of what you said, i.e. your command contained massive syntactical
+errors or the like. As Karfunkel wasn't able to detect command type
+and ID, he puts +unknown+ for the command type and -1 for the ID. If
+you send proper commands over a proper network connection, you
+shouldn't get this response.
+
+===Notifications
+
+Sometimes you'll find Karfunkel sending you some data without requesting it.
+These are usually so-called _notifications_, and are delivered when something
+in the server's state changes that affects all clients, e.g. a project file
+was opened or some data on a map was changed. Notifications have the
+following structure:
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <karfunkel> #As always
+    
+    <sender>
+      <id>0</id> #0 is Karfunkel's own ID
+    </sender>
+    
+    <notification type="field_set"> #The type tells you what info you'll find...
+      #...in this block here. It's different from notification to notification.
+    </notification>
+    
+  </karfunkel>
+
+Karfunkel expects no answer to a notification, they're purely
+informative (but you probably should reflect them in your interface,
+e.g. change a map's name if it has been renamed by another
+client). 
+
+== Further reading
+
+There’s nothing more to learn about how the XML stuff you send to and
+receive from Karfunkel is structured. You can now go on and use the
+reference files:
+
+* For a list of all standard requests (i.e. those available without
+  loading plugins), see here[requests.rdoc.html].
+* For a list of all standard notifications, see
+  here[notifications.rdoc.html].
+* For a list of all reject error types, see
+  here[rejects.rdoc.html].
+
+And that’s it! Enjoy talking with Karfunkel! ;-)
