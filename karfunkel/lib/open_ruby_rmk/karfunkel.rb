@@ -321,25 +321,6 @@ module OpenRubyRMK
       "Karfunkel"
     end
 
-    #Sends a command to the given client.
-    #==Parameters
-    #[cmd] The OpenRubyRMK::Common::Command instance to deliver.
-    #[to]  The target client, either a Client instance or an integer
-    #       that is interpreted as the client ID.
-    #==Example
-    #  cmd = Common::Command.new(123)
-    #  cmd << Common::Request.new(456, "Foo")
-    #  Karfunkel::THE_INSTANCE.deliver(cmd, 4)
-    #==Remarks
-    #To send a command just containing a single request, response or
-    #notification, you can use the respective #deliver_* methods of
-    #this class which internally call this method.
-    def deliver(cmd, to)
-      to = @clients.find{|c| c.id == to} unless to.kind_of?(OpenRubyRMK::Karfunkel::Client)
-      raise("Client with ID #{to} couldn't be found!") unless to
-      to.connection.send_data(to.connection.transformer.convert!(cmd) + OpenRubyRMK::Common::Command::END_OF_COMMAND)
-    end
-
     #Convenience method for creating a command consisting of a
     #singe request. The constructed command is passed to #deliver.
     #==Parameters
@@ -443,6 +424,26 @@ module OpenRubyRMK
           client.accepted_shutdown = false #Clear any previous answers
           deliver_request(req, client)
         end
+      end
+
+      #*HOOK*. Sends a command to the given client. By default, just does
+      #exactly that.
+      #==Parameters
+      #[cmd] The OpenRubyRMK::Common::Command instance to deliver.
+      #[to]  The target client, either a Client instance or an integer
+      #       that is interpreted as the client ID.
+      #==Example
+      #  cmd = Common::Command.new(123)
+      #  cmd << Common::Request.new(456, "Foo")
+      #  Karfunkel::THE_INSTANCE.deliver(cmd, 4)
+      #==Remarks
+      #To send a command just containing a single request, response or
+      #notification, you can use the respective #deliver_* methods of
+      #this class which internally call this method.
+      def deliver(cmd, to)
+        to = @clients.find{|c| c.id == to} unless to.kind_of?(OpenRubyRMK::Karfunkel::Client)
+        raise("Client with ID #{to} couldn't be found!") unless to
+        to.connection.send_data(to.connection.transformer.convert!(cmd) + OpenRubyRMK::Common::Command::END_OF_COMMAND)
       end
 
       #*HOOK*. Handles an incomming request. By default, calls the

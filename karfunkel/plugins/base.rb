@@ -102,6 +102,9 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     answer c, r, :ok, :message => "Project loaded successfully."
   end
 
+  ##
+  #==Parameter
+  #[path] Path to a directory which will become the project’s root directory.
   process_request :new_project do |c, r|
     answer(c, r, :rejected, :reason => "Already exists: #{r[:path]}") and break if File.exists?(r[:path])
 
