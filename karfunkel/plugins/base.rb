@@ -154,7 +154,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     answer c, r, :reject, :reason => "Not in Portable Network Graphics (PNG) format" and return unless pic.bytes.first(4).drop(1).map(&:chr).join == "PNG"
 
     File.open(@selected_project.paths.tilesets_dir + name, "wb"){|file| file.write(pic)}
-    broadcast :new_tileset, :name => name
+    broadcast :tileset_added, :name => name
     answer c, r, :ok, :message => "Tileset added successfully."
   end
 
@@ -174,6 +174,8 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
   process_request :new_map do |c, r|
     map = Base::Map.new(@selected_project, r["name"]) # If no name is given, nil passed -> default value -> auto-generated name
+    broadcast :map_added, :id => map.id
+    answer c, r, :ok, :message => "Map successfully created with ID #{map.id}."
   end
 
   process_request :delete_map do |c, r|
@@ -185,11 +187,12 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
           throw :found, map if map.has_child?(id)
         end
       end
-      answer :reject, :reason => "Map #{id} not found" and return
+      answer c, r, :reject, :reason => "Map #{id} not found" and return
     end
 
     parent_map.delete(id)
-    answer :ok, :message => "Map #{id} and all child maps deleted."
+    broadcast :map_deleted, :id => id
+    answer c, r, :ok, :message => "Map #{id} and all child maps deleted."
   end
 
 end
