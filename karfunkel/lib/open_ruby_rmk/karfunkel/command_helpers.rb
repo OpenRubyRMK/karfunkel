@@ -98,6 +98,19 @@ module OpenRubyRMK
       end
     end
 
+    #Convenience method to directly deliver a notification
+    #to all connected clients.
+    #==Parameters
+    #[type] The type of the notification, string or symbol.
+    #[hsh]  Any information you want to include into the notification
+    #       as a hash (both keys and values will be converted to
+    #       strings on delivering).
+    def broadcast(type, hsh)
+      note = Common::Notification.new(Karfunkel.instance.generate_request_id, type)
+      hsh.each_pair{|k, v| note[k] = v}
+      Karfunkel.instance.deliver_notification(note)
+    end
+
   end
 
 end

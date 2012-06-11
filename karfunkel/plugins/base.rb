@@ -26,6 +26,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   #Load the project management classes when then
   #plugin is activated.
   def self.included(*)
+    require "base64"
     require "zlib"
     require "archive/tar/minitar"
     require "tiled_tmx"
@@ -131,6 +132,38 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   process_request :save_project do |c, r|
     @selected_project.save
     answer c, r, :ok, :message => "Project saved successfully."
+  end
+
+  ########################################
+  # Tileset stuff
+
+  process_request :new_tileset do |c, r|
+    answer c, r, :reject, :reason => "No picture given" and return unless r["picture"]
+    answer c, r, :reject, :reason => "No tileset name given" and return unless r["name"]
+
+    # Make all names obey the same format. No spaces, lowercase.
+    name = r["name"].gsub(" ", "_").downcase
+    name << ".png" unless name.end_with?(".png")
+    path = @selected_project.paths.tilesets_dir + name
+    answer c, r, :reject, :reason => "Tileset already exists, use delete_tileset first" and return if path.file?
+
+    pic = Base64.decode64(r["picture"])
+    answer c, r, :reject, :reason => "Not in Portable Network Graphics (PNG) format" and return unless pic.bytes.first(4).drop(1).map(&:chr).join == "PNG"
+
+    File.open(@selected_project.paths.tilesets_dir + name, "wb"){|file| file.write(pic)}
+    broadcast :new_tileset, :name => name
+    answer c, r, :ok, :message => "Tileset added successfully."
+  end
+
+  process_request :delete_tileset do |c, r|
+    answer c, r, :reject, :reason => "No tileset name given" and return unless r["name"]
+
+    path = @selected_project.paths.tilesets_dir + name
+    answer c, r, :reject, :reason => "Tileset #{r['name']} not found." and return unless path.file?
+
+    path.delete
+    broadcast :tileset_deleted, :name => r["name"]
+    answer c, r, :ok, :message => "Tileset #{r['name']} deleted successfully."
   end
 
   ########################################
