@@ -96,77 +96,77 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   # Project management
 
   process_request :load_project do |c, r|
-    answer(c, r, :rejected, :reason => "Directory not found: #{r[:path]}") and break unless File.directory?(r[:path])
+    answer(c, r, :rejected, :reason => :not_found) and break unless File.directory?(r[:path])
 
     @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.load(r[:path])
-    answer c, r, :ok, :message => "Project loaded successfully."
+    answer c, r, :ok, :id => @projects.last.id
   end
 
   ##
   #==Parameter
   #[path] Path to a directory which will become the project’s root directory.
   process_request :new_project do |c, r|
-    answer(c, r, :rejected, :reason => "Already exists: #{r[:path]}") and break if File.exists?(r[:path])
+    answer(c, r, :rejected, :reason => :already_exists) and break if File.exists?(r[:path])
 
     @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.new(r[:path])
-    answer c, r, :ok, :message => "Project created successfully.", :id => @project.id
+    answer c, r, :ok, :id => @project.id
   end
 
   process_request :close_project do |c, r|
     proj = @projects.find{|p| p.id == r[:id].to_i}
-    answer :reject, :reason => "Project #{r[:id]} not found." and break unless proj
+    answer c, r, :reject, :reason => :not_found and break unless proj
 
     @selected_project.save
     @selected_project = nil if @selected_project == proj
     @projects.delete(proj)
-    answer :ok, :message => "Project closed successfully."
+    answer :ok
   end
 
   process_request :delete_project do |c, r|
     proj = @projects.find{|p| p.id == r[:id].to_i}
-    answer :reject, :reason => "Project #{r[:id]} not found." and break unless proj
+    answer c, r, :reject, :not_found and break unless proj
 
     @selected_project = nil if @selected_project == proj
     @projects.delete(proj)
     proj.delete!
-    answer :ok, :message => "Project closed and deleted successfully."
+    answer c, r, :ok
   end
 
   process_request :save_project do |c, r|
     @selected_project.save
-    answer c, r, :ok, :message => "Project saved successfully."
+    answer c, r, :ok
   end
 
   ########################################
   # Tileset stuff
 
   process_request :new_tileset do |c, r|
-    answer c, r, :reject, :reason => "No picture given" and return unless r["picture"]
-    answer c, r, :reject, :reason => "No tileset name given" and return unless r["name"]
+    answer c, r, :reject, :reason => :missing_parameter and return unless r["picture"]
+    answer c, r, :reject, :reason => :missing_parameter and return unless r["name"]
 
     # Make all names obey the same format. No spaces, lowercase.
     name = r["name"].gsub(" ", "_").downcase
     name << ".png" unless name.end_with?(".png")
     path = @selected_project.paths.tilesets_dir + name
-    answer c, r, :reject, :reason => "Tileset already exists, use delete_tileset first" and return if path.file?
+    answer c, r, :reject, :reason => :exists and return if path.file?
 
     pic = Base64.decode64(r["picture"])
-    answer c, r, :reject, :reason => "Not in Portable Network Graphics (PNG) format" and return unless pic.bytes.first(4).drop(1).map(&:chr).join == "PNG"
+    answer c, r, :reject, :reason => :bad_format and return unless pic.bytes.first(4).drop(1).map(&:chr).join == "PNG"
 
     File.open(@selected_project.paths.tilesets_dir + name, "wb"){|file| file.write(pic)}
     broadcast :tileset_added, :name => name
-    answer c, r, :ok, :message => "Tileset added successfully."
+    answer c, r, :ok
   end
 
   process_request :delete_tileset do |c, r|
-    answer c, r, :reject, :reason => "No tileset name given" and return unless r["name"]
+    answer c, r, :reject, :reason => :missing_parameter and return unless r["name"]
 
     path = @selected_project.paths.tilesets_dir + name
-    answer c, r, :reject, :reason => "Tileset #{r['name']} not found." and return unless path.file?
+    answer c, r, :reject, :reason => :not_found and return unless path.file?
 
     path.delete
     broadcast :tileset_deleted, :name => r["name"]
-    answer c, r, :ok, :message => "Tileset #{r['name']} deleted successfully."
+    answer c, r, :ok
   end
 
   ########################################
@@ -175,7 +175,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   process_request :new_map do |c, r|
     map = Base::Map.new(@selected_project, r["name"]) # If no name is given, nil passed -> default value -> auto-generated name
     broadcast :map_added, :id => map.id
-    answer c, r, :ok, :message => "Map successfully created with ID #{map.id}."
+    answer c, r, :ok
   end
 
   process_request :delete_map do |c, r|
@@ -187,12 +187,12 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
           throw :found, map if map.has_child?(id)
         end
       end
-      answer c, r, :reject, :reason => "Map #{id} not found" and return
+      answer c, r, :reject, :reason => :not_found and return
     end
 
     parent_map.delete(id)
     broadcast :map_deleted, :id => id
-    answer c, r, :ok, :message => "Map #{id} and all child maps deleted."
+    answer c, r, :ok
   end
 
 end
