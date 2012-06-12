@@ -30,7 +30,9 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     require "zlib"
     require "archive/tar/minitar"
     require "tiled_tmx"
+    require_relative "base/invalidatable"
     require_relative "base/project"
+    require_relative "base/map"
   end
 
   ########################################
@@ -52,13 +54,13 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
   process_request :hello do |c, r|
     answer :rejected, :reason => :already_authenticated and break if c.authenticated?
-    log.debug "Trying to authenticate '#{c}'..."
+    logger.debug "Trying to authenticate '#{c}'..."
 
     #TODO: Here one could add password checks and other nice things
     c.id            = kf.generate_client_id
     c.authenticated = true
     
-    log.info "[#{c}] Authenticated."
+    logger.info "[#{c}] Authenticated."
     
     answer c, r, :ok, :my_version => OpenRubyRMK::Karfunkel::VERSION,
                  :my_project      => kf.selected_project.to_s,
@@ -82,7 +84,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   process_request :shutdown do |c, r|
     # Trying to stop the server will issue requests
     # to all connected clients asking them to agree
-    answer c, r, :processing
+    answer c, r, :ok
     OpenRubyRMK::Karfunkel.instance.stop(c)
   end
 
@@ -140,7 +142,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
   process_request :new_tileset do |c, r|
     answer c, r, :reject, :reason => :missing_parameter, :name => "picture"  and return unless r["picture"]
-    answer c, r, :reject, :reason => :missing_parameter, :name, => "name"    and return unless r["name"]
+    answer c, r, :reject, :reason => :missing_parameter, :name => "name"     and return unless r["name"]
 
     # Make all names obey the same format. No spaces, lowercase.
     name = r["name"].gsub(" ", "_").downcase

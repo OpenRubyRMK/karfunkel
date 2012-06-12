@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-require_relative "../lib/open_ruby_rmk/karfunkel/test_case"
+require_relative "../../lib/open_ruby_rmk/karfunkel/test_case"
 
 OpenRubyRMK::Karfunkel::TestCase.new("Unauthenticated things") do
 

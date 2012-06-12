@@ -53,11 +53,13 @@ module OpenRubyRMK::Karfunkel::TestClient
   #Called by EventMachine when Karfunkel sent data to us.
   #Don’t call this manually.
   def receive_data(data)
-    cmd = @transformer.parse!(data)
+    data.split("\0").each do |xml|
+      cmd = @transformer.parse!(xml)
 
-    cmd.requests.each     {|request|  OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_request(request)  }
-    cmd.responses.each    {|response| OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_response(response)}
-    cmd.notifications.each{|note|     OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_notification(note)}
+      cmd.requests.each     {|request|  OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_request(request)  }
+      cmd.responses.each    {|response| OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_response(response)}
+      cmd.notifications.each{|note|     OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_notification(note)}
+    end
   end
 
   #Called by EventMachine when the connection to Karfunkel has

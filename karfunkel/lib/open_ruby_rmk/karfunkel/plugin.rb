@@ -36,10 +36,11 @@ module OpenRubyRMK
 
         #Your direct interface to the server log. A Ruby
         #+Logger+ instance. Equivalent to:
-        #  OpenRubyRMK::Karfunkel.instance.logger
+        #  OpenRubyRMK::Karfunkel.instance.log
         def logger
-          Karfunkel.instance.logger
+          Karfunkel.instance.log
         end
+        alias log logger
 
         #Shortcut for:
         #  OpenRubyRMK::Karfunkel.instance
