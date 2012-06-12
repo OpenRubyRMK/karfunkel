@@ -102,15 +102,20 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   process_request :load_project do |c, r|
     answer(c, r, :rejected, :reason => :not_found) and break unless File.directory?(r[:path])
 
+    # FIXME: Use EventMachine.defer + :processing answer as this operation may last long!
     @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.load(r[:path])
-    answer c, r, :ok, :id => @projects.last.id
+    @selected_project = @projects.last
+    answer c, r, :ok, :id => @selected_project.id
+    broadcast :project_selected, :id => @selected_project.id
   end
 
   process_request :new_project do |c, r|
     answer(c, r, :rejected, :reason => :already_exists) and break if File.exists?(r[:path])
 
     @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.new(r[:path])
-    answer c, r, :ok, :id => @project.id
+    @selected_project = @projects.last
+    answer c, r, :ok, :id => @selected_project.id
+    broadcast :project_selected, :id => @selected_project.id
   end
 
   process_request :close_project do |c, r|
@@ -121,6 +126,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     @selected_project = nil if @selected_project == proj
     @projects.delete(proj)
     answer :ok
+    broadcast :project_selected, :id => -1
   end
 
   process_request :delete_project do |c, r|
@@ -131,6 +137,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     @projects.delete(proj)
     proj.delete!
     answer c, r, :ok
+    broadcast :project_selected, :id => -1
   end
 
   process_request :save_project do |c, r|
