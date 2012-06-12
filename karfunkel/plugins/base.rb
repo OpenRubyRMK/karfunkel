@@ -91,6 +91,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   # If we get this, a SHUTDOWN request has been answered.
   process_response :shutdown do |c, r|
     c.accepted_shutdown = r.status == "ok" ? true : false
+    logger.info("[#{c}] Shutdown accepted")
     # If all clients have accepted, stop the server
     OpenRubyRMK::Karfunkel.instance.stop! if OpenRubyRMK::Karfunkel.instance.clients.all?(&:accepted_shutdown)
   end
