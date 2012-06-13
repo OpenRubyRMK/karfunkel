@@ -91,7 +91,7 @@ module OpenRubyRMK
     end
 
     [:rejected, :error, :ok, :processing, :failed, :finished].each do |sym|
-      define_method(sym) do |client, request, hsh|
+      define_method(sym) do |client, request, hsh = {}|
         res = Common::Response.new(Karfunkel.instance.generate_request_id, sym, request)
         hsh.each_pair{|k, v| res[k] = v}
         Karfunkel.instance.deliver_response(res, client)
@@ -105,7 +105,7 @@ module OpenRubyRMK
     #[hsh]  Any information you want to include into the notification
     #       as a hash (both keys and values will be converted to
     #       strings on delivering).
-    def broadcast(type, hsh)
+    def broadcast(type, hsh = {})
       note = Common::Notification.new(Karfunkel.instance.generate_request_id, type)
       hsh.each_pair{|k, v| note[k] = v}
       Karfunkel.instance.deliver_notification(note)

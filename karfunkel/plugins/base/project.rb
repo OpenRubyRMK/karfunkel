@@ -12,15 +12,16 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
     #Struct encapsulating all the path information for a
     #single project.
-    Paths = Struct.new(:root, :rmk_file, :data_dir, :maps_dir, :maps_file, :maps_dir, :tilesets_dir) do
+    Paths = Struct.new(:root, :rmk_file, :data_dir, :maps_dir, :maps_file, :graphics_dir, :tilesets_dir, :scripts_dir) do
       def initialize(root) # :nodoc:
         self.root         = Pathname.new(root).expand_path
-        self.rmk_file     = self.root + "bin" + "#{self.root.basename}.rmk"
-        self.data_dir     = self.root + "data"
-        self.graphics_dir = data_dir + "graphics"
-        self.maps_dir     = data_dir  + "maps"
-        self.maps_file    = maps_dir  + "maps.xml"
+        self.rmk_file     = self.root    + "bin" + "#{self.root.basename}.rmk"
+        self.data_dir     = self.root    + "data"
+        self.graphics_dir = data_dir     + "graphics"
+        self.maps_dir     = data_dir     + "maps"
+        self.maps_file    = maps_dir     + "maps.xml"
         self.tilesets_dir = graphics_dir + "tilesets"
+        self.scripts_dir  = data_dir     + "scripts"
       end
     end
 

@@ -5,6 +5,12 @@ Karfunkel if the default plugins are active. User-written plugins may
 add additional notifications, so be sure to read those plugins’
 documentations.
 
+[global_script_added]
+  A new global script was added to the project. Contains a +name+
+  attribute with the filename.
+[global_script_deleted]
+  A global script was removed from the project. The +name+ field
+  contains the name of the deleted script.
 [map_added]
   A new map was added to the project. This notifications includes both
   an +id+ and a +name+ field, containg the newly created map’s ID and

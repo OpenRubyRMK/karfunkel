@@ -17,6 +17,41 @@ connected clients on what is happening. Such requests have a section
 called _Notifications_ which briefly lists which notifications are
 issued. You can then look them up in the notifications.rdoc file.
 
+== Global scripts
+
+Global scripts are scripts written in the event DSL, but are not
+directly attached to an event. These scripts get executed prior to the
+actual game start, but after the core game libraries have been
+loaded. They are accessible through the normal GUI, whereas the core
+libraries are only accessible via the advanced GUI’s Script Editor.
+
+=== new_global_script
+Add a new global script to the project.
+==== Parameters
+[name]
+  The name of the file where to save the script in (without
+  directory). All lowercase and without spaces, terminating in
+  +.rb+. Names will be transformed to obey this convention.
+[code]
+  The actual Ruby code. No checking is done on this, this will be done
+  when it is loaded into the game. May contain multiple lines.
+==== Responses
+[ok]
+  Success.
+==== Notifications
+* global_script_added
+
+=== delete_global_script
+Remove a global script from the project.
+==== Parameters
+[name]
+  The filename (no directories) of the script to delete.
+==== Responses
+[ok]
+  Success.
+==== Notifications
+* global_script_deleted.
+
 == Map management
 
 One of the most important aspects of creating games with the ORR is

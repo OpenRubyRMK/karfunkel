@@ -40,6 +40,7 @@ module OpenRubyRMK
         def log
           Karfunkel.instance.log
         end
+        alias log logger
 
         #Shortcut for:
         #  OpenRubyRMK::Karfunkel.instance

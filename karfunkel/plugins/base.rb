@@ -30,7 +30,9 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     require "zlib"
     require "archive/tar/minitar"
     require "tiled_tmx"
+    require_relative "base/invalidatable"
     require_relative "base/project"
+    require_relative "base/map"
   end
 
   ########################################
@@ -82,13 +84,14 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   process_request :shutdown do |c, r|
     # Trying to stop the server will issue requests
     # to all connected clients asking them to agree
-    answer c, r, :processing
+    answer c, r, :ok
     OpenRubyRMK::Karfunkel.instance.stop(c)
   end
 
   # If we get this, a SHUTDOWN request has been answered.
   process_response :shutdown do |c, r|
     c.accepted_shutdown = r.status == "ok" ? true : false
+    log.info("[#{c}] Shutdown accepted")
     # If all clients have accepted, stop the server
     OpenRubyRMK::Karfunkel.instance.stop! if OpenRubyRMK::Karfunkel.instance.clients.all?(&:accepted_shutdown)
   end
@@ -99,15 +102,20 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   process_request :load_project do |c, r|
     answer(c, r, :rejected, :reason => :not_found) and break unless File.directory?(r[:path])
 
+    # FIXME: Use EventMachine.defer + :processing answer as this operation may last long!
     @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.load(r[:path])
-    answer c, r, :ok, :id => @projects.last.id
+    @selected_project = @projects.last
+    answer c, r, :ok, :id => @selected_project.id
+    broadcast :project_selected, :id => @selected_project.id
   end
 
   process_request :new_project do |c, r|
     answer(c, r, :rejected, :reason => :already_exists) and break if File.exists?(r[:path])
 
     @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.new(r[:path])
-    answer c, r, :ok, :id => @project.id
+    @selected_project = @projects.last
+    answer c, r, :ok, :id => @selected_project.id
+    broadcast :project_selected, :id => @selected_project.id
   end
 
   process_request :close_project do |c, r|
@@ -118,6 +126,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     @selected_project = nil if @selected_project == proj
     @projects.delete(proj)
     answer :ok
+    broadcast :project_selected, :id => -1
   end
 
   process_request :delete_project do |c, r|
@@ -128,6 +137,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     @projects.delete(proj)
     proj.delete!
     answer c, r, :ok
+    broadcast :project_selected, :id => -1
   end
 
   process_request :save_project do |c, r|
@@ -136,11 +146,34 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   end
 
   ########################################
+  # Global scripts
+
+  process_request :new_global_script do |c, r|
+    name = r["name"].gsub(" ", "_").downcase
+    name << ".rb" unless name.end_with?(".rb")
+    path = @selected_project.paths.script_dir + name
+    answer c, r, :reject, :reason => :exists and return if path.file?
+
+    File.open(path, "w"){|f| f.write(r["code"].force_encoding("UTF-8"))}
+    answer c, r, :ok
+    broadcast :global_script_added, :name => name
+  end
+
+  process_request :delete_global_script do |c, r|
+    path = @selected_project.paths.script_dir + r["name"]
+    answer c, r, :reject, :reason => :not_found and return unless path.file?
+
+    path.delete
+    answer c, r, :ok
+    broadcast :global_script_deleted, :name => r["name"]
+  end
+
+  ########################################
   # Tileset stuff
 
   process_request :new_tileset do |c, r|
     answer c, r, :reject, :reason => :missing_parameter, :name => "picture"  and return unless r["picture"]
-    answer c, r, :reject, :reason => :missing_parameter, :name => "name"    and return unless r["name"]
+    answer c, r, :reject, :reason => :missing_parameter, :name => "name"     and return unless r["name"]
 
     # Make all names obey the same format. No spaces, lowercase.
     name = r["name"].gsub(" ", "_").downcase
