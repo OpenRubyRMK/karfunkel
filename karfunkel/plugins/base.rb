@@ -140,7 +140,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
   process_request :new_tileset do |c, r|
     answer c, r, :reject, :reason => :missing_parameter, :name => "picture"  and return unless r["picture"]
-    answer c, r, :reject, :reason => :missing_parameter, :name, => "name"    and return unless r["name"]
+    answer c, r, :reject, :reason => :missing_parameter, :name => "name"    and return unless r["name"]
 
     # Make all names obey the same format. No spaces, lowercase.
     name = r["name"].gsub(" ", "_").downcase

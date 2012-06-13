@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+require_relative 'invalidatable'
+
 module OpenRubyRMK::Karfunkel::Plugin::Base
 
   #Class for managing an OpenRubyRMK project.
