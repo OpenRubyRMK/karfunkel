@@ -146,6 +146,29 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   end
 
   ########################################
+  # Global scripts
+
+  process_request :new_global_script do |c, r|
+    name = r["name"].gsub(" ", "_").downcase
+    name << ".rb" unless name.end_with?(".rb")
+    path = @selected_project.paths.script_dir + name
+    answer c, r, :reject, :reason => :exists and return if path.file?
+
+    File.open(path, "w"){|f| f.write(r["code"].force_encoding("UTF-8"))}
+    answer c, r, :ok
+    broadcast :global_script_added, :name => name
+  end
+
+  process_request :delete_global_script do |c, r|
+    path = @selected_project.paths.script_dir + r["name"]
+    answer c, r, :reject, :reason => :not_found and return unless path.file?
+
+    path.delete
+    answer c, r, :ok
+    broadcast :global_script_deleted, :name => r["name"]
+  end
+
+  ########################################
   # Tileset stuff
 
   process_request :new_tileset do |c, r|
