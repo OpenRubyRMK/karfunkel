@@ -82,7 +82,7 @@ module OpenRubyRMK
     #          to string on delivering).
     #==Raises
     #[NoMethodError] No method for answering with +status+ exists.
-    def answer(client, request, status, hsh)
+    def answer(client, request, status, hsh={})
       if respond_to?(status)
         send(status, client, request, hsh)
       else
