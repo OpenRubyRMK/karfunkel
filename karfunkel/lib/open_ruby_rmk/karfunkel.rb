@@ -20,6 +20,7 @@ require "bundler/setup"
 require "pathname"
 require "rbconfig"
 require "logger"
+require "socket"
 require "eventmachine"
 require "nokogiri"
 

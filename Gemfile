@@ -37,7 +37,7 @@
 source "http://rubygems.org"
 
 gem "nokogiri"
-gem "eventmachine", ">= 1.0.0.beta.4"
+gem "eventmachine"
 gem "minitar"
 gem "ruby-tmx"
 
