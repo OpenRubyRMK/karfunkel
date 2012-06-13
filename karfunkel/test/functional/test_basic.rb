@@ -21,8 +21,13 @@ OpenRubyRMK::Karfunkel::TestCase.new("Basic functionality") do
     request :shutdown
   end
 
+  test_request :shutdown do |req|
+    assert_equal(1, req["requestor"].to_i) # It was us who sent the request originally
+    response req, :ok
+  end
+
   test_response :shutdown do |res|
-    assert_equal("processing", res.status)
+    assert_equal("ok", res.status)
     request :ping
   end
 

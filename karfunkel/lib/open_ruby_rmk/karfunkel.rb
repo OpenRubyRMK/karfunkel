@@ -443,7 +443,9 @@ module OpenRubyRMK
       def deliver(cmd, to)
         to = @clients.find{|c| c.id == to} unless to.kind_of?(OpenRubyRMK::Karfunkel::Client)
         raise("Client with ID #{to} couldn't be found!") unless to
-        to.connection.send_data(to.connection.transformer.convert!(cmd) + OpenRubyRMK::Common::Command::END_OF_COMMAND)
+        xml = to.connection.transformer.convert!(cmd)
+        xml << OpenRubyRMK::Common::Command::END_OF_COMMAND # Append command separator, a NUL byte
+        to.connection.send_data(xml)
       end
 
       #*HOOK*. Handles an incomming request. By default, calls the

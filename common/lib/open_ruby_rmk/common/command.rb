@@ -17,7 +17,7 @@ module OpenRubyRMK::Common
     include Comparable
 
     #The byte marking the end of an XML command.
-    END_OF_COMMAND = "\0"
+    END_OF_COMMAND = 0x00
     
     #The ID of the client that sent the command.
     attr_reader :from_id

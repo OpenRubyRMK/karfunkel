@@ -74,7 +74,7 @@ module OpenRubyRMK
       #which I defined to be a NUL byte, is encountered. Then
       ##receive_data calls #process_command with the full command
       #and empties the @received_data instance variable.
-      @received_data = ""
+      @received_data = "".force_encoding("BINARY") # Data comes over the network in binary form
       #If the client doesn't authenticate within X seconds, disband
       #him.
       EventMachine.add_timer(Karfunkel::THE_INSTANCE.config[:greet_timeout]) do
@@ -103,14 +103,27 @@ module OpenRubyRMK
     #Called by EventMachine when data has been sent to
     #the server.
     def receive_data(data)
-      #Collect the sent data...
-      @received_data << data #TODO: Attacker could exhaust memory by sending no NULs
-      #...until we get the End Of Command marker. Then we know that
-      #the command is completed and we can process it.
-      #Empty the command cache afterwards.
-      if @received_data.end_with?(Common::Command::END_OF_COMMAND)
-        process_command(@received_data.sub(/#{Common::Command::END_OF_COMMAND}$/, ""))
-        @received_data.clear
+      # `data' may contain:
+      # 1. A command with a terminating NUL.
+      # 2. An incomplete command without a terminating NUL.
+      # 3. Multiple commands separated by NUL.
+      # 4. Any multi-command combination of 1-3.
+
+      # Fill the @received_data variable until we get the
+      # END_OF_COMMAND marker, which I defined to be a NUL
+      # byte.
+      data.bytes.each do |byte|
+        # NUL separates the commands. Trigger processing
+        # when a complete command has arrived.
+        if byte == Common::Command::END_OF_COMMAND
+          # The data we get is supposed to be encoded in UTF-8,
+          # so we can securely force it here to UTF-8 encoding.
+          process_command(@received_data.dup.force_encoding("UTF-8"))
+          @received_data.clear
+        else # Not completed yet, collect further data
+          # FIXME: Attacker may exhaust memory by sending no NULs
+          @received_data << byte
+        end
       end
     end
     
