@@ -16,24 +16,18 @@ OpenRubyRMK::Karfunkel::TestCase.new("Basic functionality") do
     request :invalidrequesttype
   end
 
-  test_response :invalidrequesttype do |req|
-    assert_equal("rejected", req.status)
+  test_response :invalidrequesttype do |res|
+    assert_equal("rejected", res.status)
     request :shutdown
   end
 
-  test_request :shutdown do |req|
-    response req, :ok
-  end
-
-  ########################################
-  # General requests/responses unrelated
-  # to the main comunication flow
-
-  test_request :ping do |req|
-    response req, :ok, :message => "pong"
+  test_response :shutdown do |res|
+    assert_equal("processing", res.status)
+    request :ping
   end
 
   test_response :ping do |res|
+    assert_equal "ok", res.status
     # Nothing to do here
   end
 
