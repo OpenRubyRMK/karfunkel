@@ -56,7 +56,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #and childless root map. Call #parent= on the returned
     #instance to assign it its place in the map hierarchy.
     def self.load(project, name, path)
-      logger.debug "Loading map from #{path}"
+      log.debug "Loading map from #{path}"
       obj = load_xml(path)
       obj.instance_eval do
         @project  = project
@@ -88,7 +88,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #a root map. You then have to call #parent= to assign
     #a parent map.
     def initialize(project, name = nil, *args)
-      logger.info "Creating a new map"
+      log.info "Creating a new map"
       super(*args)
       @project  = project
       @id       = @project.generate_map_id
@@ -221,7 +221,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #Calls ruby-tmx’ +to_xml+, logs the call and writes the
     #result out to a file derived from the map’s project.
     def save
-      logger.debug "Saving map to #{path}"
+      log.debug "Saving map to #{path}"
       File.open(path, "w"){|f| f.write(to_xml)} # FIXME: Ensure this works with a future version of ruby-tmx, this is subject to change
     end
 

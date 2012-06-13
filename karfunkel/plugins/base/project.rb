@@ -78,7 +78,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
         end
       end
 
-      logger.info "Loaded project: #{proj.paths.root}"
+      log.info "Loaded project: #{proj.paths.root}"
       proj
     end
 
@@ -98,7 +98,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       @root_maps   = []
       @last_map_id = 0
 
-      logger.info "Created project: #{@paths.root}"
+      log.info "Created project: #{@paths.root}"
     end
 
     #Recursively deletes the project directory and invalidates this
@@ -108,7 +108,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       @paths.root.rmtree
 
       # 2. Inform the log
-      logger.info "Deleted project: #{@paths.root}"
+      log.info "Deleted project: #{@paths.root}"
 
       # 3. Commit suicide
       invalidate!
@@ -140,7 +140,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #Extracts the skeleton archive into the project directory
     #and renames the name_of_proj.rmk file to the project’s name.
     def create_skeleton
-      logger.debug "Creating project directory skeleton in #{@paths.root}"
+      log.debug "Creating project directory skeleton in #{@paths.root}"
       Zlib::GzipReader.open(OpenRubyRMK::Karfunkel::Paths::SKELETON_FILE.to_s) do |tgz|
         Archive::Tar::Minitar.unpack(tgz, @paths.root.to_s)
       end
