@@ -142,9 +142,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #and renames the name_of_proj.rmk file to the project’s name.
     def create_skeleton
       log.debug "Creating project directory skeleton in #{@paths.root}"
-      Zlib::GzipReader.open(OpenRubyRMK::Karfunkel::Paths::SKELETON_FILE.to_s) do |tgz|
-        Archive::Tar::Minitar.unpack(tgz, @paths.root.to_s)
-      end
+      FileUtils.cp_r "#{OpenRubyRMK::Karfunkel::Paths::SKELETON_DIR}/.", @paths.root
       File.rename(@paths.root.join("bin", "name_of_proj.rmk"), @paths.rmk_file)
     end
 

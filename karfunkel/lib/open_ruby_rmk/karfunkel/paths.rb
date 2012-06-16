@@ -53,9 +53,8 @@ module OpenRubyRMK
       CONFIG_FILE = CONFIG_DIR + "main.conf"
       #Where to find the plugin list.
       PLUGINS_FILE = CONFIG_DIR + "plugins.conf"
-      #Compressed tarball containing the layout for a new
-      #project.
-      SKELETON_FILE = CONFIG_DIR + "skeleton.tgz"
+      #Directory containing the basic structure for new projects.
+      SKELETON_DIR = CONFIG_DIR + "skeleton"
       #From this directory all files are loaded automatically. It’s
       #inteded for plugins.
       PLUGIN_DIR = INSTALL_DIR + "plugins"
