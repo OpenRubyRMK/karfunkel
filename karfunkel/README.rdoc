@@ -1,3 +1,0 @@
-= Karfunkel, OpenRubyRMK's server
-
-TODO: Write the README

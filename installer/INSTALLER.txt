@@ -1,1 +1,0 @@
-This directory is going to contain the code for the Windows installer for OpenRubyRMK. 
