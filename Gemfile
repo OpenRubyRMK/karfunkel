@@ -37,6 +37,8 @@ gem "ruby-tmx"
 
 # Things only needed for development and testing
 group :development do
+  gem "openrubyrmk-common", :git => "http://git.pegasus-alpha.eu/openrubyrmk/common.git",
+                            :require => "open_ruby_rmk/common"
   gem "paint"
   gem "turn"
 end

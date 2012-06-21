@@ -26,7 +26,7 @@ GEMSPEC = Gem::Specification.new do |spec|
 This is the server component of the OpenRubyRMK, the free and 
 open-source RPG creation program written in Ruby.
   DESCRIPTION
-  spec.version     = OpenRubyRMK::Karfunkel::VERSION.gsub("-", ".")
+  spec.version     = File.read("VERSION").strip.gsub("-", ".")
   spec.author      = "The OpenRubyRMK team"
   spec.email       = "openrubyrmk@googlemail.com"
 

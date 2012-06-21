@@ -56,7 +56,7 @@ Rake::RDocTask.new do |rt|
 end
 
 # GEMSPEC is defined in `karfunkel.gemspec'
-load "karfunkel.gemspec"
+load "openrubyrmk-karfunkel.gemspec"
 Gem::PackageTask.new(GEMSPEC).define
 
 
