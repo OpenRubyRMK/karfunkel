@@ -19,15 +19,40 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   #automatically, because this information will be exported
   #to XML which doesn’t know anbout anything else.
   #
+  #==Example
+  #  # Create the new category
+  #  items = Category.new("items")
+  #
+  #  # Add one entry to the items category
+  #  item1 = Category::Entry.new
+  #  item1[:name] = "Hot thing"
+  #  item1[:type] = "fire"
+  #  items.entries << item1
+  #
+  #  # Add another item
+  #  item2 = Category::Entry.new
+  #  item2[:name] = "Cool thing"
+  #  item2[:type] = "ice"
+  #  items.entries << item2
+  #
+  #  # Attributes used in this category
+  #  # TODO: Enforce the same attributes for every entry
+  #  p items.attributes #=> ["name", "type"]
+  #
+  #  # Save it out to disk
+  #  items.save("items.xml")
+  #  # Reload it
+  #  items = Category.load("items.xml")
+  #  p items.entries.count #=> 2
   #==Sample XML
   #  <category name="items">
   #    <entry>
-  #      <attribute name="name">FooItem</attribute>
-  #      <attribute name="type">Fire</attribute>
+  #      <attribute name="name">Hot thing</attribute>
+  #      <attribute name="type">fire</attribute>
   #    </entry>
   #    <entry>
-  #      <attribute name="name">BlaItem</attribute>
-  #      <attribute name="type">Water</attribute>
+  #      <attribute name="name">Cool thing</attribute>
+  #      <attribute name="type">ice</attribute>
   #    </entry>
   #  </category>
   class Category
