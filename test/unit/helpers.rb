@@ -8,6 +8,7 @@ require "tiled_tmx"
 
 require_relative "../../lib/open_ruby_rmk/karfunkel"
 require_relative "../../plugins/base/invalidatable"
+require_relative "../../plugins/base/category"
 require_relative "../../plugins/base/project"
 require_relative "../../plugins/base/map"
 

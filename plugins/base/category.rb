@@ -24,13 +24,13 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   #  items = Category.new("items")
   #
   #  # Add one entry to the items category
-  #  item1 = Category::Entry.new
+  #  item1 = Category::Entry.new(items)
   #  item1[:name] = "Hot thing"
   #  item1[:type] = "fire"
   #  items.entries << item1
   #
   #  # Add another item
-  #  item2 = Category::Entry.new
+  #  item2 = Category::Entry.new(items)
   #  item2[:name] = "Cool thing"
   #  item2[:type] = "ice"
   #  items.entries << item2
@@ -56,9 +56,37 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   #    </entry>
   #  </category>
   class Category
+    include Enumerable
+
+    #Thrown when you try to create an entry with an attribute
+    #not allowed in the entry’s category.
+    class UnknownAttribute < OpenRubyRMK::Errors::OpenRubyRMKError
+
+      #The entry where you wanted to add the attribute.
+      attr_reader :entry
+      #The name of the attribute.
+      attr_reader :attribute_name
+
+      #Create a new exception of this class.
+      #==Parameters
+      #[entry] The problematic entry.
+      #[attr]  The name of the faulty attribute.
+      #[msg]   (nil) Your custom error message.
+      #==Return value
+      #The new exception.
+      def initialize(entry, attr, msg = nil)
+        super(msg || "The attribute #{attr} is not allowed in the #{entry.category} category.")
+        @entry          = entry
+        @attribute_name = attr
+      end
+
+    end
 
     #An entry in a category.
     class Entry
+
+      #The Category object this entry belongs to.
+      attr_reader :category
 
       #All attributes (and their values) for this
       #entry. Don’t modify this directly, use the
@@ -66,32 +94,37 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       attr_reader :attributes
 
       #Creates a new and empty entry.
-      def initialize
-        @attributes = {}
+      #==Parameter
+      #[category] The Category instance this entry shall belong to.
+      #==Return value
+      #The new instance.
+      def initialize(category)
+        @category   = category
+        @attributes = Hash.new{|hsh, k| hsh[k] = ""}
       end
 
       #Gets the value of the named attribute. +name+ will
       #be converted to a string and the return value also
       #is a string.
       def [](name)
-        @attributes[name.to_s]
+        name = name.to_s
+        raise(UnknownAttribute.new(self, name)) unless @category.allowed_attributes.include?(name)
+
+        @attributes[name]
       end
 
       #Sets the value of the named attribtue. +name+
       #and +val+ will be converted to strings.
       def []=(name, val)
-        @attributes[name.to_s] = val.to_s
+        name = name.to_s
+        raise(UnknownAttribute.new(self, name)) unless @category.allowed_attributes.include?(name)
+
+        @attributes[name] = val.to_s
       end
 
       #Iterates over all attribute names and values.
       def each_attribute(&block)
         @attributes.each_pair(&block)
-      end
-
-      #Deletes the attribute +name+ (which is converted
-      #to a string if necessary).
-      def delete(name)
-        @attributes.delete(name.to_s)
       end
 
     end
@@ -105,13 +138,15 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       File.open(path) do |file|
         obj = allocate
         obj.instance_eval do
-          xml = Nokogiri::XML(file)
-          @name = xml.root["name"]
-          @entries = []
+          xml                 = Nokogiri::XML(file)
+          @name               = xml.root["name"]
+          @allowed_attributes = []
+          @entries            = []
 
           xml.xpath("//entry").each do |entry|
-            item = Entry.new
+            item = Entry.new(self)
             entry.xpath("attribute").each do |attr|
+              add_attribute(attr["name"]) # NOP if already in
               item[attr["name"]] = attr.text
             end
             @entries << item
@@ -122,23 +157,58 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       end
     end
 
-    #Create a new and empty category. +name+ will
-    #be converted to a string.
+    #All attribute names allowed for entries in this
+    #category.
+    attr_reader :allowed_attributes
+    #All Entry instances associated with this category.
+    attr_reader :entries
+
+    ##
+    # :attr_accessor: name
+    #The category’s name.
+
+    #Create a new and empty category.
     def initialize(name)
-      @name    = name.to_s
-      @entries = []
+      @name               = name.to_str
+      @allowed_attributes = []
+      @entries            = []
     end
 
-    #The attributes the entries in this category have.
-    #An array of strings.
-    def attributes
-      # All entries should have the same attributes
-      @entries.first.attributes.keys
+    #See accessor.
+    def name=(str) # :nodoc:
+      @name = str.to_str
+    end
+
+    #See accessor.
+    def name
+      @name
+    end
+
+    #Adds an Entry to this category.
+    def add_entry(entry)
+      @entries.push(entry)
+    end
+
+    #Same as #add_entry, but returns +self+ for method
+    #chaining.
+    def <<(entry)
+      add_entry(entry)
+      self
+    end
+
+    #Iterates over each Entry in this Category.
+    def each(&block)
+      @entries.each(&block)
     end
 
     #Add a new attribute to each entry in this category.
     #The set value will be an empty string.
+    #If the attribute is already allowed, does nothing.
     def add_attribute(name)
+      name = name.to_s
+      return if @allowed_attributes.include?(name)
+
+      @allowed_attributes << name
       @entries.each do |entry|
         entry[name] = nil
       end
@@ -146,9 +216,14 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
     #Removes an attribute (plus value) from each entry
     #in this category.
+    #If this attribute wasn’t existant before, does nothing.
     def delete_attribute(name)
+      name = name.to_s
+      return unless @allowed_attributes.include?(name)
+
+      @allowed_attributes.delete(name)
       @entries.each do |entry|
-        entry.delete(name)
+        entry[name] = nil
       end
     end
 

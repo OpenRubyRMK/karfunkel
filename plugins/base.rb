@@ -33,6 +33,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     require_relative "base/invalidatable"
     require_relative "base/project"
     require_relative "base/map"
+    require_relative "base/category"
   end
 
   ########################################
