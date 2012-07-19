@@ -26,9 +26,10 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     end
 
     #Struct encapsulating all per-project mutexes.
-    Mutexes = Struct.new(:map_id) do
+    Mutexes = Struct.new(:map_id, :categories) do
       def initialize # :nodoc:
-        self.map_id = Mutex.new
+        self.map_id     = Mutex.new
+        self.categories = Mutex.new
       end
     end
 
@@ -41,6 +42,8 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     attr_reader :config
     #The project’s root maps.
     attr_reader :root_maps
+    #The categories registered for this project.
+    attr_reader :categories
     #The project’s ID.
     attr_reader :id
 
@@ -71,6 +74,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
         @id          = self.class.generate_project_id
         @config      = YAML.load_file(@paths.rmk_file.to_s)
         @root_maps   = []
+        @categories  = []
         @last_map_id = 0 # Set by #load_map apropriately
 
         xml = Nokogiri::XML(File.read(@paths.maps_file))
@@ -97,6 +101,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       create_skeleton
       @config      = YAML.load_file(@paths.rmk_file.to_s)
       @root_maps   = []
+      @categories  = []
       @last_map_id = 0
 
       log.info "Created project: #{@paths.root}"
@@ -116,23 +121,38 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     end
 
     def save
-      # Save the maps
-      File.open(@paths.maps_file, "w") do |file|
-        builder = Nokogiri::XML::Builder.new do |xml|
-          xml.maps do |node|
-            @root_maps.each{|map| save_map(map, node)}
-          end
-        end
-        file.write(builder.to_xml)
-      end
-
-      # TODO: What other things to save?
+      save_maps
+      save_categories
     end
 
     #Threadsafely generates a new and unused map ID.
     def generate_map_id
       @mutexes.map_id.synchronize do
         @last_map_id += 1
+      end
+    end
+
+    #Adds a Category instance to this project.
+    def add_category(cat)
+      @mutexes.categories.synchronize do
+        # FIXME: Duplicate categories may occur! Check whether
+        #        a category is arleady there and raise an
+        #        appropriate exception!
+        @categories << cat
+      end
+    end
+
+    #Removes a category with the given name from the
+    #project or raise RuntimeError if the category is
+    #not to be found.
+    def delete_category(name)
+      @mutexes.categories.synchronize do
+        if cat = @categories.find{|c| c.name == name} # Single = intended
+          @categories.delete(cat)
+        else
+          #TODO: Raise a proper exception
+          raise("Category not found: #{name}")
+        end
       end
     end
 
@@ -144,6 +164,31 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       log.debug "Creating project directory skeleton in #{@paths.root}"
       FileUtils.cp_r "#{OpenRubyRMK::Karfunkel::Paths::SKELETON_DIR}/.", @paths.root
       File.rename(@paths.root.join("bin", "name_of_proj.rmk"), @paths.rmk_file)
+    end
+
+    #Part of the saving routine. Saves the maps.
+    def save_maps
+      File.open(@paths.maps_file, "w") do |file|
+        builder = Nokogiri::XML::Builder.new do |xml|
+          xml.maps do |node|
+            @root_maps.each{|map| save_map(map, node)}
+          end
+        end
+        file.write(builder.to_xml)
+      end
+    end
+
+    #Part of the saving routine. Saves the categories.
+    def save_categories
+      File.open(@paths.categories_file, "w") do |file|
+        Nokogiri::XML::Builder.new(encoding: "UTF-8") do |builder|
+          builder.categories do |root_node|
+            @categories.each do |cat|
+              cat.to_xml(root_node)
+            end #each
+          end # </categories>
+        end #new
+      end #open
     end
 
     #Recursive method adding an entry to +node+ for the given

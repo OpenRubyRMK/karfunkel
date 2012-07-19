@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require_relative "helpers"
 
 class CategoryTest < Test::Unit::TestCase
@@ -11,7 +12,7 @@ class CategoryTest < Test::Unit::TestCase
     assert_empty(cat.entries)
   end
 
-  def test_load_and_save
+  def test_from_and_to_xml
     items = Category.new("items")
     items.add_attribute("name")
     items.add_attribute("type")
@@ -28,13 +29,28 @@ class CategoryTest < Test::Unit::TestCase
 
     Dir.mktmpdir do |tmpdir|
       path = "#{tmpdir}/test.xml"
-      items.save(path)
-      assert(File.file?(path), "Didn't save into #{path}")
 
-      items = Category.load(path)
-      assert_equal(2, items.entries.count)
-      assert_equal("Cool thing", items.entries.first[:name])
-      assert_equal("fire", items.entries.last[:type])
+      # Dump it to the file. Note that we do NOT wrap
+      # a <categories> root node around the <category>
+      # as done in the real code as this isn’t really
+      # necessary here (we just cope with this single
+      # category).
+      File.open(path, "w") do |file|
+        Nokogiri::XML::Builder.new do |builder|
+          items.to_xml(builder)
+          file.write(builder.to_xml)
+        end
+      end
+
+      # Read it back in
+      File.open(path) do |file|
+        xml = Nokogiri::XML(file)
+        items = Category.from_xml(xml.root)
+
+        assert_equal(2, items.entries.count)
+        assert_equal("Cool thing", items.entries.first[:name])
+        assert_equal("fire", items.entries.last[:type])
+      end
     end
   end
 

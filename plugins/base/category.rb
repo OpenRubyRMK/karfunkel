@@ -129,34 +129,6 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
     end
 
-    #All entries in this category.
-    attr_reader :entries
-
-    #Load an entire category from the XML file at +path+.
-    #Return value is an instance of this class.
-    def self.load(path)
-      File.open(path) do |file|
-        obj = allocate
-        obj.instance_eval do
-          xml                 = Nokogiri::XML(file)
-          @name               = xml.root["name"]
-          @allowed_attributes = []
-          @entries            = []
-
-          xml.xpath("//entry").each do |entry|
-            item = Entry.new(self)
-            entry.xpath("attribute").each do |attr|
-              add_attribute(attr["name"]) # NOP if already in
-              item[attr["name"]] = attr.text
-            end
-            @entries << item
-          end
-        end
-
-        obj
-      end
-    end
-
     #All attribute names allowed for entries in this
     #category.
     attr_reader :allowed_attributes
@@ -166,6 +138,37 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     ##
     # :attr_accessor: name
     #The category’s name.
+
+    #Loads an entire category from its XML representation.
+    #==Parameter
+    #[root_node]
+    #  The category’s root node, i.e. the <category> node,
+    #  as a Nokogiri::XML::Node object. Do not confuse this
+    #  with the toplevel <categories> tag, which can actually
+    #  include multiple <category> tags for each of which you
+    #  have to call ::from_xml separately.
+    #==Return value
+    #A "new" instance of this class, initialised from what
+    #has been found in the XML structure.
+    def self.from_xml(category_node)
+      obj = allocate
+      obj.instance_eval do
+        @name               = category_node["name"]
+        @allowed_attributes = []
+        @entries            = []
+
+        category_node.xpath("entry").each do |entry_node|
+          entry = Entry.new(self)
+          entry_node.xpath("attribute").each do |attr_node|
+            add_attribute(attr_node["name"]) # NOP if already in
+            entry[attr_node["name"]] = attr_node.text
+          end
+          @entries << entry
+        end
+      end
+
+      obj
+    end
 
     #Create a new and empty category.
     def initialize(name)
@@ -227,21 +230,26 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       end
     end
 
-    #Saves the entire category to the XML file +path+.
-    def save(path)
-      builder = Nokogiri::XML::Builder.new(encoding: "UTF-8") do |xml1|
-        xml1.category(:name => "item") do |xml2|
-          @entries.each do |item|
-            xml2.entry do |xml3|
-              item.each_attribute do |name, val|
-                xml3.attribute(val, :name => name)
-              end
-            end
-          end
-        end
-      end
+    #Takes an XML builder object and adds the
+    #<category> child node (and its own child nodes)
+    #to it.
+    #==Parameter
+    #[builder] An Nokogiri::XML::Builder object representing
+    #          the root node.
+    #==Return value
+    #The +builder+ parameter.
+    def to_xml(builder)
+      builder.category(:name => @name) do |cat_node|
+        @entries.each do |entry|
+          cat_node.entry do |entry_node|
+            entry.each_attribute do |att_name, att_val|
+              entry_node.attribute(att_val, :name => att_name)
+            end #each_attribute
+          end # </entry>
+        end #each
+      end # </category>
 
-      File.open(path, "w"){|file| file.write(builder.to_xml)}
+      builder
     end
 
   end

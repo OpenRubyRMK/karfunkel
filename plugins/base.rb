@@ -227,4 +227,21 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     answer c, r, :ok
   end
 
+  ########################################
+  # Categories
+
+  process_request :new_category do |c, r|
+    answer c, r, :reject, :reason => :missing_parameter, :name => "name"  and return unless r["name"]
+    cat = OpenRubyRMK::Karfunkel::Plugin::Base::Category.new(r["name"])
+    @selected_project.add_category(cat)
+    broadcast :category_added, :name => cat.name
+    answer c, r, :ok, :name => cat.name
+  end
+
+  process_request :delete_category do |c, r|
+    answer c, r, :reject, :reason => :missing_parameter, :name => "name"  and return unless r["name"]
+    @selected_project.delete_category(r["name"])
+    broadcast :category_deleted, :name => r["name"]
+  end
+
 end
