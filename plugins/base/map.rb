@@ -70,6 +70,20 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
       obj
     end
 
+    def self.from_xml(project, name, id, map_node)
+      obj = load_xml_node(map_node)
+      obj.instance_eval do
+        @project  = project
+        @id       = id
+        @name     = name
+        @children = []
+        @parent   = nil
+        @mutex    = Mutex.new
+      end
+
+      obj
+    end
+
     #Creates a new instance of this class.
     #==Parameters
     #[project] The project to add this map to.
@@ -222,7 +236,23 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     #result out to a file derived from the map’s project.
     def save
       log.debug "Saving map to #{path}"
-      File.open(path, "w"){|f| f.write(to_xml)} # FIXME: Ensure this works with a future version of ruby-tmx, this is subject to change
+      File.open(path, "w"){|f| f.write(to_xml)} # FIXME: Ensure this works with a future version of ruby-tmx, this is subject to change # FIXME2: Method overwritten, doesn’t work
+    end
+
+    #Overwrite the superclass’ #to_xml method. This method
+    #now takes a Nokogiri::XML::Builder object representing
+    #a node and adds the whole map structure below it.
+    #==Parameter
+    #[builder] The Builder object to add to.
+    #==Return value
+    #The +builder+ parameter.
+    #==Remarks
+    #We don’t need ruby-tmx’ functionality of outputting
+    #strings directly. Instead just make #to_xml behave
+    #as the #to_xml methods in other classes in Karfunkel,
+    #i.e. taking a Nokogiri::XML::Builder and adding to it.
+    def to_xml(builder)
+      extend_xml_node(builder)
     end
 
   end

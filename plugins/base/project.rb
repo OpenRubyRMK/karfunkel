@@ -26,9 +26,10 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     end
 
     #Struct encapsulating all per-project mutexes.
-    Mutexes = Struct.new(:map_id, :categories) do
+    Mutexes = Struct.new(:map_id, :maps, :categories) do
       def initialize # :nodoc:
         self.map_id     = Mutex.new
+        self.maps       = Mutex.new
         self.categories = Mutex.new
       end
     end
@@ -129,6 +130,32 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     def generate_map_id
       @mutexes.map_id.synchronize do
         @last_map_id += 1
+      end
+    end
+
+    #Adds a Map instance as a root map to this project.
+    def add_root_map(map)
+      #FIXME: The +map+ must be a map with #parent set
+      #to `nil' (otherwise we get a circular parent tree!)
+      @mutexes.maps.synchronize do
+        @root_maps << map
+      end
+    end
+
+    #Removes a (root) map instance and all its child maps
+    #from the project.
+    def delete_root_map(id)
+      @mutexes.maps.synchronize do
+        if map = @root_maps.find{|m| m.id == id}
+          unless map.root?
+            raise("Not a root map: #{map}!")
+          else
+            @root_maps.delete(id)
+          end
+        else
+          #TODO: Raise a proper exception
+          raise("Map not found: #{id}")
+        end
       end
     end
 
