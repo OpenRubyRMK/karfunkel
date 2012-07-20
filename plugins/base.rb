@@ -53,46 +53,46 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     @selected_project = nil
   end
 
-  process_request :hello do |c, r|
-    answer :rejected, :reason => :already_authenticated and break if c.authenticated?
-    log.debug "Trying to authenticate '#{c}'..."
+  process_request :hello do
+    answer :rejected, :reason => :already_authenticated and break if client.authenticated?
+    log.debug "Trying to authenticate '#{client}'..."
 
     #TODO: Here one could add password checks and other nice things
-    c.id            = kf.generate_client_id
-    c.authenticated = true
+    client.id            = kf.generate_client_id
+    client.authenticated = true
     
-    log.info "[#{c}] Authenticated."
+    log.info "[#{client}] Authenticated."
     
-    answer c, r, :ok, :my_version => OpenRubyRMK::Karfunkel::VERSION,
-                 :my_project      => kf.selected_project.to_s,
-                 :my_clients_num  => kf.clients.count,
-                 :your_id         => c.id
+    answer :ok, :my_version => OpenRubyRMK::Karfunkel::VERSION,
+           :my_project      => kf.selected_project.to_s,
+           :my_clients_num  => kf.clients.count,
+           :your_id         => client.id
   end
 
-  process_request :ping do |c, r|
+  process_request :ping do
     #If Karfunkel gets a PING request, we just answer it as OK and
     #are done with it.
-    answer c, r, :ok
+    answer :ok
   end
 
-  process_response :ping do |c, r|
+  process_response :ping do
     #Nothing is necessary here, because a client’s availability status
     #is set automatically if it sends a reponse. I just place the
     #method here, because without it we would get a NotImplementedError
     #exception.
   end
 
-  process_request :shutdown do |c, r|
+  process_request :shutdown do
     # Trying to stop the server will issue requests
     # to all connected clients asking them to agree
-    answer c, r, :ok
-    OpenRubyRMK::Karfunkel.instance.stop(c)
+    answer :ok
+    OpenRubyRMK::Karfunkel.instance.stop(client)
   end
 
   # If we get this, a SHUTDOWN request has been answered.
-  process_response :shutdown do |c, r|
-    c.accepted_shutdown = r.status == "ok" ? true : false
-    log.info("[#{c}] Shutdown accepted")
+  process_response :shutdown do
+    client.accepted_shutdown = request.status == "ok" ? true : false
+    log.info("[#{client}] Shutdown accepted")
     # If all clients have accepted, stop the server
     OpenRubyRMK::Karfunkel.instance.stop! if OpenRubyRMK::Karfunkel.instance.clients.all?(&:accepted_shutdown)
   end
@@ -205,6 +205,8 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   # Map management
 
   process_request :new_map do |c, r|
+    #NOTE: "new map" doesn’t necessarily mean "new root map"!
+
     map = Base::Map.new(@selected_project, r["name"]) # If no name is given, nil passed -> default value -> auto-generated name
     broadcast :map_added, :id => map.id, :name => map.name
     answer c, r, :ok, :id => map.id

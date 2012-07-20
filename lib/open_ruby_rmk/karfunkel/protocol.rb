@@ -54,7 +54,6 @@ module OpenRubyRMK
   #   which removes the client from the list of connected clients
   #   and cancels the ping timer for this client.
   module Karfunkel::Protocol
-    include Karfunkel::CommandHelpers
 
     #The client that sits on the other end of the connection.
     #A Core::Client object.
@@ -149,7 +148,7 @@ module OpenRubyRMK
         command = @transformer.parse!(command_xml)
       rescue => e
         Karfunkel::THE_INSTANCE.log_exception(e)
-        error(@client, :message => e.message)
+        answer(nil, :error, :message => e.message)
         return
       end
       
@@ -161,11 +160,11 @@ module OpenRubyRMK
       command.requests.each do |req|
         begin
           Karfunkel.instance.log.info("[#@client] Request: #{req.type}")
-          rejected(@client, req, :reason => "Not authenticated") and next if !client.authenticated? and !req.type == :hello
+          answer(req, :rejected, :reason => "Not authenticated") and next if !client.authenticated? and !req.type == :hello
           Karfunkel.instance.handle_request(client, req)
         rescue => e
           Karfunkel.instance.log_exception(e)
-          rejected(@client, req, :reason => e.message)
+          answer(req, :rejected, :reason => e.message)
         end
       end
 
@@ -196,7 +195,17 @@ module OpenRubyRMK
       @client.authenticated = false
       close_connection
     end
-    
+
+    #Delivers a response to the client for this connection.
+    #Takes the request object to construct a response for,
+    #the response type and any additional information you
+    #want to include in the response as a hash.
+    def answer(request, type, hsh = {})
+      res = Common::Response.new(Karfunkel.instance.generate_request_id, type, request)
+      hsh.each_pair{|k, v| res[k] = v}
+      Karfunkel.instance.deliver_response(res, @client)
+    end
+
   end
 
 end

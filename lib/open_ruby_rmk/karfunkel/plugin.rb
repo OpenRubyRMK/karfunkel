@@ -53,7 +53,6 @@ module OpenRubyRMK
       #When a module mixes in Plugin, this module is mixed
       #into its singleton class (#extend).
       module ClassMethods
-        include OpenRubyRMK::Karfunkel::CommandHelpers
         include OpenRubyRMK::Karfunkel::Plugin::Helpers
 
         #call-seq:
