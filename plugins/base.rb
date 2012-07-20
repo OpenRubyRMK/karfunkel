@@ -100,28 +100,28 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   ########################################
   # Project management
 
-  process_request :load_project do |c, r|
-    answer(c, r, :rejected, :reason => :not_found) and break unless File.directory?(r[:path])
+  process_request :load_project do
+    answer(:rejected, :reason => :not_found) and break unless File.directory?(request[:path])
 
     # FIXME: Use EventMachine.defer + :processing answer as this operation may last long!
-    @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.load(r[:path])
+    @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.load(request[:path])
     @selected_project = @projects.last
-    answer c, r, :ok, :id => @selected_project.id
+    answer :ok, :id => @selected_project.id
     broadcast :project_selected, :id => @selected_project.id
   end
 
-  process_request :new_project do |c, r|
-    answer(c, r, :rejected, :reason => :already_exists) and break if File.exists?(r[:path])
+  process_request :new_project do
+    answer(:rejected, :reason => :already_exists) and break if File.exists?(request[:path])
 
-    @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.new(r[:path])
+    @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.new(request[:path])
     @selected_project = @projects.last
-    answer c, r, :ok, :id => @selected_project.id
+    answer :ok, :id => @selected_project.id
     broadcast :project_selected, :id => @selected_project.id
   end
 
-  process_request :close_project do |c, r|
-    proj = @projects.find{|p| p.id == r[:id].to_i}
-    answer c, r, :reject, :reason => :not_found and break unless proj
+  process_request :close_project do
+    proj = @projects.find{|p| p.id == request[:id].to_i}
+    answer :reject, :reason => :not_found and break unless proj
 
     @selected_project.save
     @selected_project = nil if @selected_project == proj
@@ -130,90 +130,90 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     broadcast :project_selected, :id => -1
   end
 
-  process_request :delete_project do |c, r|
-    proj = @projects.find{|p| p.id == r[:id].to_i}
-    answer c, r, :reject, :not_found and break unless proj
+  process_request :delete_project do
+    proj = @projects.find{|p| p.id == request[:id].to_i}
+    answer :reject, :not_found and break unless proj
 
     @selected_project = nil if @selected_project == proj
     @projects.delete(proj)
     proj.delete!
-    answer c, r, :ok
+    answer :ok
     broadcast :project_selected, :id => -1
   end
 
-  process_request :save_project do |c, r|
+  process_request :save_project do
     @selected_project.save
-    answer c, r, :ok
+    answer :ok
   end
 
   ########################################
   # Global scripts
 
-  process_request :new_global_script do |c, r|
-    name = r["name"].gsub(" ", "_").downcase
+  process_request :new_global_script do
+    name = request["name"].gsub(" ", "_").downcase
     name << ".rb" unless name.end_with?(".rb")
     path = @selected_project.paths.script_dir + name
-    answer c, r, :reject, :reason => :exists and return if path.file?
+    answer :reject, :reason => :exists and return if path.file?
 
-    File.open(path, "w"){|f| f.write(r["code"].force_encoding("UTF-8"))}
-    answer c, r, :ok
+    File.open(path, "w"){|f| f.write(request["code"].force_encoding("UTF-8"))}
+    answer :ok
     broadcast :global_script_added, :name => name
   end
 
-  process_request :delete_global_script do |c, r|
-    path = @selected_project.paths.script_dir + r["name"]
-    answer c, r, :reject, :reason => :not_found and return unless path.file?
+  process_request :delete_global_script do
+    path = @selected_project.paths.script_dir + request["name"]
+    answer :reject, :reason => :not_found and return unless path.file?
 
     path.delete
-    answer c, r, :ok
-    broadcast :global_script_deleted, :name => r["name"]
+    answer :ok
+    broadcast :global_script_deleted, :name => request["name"]
   end
 
   ########################################
   # Tileset stuff
 
-  process_request :new_tileset do |c, r|
-    answer c, r, :reject, :reason => :missing_parameter, :name => "picture"  and return unless r["picture"]
-    answer c, r, :reject, :reason => :missing_parameter, :name => "name"     and return unless r["name"]
+  process_request :new_tileset do
+    answer :reject, :reason => :missing_parameter, :name => "picture"  and return unless request["picture"]
+    answer :reject, :reason => :missing_parameter, :name => "name"     and return unless request["name"]
 
     # Make all names obey the same format. No spaces, lowercase.
-    name = r["name"].gsub(" ", "_").downcase
+    name = request["name"].gsub(" ", "_").downcase
     name << ".png" unless name.end_with?(".png")
     path = @selected_project.paths.tilesets_dir + name
-    answer c, r, :reject, :reason => :exists and return if path.file?
+    answer :reject, :reason => :exists and return if path.file?
 
-    pic = Base64.decode64(r["picture"])
-    answer c, r, :reject, :reason => :bad_format and return unless pic.bytes.first(4).drop(1).map(&:chr).join == "PNG"
+    pic = Base64.decode64(request["picture"])
+    answer :reject, :reason => :bad_format and return unless pic.bytes.first(4).drop(1).map(&:chr).join == "PNG"
 
     File.open(@selected_project.paths.tilesets_dir + name, "wb"){|file| file.write(pic)}
     broadcast :tileset_added, :name => name
-    answer c, r, :ok
+    answer :ok
   end
 
   process_request :delete_tileset do |c, r|
-    answer c, r, :reject, :reason => :missing_parameter and return unless r["name"]
+    answer :reject, :reason => :missing_parameter and return unless request["name"]
 
     path = @selected_project.paths.tilesets_dir + name
-    answer c, r, :reject, :reason => :not_found and return unless path.file?
+    answer :reject, :reason => :not_found and return unless path.file?
 
     path.delete
-    broadcast :tileset_deleted, :name => r["name"]
-    answer c, r, :ok
+    broadcast :tileset_deleted, :name => request["name"]
+    answer :ok
   end
 
   ########################################
   # Map management
 
-  process_request :new_map do |c, r|
+  process_request :new_map do
     #NOTE: "new map" doesn’t necessarily mean "new root map"!
 
-    map = Base::Map.new(@selected_project, r["name"]) # If no name is given, nil passed -> default value -> auto-generated name
+    map = Base::Map.new(@selected_project, request["name"]) # If no name is given, nil passed -> default value -> auto-generated name
     broadcast :map_added, :id => map.id, :name => map.name
-    answer c, r, :ok, :id => map.id
+    answer :ok, :id => map.id
   end
 
-  process_request :delete_map do |c, r|
-    id = Integer(r["id"]) # Raises if id is not given
+  process_request :delete_map do
+    id = Integer(request["id"]) # Raises if id is not given
 
     parent_map = catch(:found) do
       @selected_project.root_maps.each do |root_map|
@@ -221,29 +221,29 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
           throw :found, map if map.has_child?(id)
         end
       end
-      answer c, r, :reject, :reason => :not_found and return
+      answer :reject, :reason => :not_found and return
     end
 
     parent_map.delete(id)
     broadcast :map_deleted, :id => id
-    answer c, r, :ok
+    answer :ok
   end
 
   ########################################
   # Categories
 
-  process_request :new_category do |c, r|
-    answer c, r, :reject, :reason => :missing_parameter, :name => "name"  and return unless r["name"]
-    cat = OpenRubyRMK::Karfunkel::Plugin::Base::Category.new(r["name"])
+  process_request :new_category do
+    answer :reject, :reason => :missing_parameter, :name => "name"  and return unless request["name"]
+    cat = OpenRubyRMK::Karfunkel::Plugin::Base::Category.new(request["name"])
     @selected_project.add_category(cat)
     broadcast :category_added, :name => cat.name
-    answer c, r, :ok, :name => cat.name
+    answer :ok, :name => cat.name
   end
 
-  process_request :delete_category do |c, r|
-    answer c, r, :reject, :reason => :missing_parameter, :name => "name"  and return unless r["name"]
-    @selected_project.delete_category(r["name"])
-    broadcast :category_deleted, :name => r["name"]
+  process_request :delete_category do
+    answer :reject, :reason => :missing_parameter, :name => "name"  and return unless request["name"]
+    @selected_project.delete_category(request["name"])
+    broadcast :category_deleted, :name => request["name"]
   end
 
 end
