@@ -116,7 +116,7 @@ class OpenRubyRMK::Karfunkel::ActionHandler
   #         :processing, :failed and :finished.
   #[hsh]    Any information you want to include into the
   #         response as a hash (both keys and values will
-  #         be converted to strings upon delivering).
+  #         be converted to strings upon delivery).
   def answer(status, hsh = {})
     if respond_to?(status, true)
       send(status, hsh)
@@ -131,6 +131,20 @@ class OpenRubyRMK::Karfunkel::ActionHandler
       hsh.each_pair{|k, v| res[k] = v}
       OpenRubyRMK::Karfunkel.instance.deliver_response(res, @client)
     end
+  end
+
+  #Delivers a notification to all currently connected clients.
+  #==Parameters
+  #[type] The notification type. You can use your own types,
+  #       but please document them.
+  #       FIXME: And what are the built-in types?
+  #[hsh]  ({}) Any information you want to include into the
+  #       notification as a hash (both keys and values will
+  #       be converted to strings upon delivery).
+  def broadcast(type, hsh = {})
+    note = OpenRubyRMK::Common::Notification.new(OpenRubyRMK::Karfunkel.instance.generate_request_id, type)
+    hsh.each_pair{|k, v| note[k] = v}
+    OpenRubyRMK::Karfunkel.instance.deliver_notification(note)
   end
 
 end
