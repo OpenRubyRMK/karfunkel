@@ -32,9 +32,10 @@ rescue LoadError
 end
 
 require_relative "karfunkel/paths"
-require_relative "karfunkel/command_helpers"
 require_relative "karfunkel/plugin"
 require_relative "karfunkel/pluggable"
+require_relative "karfunkel/request_dsl"
+require_relative "karfunkel/action_handler"
 require_relative "karfunkel/errors"
 require_relative "karfunkel/configuration"
 require_relative "karfunkel/client"
@@ -173,9 +174,10 @@ module OpenRubyRMK
       @plugins = []
       # Configuration instance.
       @config = Configuration.new
-      # Hold procs to handle incomming requests and responses
-      @request_procs  = {}
-      @response_procs = {}
+      # Hold instances of ActionHandler to handle incomming
+      #requests and responses
+      @request_handlers  = []
+      @response_handlers = []
 
       @client_id_generator_mutex  = Mutex.new #Never generate duplicate client IDs.
       @request_id_generator_mutex = Mutex.new #Same for request IDs.
@@ -503,7 +505,17 @@ module OpenRubyRMK
       def handle_request(client, req)
         raise(Errors::UnknownRequestType.new(req, "Can't handle '#{req.type}' requests!")) unless can_handle_request?(req)
 
-        @request_procs[req.type].call(client, req)
+        begin
+          @request_handlers.find{|handler| handler.type == req.type}.call(client, req)
+        rescue OpenRubyRMK::Common::Errors::UnknownParameter => e
+          # If this exception is thrown, the client didn’t
+          # set a required parameter.
+
+          log_exception(e)
+          res = OpenRubyRMK::Common::Response.new(generate_request_id, :rejected, req)
+          res[:reason] = :missing_parameter
+          res[:name]   = e.name
+        end
       end
 
       #*HOOK*. Handles an incoming response. By default, calls the
@@ -522,7 +534,16 @@ module OpenRubyRMK
       def handle_response(client, res)
         raise(Errors::UnknownResponseType.new(res, "Can't handle responses to '#{res.request.type}' requests!")) unless can_handle_response?(res)
 
-        @response_procs[res.request.type].call(client, res)
+        begin
+          @response_handlers.find{|handler| handler.type == res.request.type}.call(client, res)
+          rescue OpenRubyRMK::Common::Errors::UnknownParameter => e
+          # If this exception is thrown, the client didn’t
+          # set a required parameter.
+
+          # You cannot respond to a response. So just log the
+          # error and be done with it.
+          log_exception(e)
+        end
       end
       
       protected
@@ -622,7 +643,7 @@ module OpenRubyRMK
     #Either true or false.
     def can_handle_request?(type)
       type = type.type if type.kind_of?(OpenRubyRMK::Common::Request)
-      @request_procs.has_key?(type)
+      @request_handlers.any?{|handler| handler.type == type}
     end
 
     #true if Karfunkel or one of its plugins is capable to
@@ -634,7 +655,7 @@ module OpenRubyRMK
     #Either true or false.
     def can_handle_response?(type)
       type = type.request.type if type.kind_of?(OpenRubyRMK::Common::Response)
-      @response_procs.has_key?(type)
+      @response_handlers.any?{|handler| handler.type == type}
     end
 
     #call-seq:
@@ -655,7 +676,7 @@ module OpenRubyRMK
       # in order to avoid confusion.
       raise(Errors::PluginError, "Duplicate definition of request handler '#{type}'!") if can_handle_request?(type)
 
-      @request_procs[type] = handler
+      @request_handlers << ActionHandler.new(type, &handler)
     end
 
     #call-seq:
@@ -677,7 +698,7 @@ module OpenRubyRMK
       # allowed in order to avoid confusion.
       raise(Errors::PluginError, "Duplicate definition of response handler '#{type}'!") if can_handle_response?(type)
 
-      @response_procs[type] = handler
+      @response_handlers << ActionHandler.new(type, &handler)
     end
     
     private

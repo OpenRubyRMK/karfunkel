@@ -28,6 +28,7 @@ Path                    Description
   bin/                  Contains the main file.
     - name_of_proj.rmk  Project main file, containg name, version, etc.
   data/                 Project data. Graphics, music, ...
+    - categories.xml    Categories (items, skills, etc.) used in a project.
     audio/              Sounds and music.
     graphics/           Characters, tilesets...
     maps/               Actual maps.
