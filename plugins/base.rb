@@ -54,7 +54,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   end
 
   process_request :hello do
-    answer :rejected, :reason => :already_authenticated and break if client.authenticated?
+    answer! :rejected, :reason => :already_authenticated if client.authenticated?
     log.debug "Trying to authenticate '#{client}'..."
 
     #TODO: Here one could add password checks and other nice things
@@ -101,7 +101,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   # Project management
 
   process_request :load_project do
-    answer(:rejected, :reason => :not_found) and break unless File.directory?(request[:path])
+    answer! :rejected, :reason => :not_found unless File.directory?(request[:path])
 
     # FIXME: Use EventMachine.defer + :processing answer as this operation may last long!
     @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.load(request[:path])
@@ -111,7 +111,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   end
 
   process_request :new_project do
-    answer(:rejected, :reason => :already_exists) and break if File.exists?(request[:path])
+    answer! :rejected, :reason => :already_exists if File.exists?(request[:path])
 
     @projects << OpenRubyRMK::Karfunkel::Plugin::Base::Project.new(request[:path])
     @selected_project = @projects.last
@@ -121,9 +121,9 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
   process_request :close_project do
     proj = @projects.find{|p| p.id == request[:id].to_i}
-    answer :reject, :reason => :not_found and break unless proj
+    answer! :reject, :reason => :not_found unless proj
 
-    @selected_project.save
+    proj.save
     @selected_project = nil if @selected_project == proj
     @projects.delete(proj)
     answer :ok
@@ -132,7 +132,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
   process_request :delete_project do
     proj = @projects.find{|p| p.id == request[:id].to_i}
-    answer :reject, :not_found and break unless proj
+    answer! :reject, :not_found unless proj
 
     @selected_project = nil if @selected_project == proj
     @projects.delete(proj)
@@ -153,7 +153,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     name = request["name"].gsub(" ", "_").downcase
     name << ".rb" unless name.end_with?(".rb")
     path = @selected_project.paths.script_dir + name
-    answer :reject, :reason => :exists and return if path.file?
+    answer! :reject, :reason => :exists if path.file?
 
     File.open(path, "w"){|f| f.write(request["code"].force_encoding("UTF-8"))}
     answer :ok
@@ -162,7 +162,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
   process_request :delete_global_script do
     path = @selected_project.paths.script_dir + request["name"]
-    answer :reject, :reason => :not_found and return unless path.file?
+    answer! :reject, :reason => :not_found unless path.file?
 
     path.delete
     answer :ok
@@ -177,10 +177,10 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     name = request["name"].gsub(" ", "_").downcase
     name << ".png" unless name.end_with?(".png")
     path = @selected_project.paths.tilesets_dir + name
-    answer :reject, :reason => :exists and return if path.file?
+    answer! :reject, :reason => :exists if path.file?
 
     pic = Base64.decode64(request["picture"])
-    answer :reject, :reason => :bad_format and return unless pic.bytes.first(4).drop(1).map(&:chr).join == "PNG"
+    answer! :reject, :reason => :bad_format unless pic.bytes.first(4).drop(1).map(&:chr).join == "PNG"
 
     File.open(@selected_project.paths.tilesets_dir + name, "wb"){|file| file.write(pic)}
     broadcast :tileset_added, :name => name
@@ -189,7 +189,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
 
   process_request :delete_tileset do |c, r|
     path = @selected_project.paths.tilesets_dir + request["name"]
-    answer :reject, :reason => :not_found and return unless path.file?
+    answer! :reject, :reason => :not_found unless path.file?
 
     path.delete
     broadcast :tileset_deleted, :name => request["name"]
@@ -216,7 +216,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
           throw :found, map if map.has_child?(id)
         end
       end
-      answer :reject, :reason => :not_found and return
+      answer! :reject, :reason => :not_found
     end
 
     parent_map.delete(id)

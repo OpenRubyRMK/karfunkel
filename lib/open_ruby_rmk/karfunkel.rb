@@ -506,7 +506,9 @@ module OpenRubyRMK
         raise(Errors::UnknownRequestType.new(req, "Can't handle '#{req.type}' requests!")) unless can_handle_request?(req)
 
         begin
-          @request_handlers.find{|handler| handler.type == req.type}.call(client, req)
+          catch(:halt) do # Gives a possiblity to immediately halt processing
+            @request_handlers.find{|handler| handler.type == req.type}.call(client, req)
+          end
         rescue OpenRubyRMK::Common::Errors::UnknownParameter => e
           # If this exception is thrown, the client didn’t
           # set a required parameter.
@@ -535,8 +537,10 @@ module OpenRubyRMK
         raise(Errors::UnknownResponseType.new(res, "Can't handle responses to '#{res.request.type}' requests!")) unless can_handle_response?(res)
 
         begin
-          @response_handlers.find{|handler| handler.type == res.request.type}.call(client, res)
-          rescue OpenRubyRMK::Common::Errors::UnknownParameter => e
+          catch(:halt) do # Gives a possiblity to immediately halt processing
+            @response_handlers.find{|handler| handler.type == res.request.type}.call(client, res)
+          end
+        rescue OpenRubyRMK::Common::Errors::UnknownParameter => e
           # If this exception is thrown, the client didn’t
           # set a required parameter.
 

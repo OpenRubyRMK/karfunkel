@@ -70,19 +70,30 @@ module OpenRubyRMK::Karfunkel::RequestDSL
   #         response as a hash (both keys and values will
   #         be converted to strings upon delivery).
   def answer(status, hsh = {})
-    if respond_to?(status, true)
-      send(status, hsh)
-    else
-      raise(NoMethodError, "Unknown answer method '#{status}'!")
-    end
+    res = OpenRubyRMK::Common::Response.new(OpenRubyRMK::Karfunkel.instance.generate_request_id, status, request)
+    hsh.each_pair{|k, v| res[k] = v}
+    OpenRubyRMK::Karfunkel.instance.deliver_response(res, client)
   end
 
-  [:rejected, :error, :ok, :processing, :failed, :finished].each do |sym|
-    define_method(sym) do |hsh = {}|
-      res = OpenRubyRMK::Common::Response.new(OpenRubyRMK::Karfunkel.instance.generate_request_id, sym, request)
-      hsh.each_pair{|k, v| res[k] = v}
-      OpenRubyRMK::Karfunkel.instance.deliver_response(res, client)
-    end
+  #Like #answer, but immediately after sending out the response
+  #calls #halt, stopping further processing on this request handler.
+  #==Parameters
+  #[status] The request status, i.e. one of :ok, :rejected,
+  #         :processing, :failed and :finished.
+  #[hsh]    Any information you want to include into the
+  #         response as a hash (both keys and values will
+  #         be converted to strings upon delivery).
+  def answer!(status, hsh = {})
+    answer
+    halt
+  end
+
+  #Throws the :halt symbol, which is catched by the request/response
+  #scheduler. It effectively stops further processing of this
+  #request/response inside your handler (but note that plugins
+  #that have hooked into the respective scheduler may still run).
+  def halt
+    throw :halt
   end
 
   #Delivers a notification to all currently connected clients.

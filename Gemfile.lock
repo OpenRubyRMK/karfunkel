@@ -1,6 +1,6 @@
 GIT
   remote: http://git.pegasus-alpha.eu/openrubyrmk/common.git
-  revision: c4cc47d89f8c4bcf37cadee4d4530b0ead244e7c
+  revision: 8b7a5b037908aede7fc5170cb2999c18be41856a
   specs:
     openrubyrmk-common (0.0.1.dev)
       nokogiri
@@ -11,7 +11,7 @@ GEM
     ansi (1.4.2)
     eventmachine (0.12.10)
     minitar (0.5.3)
-    nokogiri (1.5.4)
+    nokogiri (1.5.5)
     paint (0.8.5)
     ruby-tmx (0.0.1.dev)
       nokogiri
