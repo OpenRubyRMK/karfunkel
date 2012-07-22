@@ -70,6 +70,8 @@ module OpenRubyRMK::Karfunkel::RequestDSL
   #         response as a hash (both keys and values will
   #         be converted to strings upon delivery).
   def answer(status, hsh = {})
+    raise(OpenRubyRMK::Errors::PluginError, "Can't use #answer if no request is being processed!") unless request
+
     res = OpenRubyRMK::Common::Response.new(OpenRubyRMK::Karfunkel.instance.generate_request_id, status, request)
     hsh.each_pair{|k, v| res[k] = v}
     OpenRubyRMK::Karfunkel.instance.deliver_response(res, client)
