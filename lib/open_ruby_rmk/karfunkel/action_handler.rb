@@ -11,12 +11,10 @@
 #with.
 #
 #The methods most interesting for you as a plugin writer
-#are the protected methods documented further below. Additionally,
-#this class includes the OpenRubyRMK::Karfunkel::Plugin::Helpers
-#module, allowing you to use the generic helper methods defined
-#there in your handler code blocks.
+#are those made available via the RequestDSL mixin.
 class OpenRubyRMK::Karfunkel::ActionHandler
   include OpenRubyRMK::Karfunkel::Plugin::Helpers
+  include OpenRubyRMK::Karfunkel::RequestDSL
 
   #The currently handled Request instance.
   attr_reader :request
@@ -30,54 +28,6 @@ class OpenRubyRMK::Karfunkel::ActionHandler
   #string, to ease comparison with what requests and
   #responses return.
   attr_reader :type
-
-  ##
-  # :method: rejected
-  #call-seq:
-  #  rejected(client, request, hsh)
-  #
-  #Like #ok, but for the +rejected+ status.
-
-  ##
-  # :method: error
-  #call-seq:
-  #  error(client, request, hsh)
-  #
-  #Like #ok, but for the +error+ status.
-
-  ##
-  # :method: ok
-  #call-seq:
-  #  ok(client, request, hsh)
-  #
-  #Delivers the +ok+ response.
-  #==Parameters
-  #[client] The client to deliver to.
-  #[request] The request to answer.
-  #[hsh]     Any information you want to include into the response
-  #          as a hash (both keys and values will be converted
-  #          to string on delivering).
-
-  ##
-  # :method: processing
-  #call-seq:
-  #  processing(client, request, hsh)
-  #
-  #Like #ok, but for the +processing+ status.
-
-  ##
-  # :method: failed
-  #call-seq:
-  #  failed(client, request, hsh)
-  #
-  #Like #ok, but for the +failed+ status.
-
-  ##
-  # :method: finished
-  #call-seq:
-  #  finished(client, request, hsh)
-  #
-  #Like #ok, but for the +finished+ status.
 
   #Creates a new instance of this class. Pass the block
   #that is to be used as the request/response handler.
@@ -106,45 +56,6 @@ class OpenRubyRMK::Karfunkel::ActionHandler
     @client   = nil
     @request  = nil
     @response = nil
-  end
-
-  protected
-
-  #Answers the currently running request.
-  #==Parameters
-  #[status] The request status, i.e. one of :ok, :rejected,
-  #         :processing, :failed and :finished.
-  #[hsh]    Any information you want to include into the
-  #         response as a hash (both keys and values will
-  #         be converted to strings upon delivery).
-  def answer(status, hsh = {})
-    if respond_to?(status, true)
-      send(status, hsh)
-    else
-      raise(NoMethodError, "Unknown answer method '#{status}'!")
-    end
-  end
-
-  [:rejected, :error, :ok, :processing, :failed, :finished].each do |sym|
-    define_method(sym) do |hsh = {}|
-      res = OpenRubyRMK::Common::Response.new(OpenRubyRMK::Karfunkel.instance.generate_request_id, sym, @request)
-      hsh.each_pair{|k, v| res[k] = v}
-      OpenRubyRMK::Karfunkel.instance.deliver_response(res, @client)
-    end
-  end
-
-  #Delivers a notification to all currently connected clients.
-  #==Parameters
-  #[type] The notification type. You can use your own types,
-  #       but please document them.
-  #       FIXME: And what are the built-in types?
-  #[hsh]  ({}) Any information you want to include into the
-  #       notification as a hash (both keys and values will
-  #       be converted to strings upon delivery).
-  def broadcast(type, hsh = {})
-    note = OpenRubyRMK::Common::Notification.new(OpenRubyRMK::Karfunkel.instance.generate_request_id, type)
-    hsh.each_pair{|k, v| note[k] = v}
-    OpenRubyRMK::Karfunkel.instance.deliver_notification(note)
   end
 
 end

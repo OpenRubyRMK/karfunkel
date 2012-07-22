@@ -173,9 +173,6 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   # Tileset stuff
 
   process_request :new_tileset do
-    answer :reject, :reason => :missing_parameter, :name => "picture"  and return unless request["picture"]
-    answer :reject, :reason => :missing_parameter, :name => "name"     and return unless request["name"]
-
     # Make all names obey the same format. No spaces, lowercase.
     name = request["name"].gsub(" ", "_").downcase
     name << ".png" unless name.end_with?(".png")
@@ -191,9 +188,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   end
 
   process_request :delete_tileset do |c, r|
-    answer :reject, :reason => :missing_parameter and return unless request["name"]
-
-    path = @selected_project.paths.tilesets_dir + name
+    path = @selected_project.paths.tilesets_dir + request["name"]
     answer :reject, :reason => :not_found and return unless path.file?
 
     path.delete
@@ -213,7 +208,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   end
 
   process_request :delete_map do
-    id = Integer(request["id"]) # Raises if id is not given
+    id = request["id"].to_i
 
     parent_map = catch(:found) do
       @selected_project.root_maps.each do |root_map|
@@ -233,7 +228,6 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   # Categories
 
   process_request :new_category do
-    answer :reject, :reason => :missing_parameter, :name => "name"  and return unless request["name"]
     cat = OpenRubyRMK::Karfunkel::Plugin::Base::Category.new(request["name"])
     @selected_project.add_category(cat)
     broadcast :category_added, :name => cat.name
@@ -241,7 +235,6 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   end
 
   process_request :delete_category do
-    answer :reject, :reason => :missing_parameter, :name => "name"  and return unless request["name"]
     @selected_project.delete_category(request["name"])
     broadcast :category_deleted, :name => request["name"]
   end

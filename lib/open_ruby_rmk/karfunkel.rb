@@ -34,6 +34,7 @@ end
 require_relative "karfunkel/paths"
 require_relative "karfunkel/plugin"
 require_relative "karfunkel/pluggable"
+require_relative "karfunkel/request_dsl"
 require_relative "karfunkel/action_handler"
 require_relative "karfunkel/errors"
 require_relative "karfunkel/configuration"
@@ -504,7 +505,17 @@ module OpenRubyRMK
       def handle_request(client, req)
         raise(Errors::UnknownRequestType.new(req, "Can't handle '#{req.type}' requests!")) unless can_handle_request?(req)
 
-        @request_handlers.find{|handler| handler.type == req.type}.call(client, req)
+        begin
+          @request_handlers.find{|handler| handler.type == req.type}.call(client, req)
+        rescue OpenRubyRMK::Common::Errors::UnknownParameter => e
+          # If this exception is thrown, the client didn’t
+          # set a required parameter.
+
+          log_exception(e)
+          res = OpenRubyRMK::Common::Response.new(generate_request_id, :rejected, req)
+          res[:reason] = :missing_parameter
+          res[:name]   = e.name
+        end
       end
 
       #*HOOK*. Handles an incoming response. By default, calls the
@@ -523,7 +534,16 @@ module OpenRubyRMK
       def handle_response(client, res)
         raise(Errors::UnknownResponseType.new(res, "Can't handle responses to '#{res.request.type}' requests!")) unless can_handle_response?(res)
 
-        @response_handlers.find{|handler| handler.type == res.request.type}.call(client, res)
+        begin
+          @response_handlers.find{|handler| handler.type == res.request.type}.call(client, res)
+          rescue OpenRubyRMK::Common::Errors::UnknownParameter => e
+          # If this exception is thrown, the client didn’t
+          # set a required parameter.
+
+          # You cannot respond to a response. So just log the
+          # error and be done with it.
+          log_exception(e)
+        end
       end
       
       protected
