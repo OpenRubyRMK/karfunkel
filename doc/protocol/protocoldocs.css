@@ -1,0 +1,114 @@
+/****************************************
+ * All-element styles
+ ****************************************/
+
+body {
+    background-color: #EEEEEE;
+    font-family: sans-serif;
+}
+
+h1 {
+    margin-top: 0px;
+    border-bottom: 4px double gray;
+    font-family: serif;
+    font-weight: normal;
+    color: #1863A1;
+}
+
+h2 {
+    border-bottom: 1px solid #1863A1;
+}
+
+dl {
+    border-left: 1px solid #333333;
+    border-right: 1px solid #333333;
+    border-bottom: 1px solid #333333;
+}
+
+dt {
+    background-color: #DDDDDD;
+    border-top: 1px solid #333333;
+    border-bottom: 1px solid #333333;
+    padding: 2px;
+}
+
+dd {
+    padding: 2px;
+}
+
+a {
+    color: #1863A1;
+}
+
+a:hover {
+    color: blue;
+}
+
+/****************************************
+ * Class styles
+ ****************************************/
+
+div.warn {
+    margin-left: 10%;
+    margin-right: 10%;
+    border: 2px solid #FFAA00;
+    padding: 4px;
+    background-color: #FFFF88;
+}
+
+div.warn h3 {
+    margin-top: 0px; /* Too much space above it otherwise */
+    border-bottom: 1px solid #FFAA00;
+}
+
+div.request {
+    margin-top: 8px;
+    margin-bottom: 8px;
+    border: 1px solid #1863A1;
+    padding: 4px;
+    background-color: white;
+}
+
+div.request h2 {
+    margin-top: 0px; /* Too much space above it otherwise */
+}
+
+div.clear {
+    clear: both;
+}
+
+/****************************************
+ * Individual styles
+ ****************************************/
+
+div#header {
+    margin-bottom: 5px;
+    border-bottom: 2px dashed gray;
+    font-weight: bold;
+    color: gray;
+}
+
+div#header p#docname {
+    margin: 4px;
+    float: left;
+}
+
+div#header p#top {
+    margin: 4px;
+    float: right;
+}
+
+div#footer {
+    margin-top: 5px;
+    border-top: 2px dashed gray;
+    font-size: small;
+    color: gray;
+}
+
+div#footer p#version {
+    float: left;
+}
+
+div#footer p#generator {
+    float: right;
+}

@@ -127,7 +127,9 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     @selected_project = nil if @selected_project == proj
     @projects.delete(proj)
     answer :ok
-    broadcast :project_selected, :id => -1
+
+    # If the active project was closed, notify the clients.
+    broadcast :project_selected, :id => -1 unless @selected_project
   end
 
   process_request :delete_project do
@@ -138,7 +140,9 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
     @projects.delete(proj)
     proj.delete!
     answer :ok
-    broadcast :project_selected, :id => -1
+
+    # If the active project was deleted, notify the clients.
+    broadcast :project_selected, :id => -1 unless @selected_project
   end
 
   process_request :save_project do

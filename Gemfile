@@ -41,4 +41,6 @@ group :development do
                             :require => "open_ruby_rmk/common"
   gem "paint"
   gem "turn"
+  gem "rake"
+  gem "kramdown"
 end
