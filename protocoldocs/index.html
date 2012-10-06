@@ -1,0 +1,82 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="stylesheet" href="protocoldocs.css" type="text/css"/>
+    <title>OpenRubyRMK protocol documentation</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+  </head>
+  <body>
+    <div id="header">
+      <p id="docname">OpenRubyRMK Protocol Documentation</p>
+      <p id="top"><a href="index.html">↑ Top</a></p>
+      <div class="clear"></div>
+    </div>
+
+    <div id="main">
+      <h1 id="openrubyrmk-protocol-documentation">OpenRubyRMK Protocol documentation</h1>
+
+<p>These pages describe the protocol used between the OpenRubyRMK server
+component, Karfunkel, and the clients. As a user, you are most
+probably not interested in this. As a plugin writer, it depends on
+what exactly you want to do with your plugin. As an implementor of a
+new client, this is a must-read.</p>
+
+<p>The OpenRubyRMK protocol is a stateful two-way protocol on top of
+TCP. Clients establish a connection by sending the HELLO request and,
+if the server is configured accordingly, their login credentials (this
+is a TODO currently).</p>
+
+<p>The protocol is XML-based (UTF-8-encoded), and consists of four major
+components:</p>
+
+<ol>
+  <li><strong>The request</strong>. A request is something that orders the other side of
+the connection to take action somehow.</li>
+  <li><strong>The response</strong>. A response is a reaction to a request; it may
+either be a successful (like <code>ok</code>), an unsuccessful (like
+<code>rejected</code>), or a postponing (like <code>processing</code>) response.</li>
+  <li><strong>The notification</strong>. A notification is a one-way information
+triggered by certain requests that cause global modifications that
+all clients need to know about (like loading a project). You don’t
+have to answer notifications, but a client will most likely want to
+update its user interface when it receives a notification.</li>
+  <li><strong>The command</strong>. A command the meta-structure sent to and from the
+server. It acts as a container for any number of requests,
+responses and notifications, and allows you (and Karfunkel) to sent
+multiple informations in a single chunk of data.</li>
+</ol>
+
+<p>TODO: Write more docs, about request and response IDs, give examples
+for actual XML, etc.</p>
+
+<h2 id="contents">Contents</h2>
+
+<ul>
+  <li><a href="requests/index.html">Requests</a>
+    <ul>
+      <li><a href="requests/categories.html">Categories</a></li>
+      <li><a href="requests/global_scripts.html">Global scripts</a></li>
+      <li><a href="requests/maps.html">Maps</a></li>
+      <li><a href="requests/project_management.html">Project Management</a></li>
+      <li><a href="requests/server_management.html">Server Management</a></li>
+      <li><a href="requests/tilesets.html">Tilesets</a></li>
+    </ul>
+  </li>
+  <li><a href="responses/index.html">Responses</a> (TODO)</li>
+  <li><a href="notifications/index.html">Notifications</a> (TODO)</li>
+</ul>
+
+<h2 id="license">License</h2>
+
+<p>This documentation is provided under the same terms as the
+OpenRubyRMK.</p>
+
+
+    </div>
+
+    <div id="footer">
+      <p id="version">OpenRubyRMK 0.0.1-dev</p>
+      <p id="generator">Generated from the Markdown sources by <a href="http://kramdown.rubyforge.org">kramdown 0.13.8</a>.</p>
+    </div>
+  </body>
+</html>

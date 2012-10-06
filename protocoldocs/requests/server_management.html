@@ -1,0 +1,91 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="stylesheet" href="../protocoldocs.css" type="text/css"/>
+    <title>OpenRubyRMK protocol documentation</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+  </head>
+  <body>
+    <div id="header">
+      <p id="docname">OpenRubyRMK Protocol Documentation</p>
+      <p id="top"><a href="../index.html">↑ Top</a></p>
+      <div class="clear"></div>
+    </div>
+
+    <div id="main">
+      <h1 id="requestsserver-management">Requests/Server management</h1>
+
+<p><em>Server management</em> covers all requests that are not related to a
+specific project in any way, but rather influence Karfunkel’s
+behaviour in some way or another.</p>
+
+<div class="request">
+  <h2 id="hello">Hello</h2>
+
+  <p>The <code>hello</code> request verifies a connection to the server and is the
+very first request a potential client has to sent to Karfunkel. If the
+connection is judged trustworthy (currently it always is), the
+connection is verified and you get an <code>ok</code> response. Otherwise you get
+<code>rejected</code>.</p>
+
+  <h3 id="parameters">Parameters</h3>
+
+  <p>None currently. This may change in the future.</p>
+
+  <h3 id="responses">Responses</h3>
+
+  <dl>
+    <dt><code>ok</code></dt>
+    <dd>You have been accepted as a client. The response contains your ID
+for further requests to the server in <code>your_id</code>, the number of
+currently connected clients (including you) in <code>my_clients_num</code>, the
+name of the currently loaded project (if any) in <code>my_project</code> and
+the version of the remote server in <code>my_version</code>.</dd>
+    <dt><code>rejected</code></dt>
+    <dd>You’re not allowed to send requests to this server.</dd>
+  </dl>
+</div>
+
+<div class="request">
+  <h2 id="ping">Ping</h2>
+
+  <p>A no-op request. The server always answers this as OK, and its solre
+purpose is to keep the connection up and running even if no other
+communication happens.</p>
+
+  <h3 id="responses-1">Responses</h3>
+
+  <p>Always causes an <code>ok</code> response.</p>
+</div>
+
+<div class="request">
+  <h2 id="shutdown">Shutdown</h2>
+
+  <p>Asks Karfunkel to terminate himself. Although the request is
+immediately answered as being <code>ok</code>, Karfunkel now sends <code>shutdown</code>
+requests to all currently connected clients. If all clients answer
+these requests as being <code>ok</code>, he proceeds to the actual termination,
+otherwise, nothing happens and the request is silently discarded.</p>
+
+  <h3 id="responses-2">Responses</h3>
+
+  <p>When sent to Karfunkel, the response always is an <code>ok</code>. If <em>you</em> get
+such a request, Karfunkel has just ask you whether he is allowed to
+terminate. If you answer <code>ok</code>, you’re fine with this; answer
+<code>rejected</code> if you disagree.</p>
+
+  <h3 id="remarks">Remarks</h3>
+
+  <p>The server administrator of course can terminate Karfunkel immediately
+without any client consultation.</p>
+</div>
+
+
+    </div>
+
+    <div id="footer">
+      <p id="version">OpenRubyRMK 0.0.1-dev</p>
+      <p id="generator">Generated from the Markdown sources by <a href="http://kramdown.rubyforge.org">kramdown 0.13.8</a>.</p>
+    </div>
+  </body>
+</html>

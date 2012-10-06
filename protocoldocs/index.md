@@ -37,8 +37,12 @@ Contents
 --------
 
 * [Requests](requests/index.html)
+  * [Categories](requests/categories.html)
+  * [Global scripts](requests/global_scripts.html)
+  * [Maps](requests/maps.html)
   * [Project Management](requests/project_management.html)
   * [Server Management](requests/server_management.html)
+  * [Tilesets](requests/tilesets.html)
 * [Responses](responses/index.html) (TODO)
 * [Notifications](notifications/index.html) (TODO)
 
@@ -49,6 +53,6 @@ This documentation is provided under the same terms as the
 OpenRubyRMK.
 
 %% Local Variables:
-%% mode: markdown
-%% eval: (add-to-list 'yas-snippet-dirs "../../../.yasnippet")
+%% mode: text
+%% eval: (yas-load-directory "../../.yasnippet")
 %% End:

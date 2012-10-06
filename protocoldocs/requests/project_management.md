@@ -118,6 +118,6 @@ ok
 ++++++++++++++++++++++++++++++++++++++++
 
 %% Local Variables:
-%% mode: markdown
-%% eval: (add-to-list 'yas-snippet-dirs "../../../.yasnippet")
+%% mode: text
+%% eval: (yas-load-directory "../../../.yasnippet")
 %% End:

@@ -1,0 +1,85 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="stylesheet" href="../protocoldocs.css" type="text/css"/>
+    <title>OpenRubyRMK protocol documentation</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+  </head>
+  <body>
+    <div id="header">
+      <p id="docname">OpenRubyRMK Protocol Documentation</p>
+      <p id="top"><a href="../index.html">↑ Top</a></p>
+      <div class="clear"></div>
+    </div>
+
+    <div id="main">
+      <h1 id="requestsmaps">Requests/Maps</h1>
+
+<p>A <em>map</em> is a conglomerate of graphics from a given tileset,
+characters, and other information.</p>
+
+<div class="request">
+  <h2 id="newmap">new_map</h2>
+
+  <p>Create a new and empty map on the server. The map is automatically
+made a root map.</p>
+
+  <h3 id="parameters">Parameters</h3>
+
+  <dl>
+    <dt>name (optional)</dt>
+    <dd>A name for the map. If left out, the name will be generated from the
+ID the map gets assigned.</dd>
+  </dl>
+
+  <h3 id="responses">Responses</h3>
+
+  <dl>
+    <dt>ok</dt>
+    <dd>A new map has been created. The <code>id</code> field contains the ID the map
+got assigned.</dd>
+  </dl>
+
+  <h3 id="notifications">Notifications</h3>
+
+  <ul>
+    <li><code>map_added</code></li>
+  </ul>
+</div>
+
+<div class="request">
+  <h2 id="deletemap">delete_map</h2>
+
+  <p>Deletes a map and recursively deletes all its child maps.</p>
+
+  <h3 id="parameters-1">Parameters</h3>
+
+  <dl>
+    <dt>id</dt>
+    <dd>The ID of the map to delete.</dd>
+  </dl>
+
+  <h3 id="responses-1">Responses</h3>
+
+  <dl>
+    <dt>ok</dt>
+    <dd>The requested map(s) has/have been deleted successfully.</dd>
+  </dl>
+
+  <h3 id="notifications-1">Notifications</h3>
+  <ul>
+    <li><code>map_deleted</code>. Note this is only sent for the actual map requested
+to delete and is not repeated for the deleted child maps (as
+deleting the parent map obviously deletes the child maps as well).</li>
+  </ul>
+</div>
+
+
+    </div>
+
+    <div id="footer">
+      <p id="version">OpenRubyRMK 0.0.1-dev</p>
+      <p id="generator">Generated from the Markdown sources by <a href="http://kramdown.rubyforge.org">kramdown 0.13.8</a>.</p>
+    </div>
+  </body>
+</html>

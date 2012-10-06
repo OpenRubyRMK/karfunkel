@@ -165,7 +165,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   end
 
   process_request :delete_global_script do
-    path = @selected_project.paths.script_dir + request["name"]
+    path = @selected_project.paths.script_dir + request["name"].gsub(" ", "_").downcase
     answer! :reject, :reason => :not_found unless path.file?
 
     path.delete
@@ -232,7 +232,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   # Categories
 
   process_request :new_category do
-    cat = OpenRubyRMK::Karfunkel::Plugin::Base::Category.new(request["name"])
+    cat = OpenRubyRMK::Karfunkel::Plugin::Base::Category.new(request["name"].downcase)
     @selected_project.add_category(cat)
     broadcast :category_added, :name => cat.name
     answer :ok, :name => cat.name
@@ -241,6 +241,7 @@ module OpenRubyRMK::Karfunkel::Plugin::Base
   process_request :delete_category do
     @selected_project.delete_category(request["name"])
     broadcast :category_deleted, :name => request["name"]
+    answer :ok
   end
 
 end

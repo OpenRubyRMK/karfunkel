@@ -27,6 +27,8 @@ require "erb"
 require "kramdown"
 require_relative "lib/open_ruby_rmk/karfunkel"
 
+CLOBBER.include("doc")
+
 namespace :test do
 
   desc "Run the unit tests."
@@ -50,8 +52,11 @@ namespace :test do
 
 end
 
+desc "Generate the documentation for the protocol."
 task :reqdocs do
-  cd "doc/protocol" do
+  puts "Generating the protocol documentation..."
+
+  cd "protocoldocs" do
     top_dir = Pathname.pwd
 
     # Parse the skeleton
@@ -59,7 +64,7 @@ task :reqdocs do
 
     Pathname.pwd.find do |path|
       next unless path.to_s.end_with?(".md")
-      puts "Processing #{path}..."
+      puts "=> Processing #{path}"
 
       # Transform our meta-markdown to raw markdown
       text = parse_meta_markdown(path.read)
@@ -74,19 +79,28 @@ task :reqdocs do
       result = template.result(binding)
 
       # Write the resulting HTML out to disk
-      path.sub_ext(".html").open("w") do |file|
+      target_file = top_dir.parent.join("doc", "protocol", path.relative_path_from(top_dir)).sub_ext(".html")
+      mkdir_p target_file.dirname unless target_file.dirname.directory?
+      target_file.open("w") do |file|
         file.write(result)
       end
     end
+
+    puts "=> Copying stylesheets"
+    cp_r "styles", "../doc/protocol"
   end
 end
 
 Rake::RDocTask.new do |rt|
-  rt.rdoc_dir  = "doc/html"
+  rt.rdoc_dir  = "doc/api"
   rt.rdoc_files.include("lib/**/*.rb", "plugins/**/*.rb", "**/*.rdoc", "COPYING")
   rt.title     = "OpenRubyRMK RDocs"
   rt.main      = "README.rdoc"
 end
+
+# Generating the documentation includes generating the
+# protocol docs.
+task :rdoc => :reqdocs
 
 # GEMSPEC is defined in `karfunkel.gemspec'
 load "openrubyrmk-karfunkel.gemspec"

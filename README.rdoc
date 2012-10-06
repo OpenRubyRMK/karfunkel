@@ -1,3 +1,9 @@
 = Karfunkel, OpenRubyRMK's server
 
 TODO: Write the README
+
+== The protocol
+
+The communication between Karfunkel and its clients is defined by the
+OpenRubyRMK protocol, or ORRP for short. It is documented separately
+from this API documentation; you can find it here[link:../protocol/index.html].

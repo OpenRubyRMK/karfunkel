@@ -1,0 +1,168 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="stylesheet" href="../protocoldocs.css" type="text/css"/>
+    <title>OpenRubyRMK protocol documentation</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+  </head>
+  <body>
+    <div id="header">
+      <p id="docname">OpenRubyRMK Protocol Documentation</p>
+      <p id="top"><a href="../index.html">↑ Top</a></p>
+      <div class="clear"></div>
+    </div>
+
+    <div id="main">
+      <h1 id="requestsproject-management">Requests/Project management</h1>
+
+<p><em>Projects</em> are the top-level entity of nearly everything Karfunkel
+deals with. Therefore, there exists a good number of requests
+specifically dedicated at managing them in some way. You can find all
+of them in this section.</p>
+
+<div class="warn">
+  <h3 id="attention">Attention</h3>
+
+  <p>Karfunkel can maintain multiple opened projects at once, but only
+operate on the currently <em>active</em> one. You may want to instruct
+Karfunkel to activate another project before requesting to change it.</p>
+</div>
+
+<div class="request">
+  <h2 id="closeproject">close_project</h2>
+
+  <p>Removes a project from the list of currently loaded projects. If the
+project is the active one, deselects it (Karfunkel has no active
+project after this, so you want to send another request selecting
+another project). Prior to removing, the project’s current state is
+saved out to disk.</p>
+
+  <h3 id="parameters">Parameters</h3>
+
+  <dl>
+    <dt>id</dt>
+    <dd>The project ID of the project you want to close.</dd>
+  </dl>
+
+  <h3 id="responses">Responses</h3>
+
+  <dl>
+    <dt>ok</dt>
+    <dd>The project was successfully closed.</dd>
+  </dl>
+
+  <h3 id="notifications">Notifications</h3>
+
+  <ul>
+    <li><code>project_selected</code>. Only sent if the active project was closed. The
+notification’s <code>id</code> field is set to <code>-1</code>.</li>
+  </ul>
+</div>
+
+<div class="request">
+  <h2 id="deleteproject">delete_project</h2>
+
+  <p>Closes a project (see <a href="#closeproject">close_project</a>) and then
+recursively deletes the project directory from the file system. After
+this, there is no way back.</p>
+
+  <h3 id="parameters-1">Parameters</h3>
+
+  <dl>
+    <dt>id</dt>
+    <dd>The ID of the project to delete.</dd>
+  </dl>
+
+  <h3 id="responses-1">Responses</h3>
+
+  <dl>
+    <dt>ok</dt>
+    <dd>The project was successfully deleted.</dd>
+  </dl>
+
+  <h3 id="notifications-1">Notifications</h3>
+
+  <ul>
+    <li><code>project_selected</code>. Only sent if the active project was deleted. The
+notification’s <code>id</code> field is set to <code>-1</code>.</li>
+  </ul>
+</div>
+
+<div class="request">
+  <h2 id="loadproject">load_project</h2>
+
+  <p>Instructs Karfunkel to load a specified project from the filesystem
+and automatically makes it the active one.</p>
+
+  <h3 id="parameters-2">Parameters</h3>
+
+  <dl>
+    <dt>path</dt>
+    <dd>The path to the project directory on the filesystem.</dd>
+  </dl>
+
+  <h3 id="responses-2">Responses</h3>
+
+  <dl>
+    <dt>ok</dt>
+    <dd>Everything is fine, the project was loaded and now is the active
+one. The response has a parameter <code>id</code> that contains the project ID
+the loaded project got assigned.</dd>
+  </dl>
+
+  <h3 id="notifications-2">Notifications</h3>
+
+  <ul>
+    <li><code>project_selected</code></li>
+  </ul>
+</div>
+
+<div class="request">
+  <h2 id="newproject">new_project</h2>
+
+  <p>Creates an empty project and makes it the active one.</p>
+
+  <h3 id="parameters-3">Parameters</h3>
+
+  <dl>
+    <dt>path</dt>
+    <dd>Directory where to store the new project.</dd>
+  </dl>
+
+  <h3 id="responses-3">Responses</h3>
+
+  <dl>
+    <dt>ok</dt>
+    <dd>The project was successfully created. The <code>id</code> parameter contains
+the project ID the new project got assigned.</dd>
+  </dl>
+
+  <h3 id="notifications-3">Notifications</h3>
+
+  <ul>
+    <li><code>project_selected</code></li>
+  </ul>
+</div>
+
+<div class="request">
+  <h2 id="saveproject">save_project</h2>
+
+  <p>Saves the active project out to disk.</p>
+
+  <h3 id="responses-4">Responses</h3>
+
+  <dl>
+    <dt>ok</dt>
+    <dd>The project was successfully saved.</dd>
+  </dl>
+</div>
+
+
+    </div>
+
+    <div id="footer">
+      <p id="version">OpenRubyRMK 0.0.1-dev</p>
+      <p id="generator">Generated from the Markdown sources by <a href="http://kramdown.rubyforge.org">kramdown 0.13.8</a>.</p>
+    </div>
+  </body>
+</html>
