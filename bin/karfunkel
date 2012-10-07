@@ -28,5 +28,5 @@ end
 require_relative "../lib/open_ruby_rmk/karfunkel"
 
 EventMachine.run do
-  OpenRubyRMK::Karfunkel.new(ARGV).start
+  OpenRubyRMK::Karfunkel.new(ARGV).start!
 end

@@ -21,7 +21,7 @@
 #class. Note that this class is just a storage for any kind of
 #configuration information, it doesn’t validate what is assigned to
 #it. The validation is responsibility of the respective plugins that
-#handle the configuration options (even if it’s just the +core+ plugin).
+#handle the configuration options (even if it’s just the +base+ plugin).
 #
 #The methods in this class are mainly interesting for the configuration
 #DSL, but if you want to change configuration options later on you
@@ -127,10 +127,10 @@ class OpenRubyRMK::Karfunkel::Configuration
     #*Hook*. The default values for most options, i.e. the
     #values they have prior to any setting. The default
     #implementation defines the default values for the options
-    #constrolling the server’s default behaviour.
+    #constrolling the server’s default behaviour, i.e. it sets
+    #the default values for the options available in the default
+    #implementation of Karfunkel#parse_argv.
     #This method must return a hash using symbols as keys.
-    #
-    #Does nothing by default.
     #==Example
     #  module MyPlugin
     #    module Configuration
@@ -146,7 +146,8 @@ class OpenRubyRMK::Karfunkel::Configuration
         :log_format    => lambda{|sev, time, progname, msg| time.strftime("%d/%m/%Y %H:%M:%S [#{sev.chars.first}] #{msg}\n")},
         :ping_interval => 20,
         :greet_timeout => 5,
-        :pid_file      => OpenRubyRMK::Karfunkel::Paths::TMP_DIR + "karfunkel.pid"
+        :pid_file      => OpenRubyRMK::Karfunkel::Paths::TMP_DIR + "karfunkel.pid",
+        :signal_pid    => nil,
       }
     end
 

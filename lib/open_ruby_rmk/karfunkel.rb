@@ -50,6 +50,21 @@ module OpenRubyRMK
   #receiving and sending requests via an underlying EventMachine
   #reactor.
   #
+  #== Starting and stopping the server
+  #
+  # The server can be started by calling the #start! method,
+  # which internally calls the #start method which is a
+  # hook method that can be overridden by plugins. Never
+  # use #start directly, but only the bang version.
+  #
+  # To stop the server, use the #stop method if you want to
+  # issue a regular shutdown, i.e. have the server ask the
+  # connected clients before he actually stops. If you want
+  # to forcibly disconnect all clients without asking, use
+  # the #stop! method. Also, #stop is hookable by plugins,
+  # which may also veto a shutdown; #stop! is static and
+  # cannot be overridden by plugins regularily.
+  #
   #== Plugins
   #
   #Karfunkel’s capabilities can easily extended by a set of
@@ -57,14 +72,15 @@ module OpenRubyRMK
   #himself and into other classes inside the +Karfunkel+
   #namespace.
   #
-  #Writing a plugin is as easy as creating a module inside the
-  #OpenRubyRMK::Karfunkel::Plugins namespace. As described above,
+  #Writing a plugin is as easy as creating a module and including
+  #the OpenRubyRMK::Karfunkel::Plugin module. As described above,
   #Karfunkel exposes some methods you can hook into and change or
   #add to Karfunkel’s acting. If for example you want to display
   #a nice starting message on the server side (whatever for) you
   #could do it like this:
   #
-  #  module OpenRubyRMK::Karfunkel::Plugins::StartupMessagePlugin
+  #  module StartupMessagePlugin
+  #    include OpenRubyRMK::Karfunkel::Plugin
   #    def start
   #      super
   #      puts("Hey, time to do some cool coding!")
@@ -84,7 +100,9 @@ module OpenRubyRMK
   #the above directory, you can then easily add a subdirectory
   #*plugins/my_plugin/* that is completely under your control,
   #Karfunkel’s loading won’t interfer with yours. See the
-  #_base_ plugin for an example.
+  #_base_ plugin for an example. To load these files only when
+  # your plugin is actually _activated_, put the necessary
+  # +rqeuire_relative+ statements into a Module#included hook.
   #
   #Note however that your plugin (as the name suggests) is
   #_included_ into the OpenRubyRMK::Karfunkel class. Therefore,
@@ -381,7 +399,9 @@ module OpenRubyRMK
     pluggify do
 
       #*HOOK*. This method starts Karfunkel. By default, it starts
-      #EventMachine’s server.
+      #EventMachine’s server. Note that the regular method to start
+      #the server is #start!, which is not hookable, but runs this
+      #method internally.
       #==Raises
       #[RuntimeError] Karfunkel is already running.
       def start
@@ -405,10 +425,8 @@ module OpenRubyRMK
         write_pidfile
 
         @log.info("Loaded plugins: #{@plugins.map(&:to_s).join(', ')}")
-        @log.info("A new story may begin now. Karfunkel waits with PID #$$ on port #{@config[:port]} for you...")
-        EventMachine.start_server("localhost", @config[:port], OpenRubyRMK::Karfunkel::Protocol)
-        @running = true
       end
+      protected :start # This method is not intended to be called from the outside. Use #start! instead.
       
       #*HOOK*. This method stops Karfunkel and disconnects all
       #clients.
@@ -596,6 +614,12 @@ module OpenRubyRMK
           end
           exit
         end
+
+        op.on("-S", "--signal-ready PID", Integer,
+              "When the server is ready, send SIGUSR1 to the PID",
+              "specified here. This is mostly used for testing.") do |pid|
+          @config[:signal_pid] = pid
+        end
       end
 
       #*HOOK*. Sets up handlers for the following UNIX process signals:
@@ -623,6 +647,25 @@ module OpenRubyRMK
       end
 
     end # pluggify
+
+    # Starts up Karfunkel, calling any hook methods that need to be called.
+    # You should use this method if you want to start Karfunkel, #start
+    # is intended to be hooked by plugins (and is run internally by
+    # this method).
+    def start!
+      # Run the hookable start method in which plugins may do their
+      # initialisation.
+      start
+
+      # Instruct EventMachine to accept connections.
+      EventMachine.start_server("localhost", @config[:port], OpenRubyRMK::Karfunkel::Protocol)
+      @log.info("A new story may begin now. Karfunkel waits with PID #$$ on port #{@config[:port]} for you...")
+      @running = true
+
+      # If we were requested to notify a process of our readiness,
+      # do so now.
+      Process.kill("SIGUSR1", @config[:signal_pid]) if @config[:signal_pid]
+    end
 
     #Immediately stops Karfunkel, forcibly disconnecting
     #all clients. The clients are not notified about

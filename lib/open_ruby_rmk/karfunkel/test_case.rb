@@ -126,7 +126,7 @@ end
 #    # Do some different tests...
 #  end
 #
-#The same applices for responses and notifications, respectively.
+#The same applies for responses and notifications, respectively.
 #
 #==Sending Requests, etc.
 #You probably want to send requests to Karfunkel during the
@@ -325,12 +325,12 @@ class OpenRubyRMK::Karfunkel::TestCase
   def run!
     raise("Another testcase is running!") if OpenRubyRMK::Karfunkel::TestClient.current_test_case
 
-    File.open("karfunkel.log", "w+") do |logfile|
-      # Spawn server
-      spawn("#{OpenRubyRMK::Karfunkel::Paths::BIN_DIR.join("karfunkel")} -d > karfunkel.log")
-      # Wait until ready
-      sleep 1 while logfile.gets !~ /PID/ # Log message when ready contains this word
-    end
+    # Prepare for receiving the ready message
+    Signal.trap("SIGUSR1"){@server_ready = true}
+    # Spawn server
+    spawn("#{OpenRubyRMK::Karfunkel::Paths::BIN_DIR.join("karfunkel")} -d -S #$$ > karfunkel.log")
+    # Wait until ready
+    sleep 1 until @server_ready
 
     # Run testcase
     OpenRubyRMK::Karfunkel::TestClient.current_test_case = self
