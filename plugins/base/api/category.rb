@@ -2,7 +2,7 @@
 
 module OpenRubyRMK::Karfunkel::Plugin::Base
 
-  #A _cageroy_ encapsulates all information from a special
+  #A _category_ encapsulates all information from a special
   #kind of resource in the ORR. These resources include
   #items, weapons, skills and everything else that occurs
   #in a great number with configurable subattributes.

@@ -51,7 +51,8 @@ module OpenRubyRMK
       end
 
       #When a module mixes in Plugin, this module is mixed
-      #into its singleton class (#extend).
+      #into its singleton class (#extend). Note it also
+      #includes the Plugins::Helpers module.
       module ClassMethods
         include OpenRubyRMK::Karfunkel::Plugin::Helpers
 
