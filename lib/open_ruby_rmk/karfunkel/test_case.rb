@@ -4,93 +4,6 @@ require "eventmachine"
 require "paint"
 require_relative "../karfunkel"
 
-#A client for Karfunkel specifally designed to test his networking
-#facilities. This is a protocol module for use with EventMachine
-#and is heavily integrated with the OpenRubyRMK::Karfunkel::TestCase
-#class. Inside an instance of TestCase, during the actual testing
-#you have access to an instance of an anonymous class mixing in
-#this module via TestCase#client. Usually you won’t need that
-#instance because the helper methods hide it away from you,
-#but it might nevertheless prove useful.
-module OpenRubyRMK::Karfunkel::TestClient
-  include OpenRubyRMK::Common
-
-  #The Common::Transformer instance used for messing with
-  #the protocol’s XML.
-  attr_reader :transformer
-  #Client ID used when talking to Karfunkel. Remember
-  #to set this when talking to Karfunkel with anything
-  #other than +hello+ requests.
-  attr_accessor :id
-
-  #Currently running testcase. Set by TestCase::run!.
-  def self.current_test_case
-    @current_test_case
-  end
-
-  #Set the currently running testcase. Used by TestCase::run!
-  #and should never be called from elsewhere.
-  def self.current_test_case=(test_case)
-    @current_test_case = test_case
-  end
-
-  #Called by EventMachine when the connection to Karfunkel has
-  #been established. Don’t call this manually.
-  def post_init
-    # Initialisation
-    @last_request_id = 0
-    @id_mutex        = Mutex.new
-    @transformer     = Transformer.new
-    @id              = -1
-
-    # Let the testcase know the client that runs it
-    OpenRubyRMK::Karfunkel::TestClient.current_test_case.client = self
-
-    # Allow the testcase to be initialised
-    OpenRubyRMK::Karfunkel::TestClient.current_test_case.execute_at(:startup)
-  end
-
-  #Called by EventMachine when Karfunkel sent data to us.
-  #Don’t call this manually.
-  def receive_data(data)
-    data.split("\0").each do |xml|
-      cmd = @transformer.parse!(xml)
-
-      cmd.requests.each     {|request|  OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_request(request)  }
-      cmd.responses.each    {|response| OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_response(response)}
-      cmd.notifications.each{|note|     OpenRubyRMK::Karfunkel::TestClient.current_test_case.submit_notification(note)}
-    end
-  end
-
-  #Called by EventMachine when the connection to Karfunkel has
-  #been closed. Don’t call this manually.
-  def unbind
-    OpenRubyRMK::Karfunkel::TestClient.current_test_case.execute_at(:shutdown)
-    OpenRubyRMK::Karfunkel::TestClient.current_test_case.client = nil
-
-    # When we’ve been disconnected, there’s nothing more to do for us.
-    EventMachine.stop_event_loop
-  end
-
-  #Threadsafely generate a request ID you can use for sending
-  #something to Karfunkel.
-  def generate_request_id
-    @id_mutex.synchronize do
-      @last_request_id += 1
-    end
-  end
-
-  #Deliver a Common::Command instance to Karfunkel by first
-  #transforming it to XML and then appending the end-of-command
-  #marker, then sending it out.
-  def deliver(cmd)
-    xml = Transformer.convert!(cmd)
-    xml << Command::END_OF_COMMAND
-    send_data(xml)
-  end
-
-end
-
 #Base class for testing Karfunkel’s functionality via simulating
 #requests, responses and notifications (and of course receiving
 #them). In contrast to the usual unit testing defining a testcase
@@ -199,151 +112,238 @@ end
 #  longrunning_operation = lambda{your_operation_code_here}
 #  callback              = lambda{|result| your_code_here}
 #  EventMachine.defer(longrunning_operation, callback)
+#
+# == Internal stuff
+#
+# Internally, the asynchronous testing mechanism works by specifying
+# a micro protocol module to EventMachine, TestCase::ORRTP, which
+# basically does nothing more than notifying the currently running
+# testcase of the fact that data has arrived. It actually does a
+# bit more, like automatically converting the received data to
+# proper instances of the Request, Response, and Notification
+# classes, but that’s the basic idea. The data is handed to the
+# testcase (via TestCase#submit, which is not visible in the
+# RDoc output by default), which calls the handler registered
+# for this kind of command object (request, response, notification)
+# and also takes care of calling the +setup+ and +teardown+ methods
+# for this test. Note that when using a real concurrent Ruby implementation
+# such as Rubinius, it is possible that two or even more handlers
+# run *really* at the same time. The test case the ORRTP module
+# calls out to, is moved around in a global variable <tt>$test_case</tt>,
+# should you ever need it; see the code for reasoning why to use
+# a global here.
 class OpenRubyRMK::Karfunkel::TestCase
   include OpenRubyRMK::Common
   include MiniTest::Assertions
+
+  # Beware the global variables! However, this one significantly
+  # eases the work needed for keeping track of the connection we
+  # have to the server. As there can only be one test case running
+  # at a time needing exactly one connection, there shouldn’t arise
+  # any access problems. The connection object needs the test case
+  # for notifying it of data received, and the testcase object needs
+  # the connection object for sending data; however, the one and
+  # only way to get hold of the connection object is to assign it
+  # inside the #post_init hook method of the module handed to
+  # EventMachine. Note a singleton wouldn’t do neither,
+  # because although there can only be one test case at a time,
+  # to different times it may well be different test cases. The
+  # most prominent place where this happens is a (one-process)
+  # Rake task running all test cases one after the other.
+  $test_case = nil # OpenRubyRMK::Karfunkel::TestCase object
+
+  # Micro EventMachine protocol module used for the communication
+  # with the server. It does nothing beside receiving data, transforming
+  # it to Request, Response, and Notification objects, and then
+  # pass them on to the currently running <tt>$test_case</tt>. It
+  # also has a #deliver method for the reverse process of transforming
+  # a Request, Response, or Notification object to raw data and send
+  # that to the server.
+  module ORRTP # OpenRubyRMK Testing Protocol ;-)
+
+    #The Common::Transformer instance used for messing with
+    #the protocol’s XML.
+    attr_reader :transformer
+    #Client ID used when talking to Karfunkel. Remember
+    #to set this when talking to Karfunkel with anything
+    #other than +hello+ requests.
+    attr_accessor :id
+
+    #Called by EventMachine when the connection to Karfunkel has
+    #been established. Don’t call this manually.
+    def post_init
+      raise("FATAL: No test case running that we could inform of events!") unless $test_case
+
+      # Initialisation
+      @last_request_id = 0
+      @id_mutex        = Mutex.new
+      @transformer     = OpenRubyRMK::Common::Transformer.new
+      @id              = -1
+
+      # Let the testcase know the client that runs it
+      $test_case.connection = self
+
+      # Allow the testcase to be initialised
+      begin
+        $test_case.execute_at(:startup)
+      rescue => e
+        puts e.name
+        puts e.message
+        puts e.backtrace.join("\n\t")
+        raise
+      end
+    end
+
+    # Called by EventMachine when Karfunkel sent data to us. Transforms
+    # the received data to Request/Response/Notification objects and then
+    # hands it out to the test case.
+    def receive_data(data)
+      data.split("\0").each do |xml|
+        cmd = @transformer.parse!(xml)
+
+        cmd.requests.each     {|request|  $test_case.submit(request) }
+        cmd.responses.each    {|response| $test_case.submit(response)}
+        cmd.notifications.each{|note|     $test_case.submit(note)    }
+      end
+    end
+
+    #Called by EventMachine when the connection to Karfunkel has
+    #been closed. Don’t call this manually.
+    def unbind
+      $test_case.execute_at(:shutdown)
+      $test_case.connection = nil
+
+      # When we’ve been disconnected, there’s nothing more to do for us.
+      EventMachine.stop_event_loop
+    end
+
+    #Threadsafely generate a request ID you can use for sending
+    #something to Karfunkel.
+    def generate_request_id
+      @id_mutex.synchronize do
+        @last_request_id += 1
+      end
+    end
+
+    #Deliver a Common::Command instance to Karfunkel by first
+    #transforming it to XML and then appending the end-of-command
+    #marker, then sending it out.
+    def deliver(cmd)
+      xml = @transformer.convert!(cmd)
+      xml << OpenRubyRMK::Common::Command::END_OF_COMMAND
+      send_data(xml)
+    end
+
+  end
 
   #Structure that encapsulates a single test by its
   #name, the conditions under which the test shall be
   #executed, and the actual test code.
   Test = Struct.new(:type, :conditions, :block)
 
-  #The test client. Set automatically, you shouldn’t
-  #need this. Anonymous class (thanks to EventMachine)
-  #mixing in OpenRubyRMK::Karfunkel::TestClient.
-  attr_accessor :client
+  # The connection to the server. This is the anonymous
+  # subclass of EM::Connection mixing in the ORRTP module
+  # and is created by EventMachine and assigned to this
+  # variable automatically in ORRTP#post_init. You most likely
+  # won’t access it directly.
+  attr_accessor :connection
 
   #The name of the testcase, to be displayed when running it.
   attr_reader :name
 
-  #All instances of this class. Needed for running all of
-  #them at once with #run!.
-  def self.test_cases
-    @test_cases ||= []
-  end
-
   #Create a new instance of this class. The block is evaluated
   #in the context of the newly created instance, so feel free
   #to call this class’ instance methods without receiver.
+  #
+  #The +name+ parameter is a pretty name for the test case that
+  #is printed out to the console when running the test case.
   def initialize(name, &block)
     @name               = name
     @request_tests      = []
     @response_tests     = []
     @notification_tests = []
     @at_procs           = {}
-    @client             = nil
+    @connection         = nil
 
     instance_eval(&block)
-    self.class.test_cases << self
   end
 
   #Execute an event handler registered with #at. Called from
-  #TestClient.
+  #ORRTP when necessary.
   def execute_at(event) # :nodoc:
     @at_procs[event].call if @at_procs.has_key?(event)
   end
 
-  #Search for an event handler fitting for the given request
-  #and execute it if one is found.
-  def submit_request(req) # :nodoc:
-    print "Testing a #{req.type.upcase} request... "
-    @request_tests.each do |test|
-      if test.type.to_s == req.type && test.conditions.all?{|k, v| req[k.to_s] == v.to_s}
-        execute_test(test, req)
-        puts Paint["PASS", :green]
-        return
-      end
-    end
-
-    puts Paint["SKIP", :blue]
-    puts(Paint["Unhandled request of type '#{req.type}' with parameters #{req.parameters.inspect}.", :blue])
-  rescue MiniTest::Assertion => e
-    puts Paint["FAIL", :red]
-    puts Paint[e.message, :red]
-    puts Paint[e.backtrace.join("\n\t"), :red]
-  rescue => e
-    puts Paint["ERROR", :yellow]
-    puts Paint["#{e.class}: #{e.message}", :yellow]
-    puts Paint[e.backtrace.join("\n\t"), :yellow]
-  end
-
-  #Search for an event handler fitting for the given response
-  #and execute it if one is found.
-  def submit_response(res) # :nodoc:
-    print "Testing response to a #{res.request.type.upcase} request... "
-
-    @response_tests.each do |test|
-      if test.type.to_s == res.request.type && test.conditions.all?{|k, v| res[k.to_s] == v.to_s}
-        execute_test(test, res)
-        puts Paint["PASS", :green]
-        return
-      end
-    end
-
-    puts Paint["SKIP", :blue]
-    puts(Paint["Unhandled response to a request of type '#{res.request.type}' with response parameters #{res.parameters.inspect}.", :blue])
-  rescue MiniTest::Assertion => e
-    puts Paint["FAIL", :red]
-    puts Paint[e.message, :red]
-    puts Paint[e.backtrace.join("\n\t"), :red]
-  rescue => e
-    puts Paint["ERROR", :yellow]
-    puts Paint["#{e.class}: #{e.message}", :yellow]
-    puts Paint[e.backtrace.join("\n\t"), :yellow]
-  end
-
-  #Search for an event handler fitting the given notification
-  #and execute it if one is found.
-  def submit_notification(note) # :nodoc:
-    print "Testing a #{note.type.upcase} notification... "
-    @notification_tests.each do |test|
-      if test.type.to_s == note.type && test.conditions.all?{|k, v| note[k.to_s] == v.to_s}
-        execute_test(test, note)
-        puts Paint["PASS", :green]
-        return
-      end
-    end
-
-    puts Paint["SKIP", :blue]
-    puts(Paint["Unhandled notification of type '#{note.type}' with parameters #note.parameters.inspect}.", :blue])
-  rescue MiniTest::Assertion => e
-    puts Paint["FAIL", :red]
-    puts Paint[e.message, :red]
-    puts Paint[e.backtrace.join("\n\t"), :red]
-  rescue => e
-    puts Paint["ERROR", :yellow]
-    puts Paint["#{e.class}: #{e.message}", :yellow]
-    puts Paint[e.backtrace.join("\n\t"), :yellow]
-  end
-
-  #Runs this testcase.
+  # Called by ORRTP#receive_data. This method expects an
+  # instance of Request, Response, or Notification and
+  # searches for a handler registered for this kind of
+  # command object. If one is found, the handler is executed
+  # as a test (with the appropriate calls to the :setup and
+  # :teardown hooks). Also prints a nice testing message.
   #
-  #Karfunkel itself must be started prior to calling this method.
-  #==Parameters
-  #[host] ("localhost") Where to find Karfunkel.
-  #[port] (3141) The port on +host+ to connect to.
+  # Do not call this yourself, this is only for
+  # ORRTP#receive_data.
+  def submit(obj) # :nodoc:
+    # Determine what we got
+    klass = obj.class.name.split("::").last.downcase
+    tests = instance_variable_get("@#{klass}_tests") || raise(TypeError, "BUG: Unknown command object received!")
+
+    print "Testing a #{klass} of type #{obj.type}... "
+
+    # Search all event handlers for this type of command object
+    # and execute the matching one if one is found.
+    tests.each do |test|
+      if obj.type.to_s == test.type.to_s && test.conditions.all?{|k, v| obj[k.to_s] == v.to_s} # Note `type' here refers to the `type=xxx' parameter in the XML of the command object
+        execute_test(test, obj)
+        puts Paint["PASS", :green] # If we get here, everything is fine
+        return
+      end
+    end
+
+    # If we get here, this command object is not handled.
+    puts Paint["SKIP", :blue]
+    puts Paint["Unhandled #{klass} of type '#{obj.type}' with parameters #{obj.parameters.inspect}.", :blue]
+  rescue MiniTest::Assertion => e
+    puts Paint["FAIL", :red]
+    puts Paint[e.message, :red]
+    puts Paint[e.backtrace.join("\n\t"), :red]
+  rescue => e
+    puts Paint["ERROR", :yellow]
+    puts Paint["#{e.class}: #{e.message}", :yellow]
+    puts Paint[e.backtrace.join("\n\t"), :yellow]
+  end
+
+  # Starts Karfunkel in the background, waits for it to become
+  # ready (via the -S commandine switch) and then starts an
+  # EventMachine loop for a client using the ORRTP protocol,
+  # which talks back to the instance calling this and causes
+  # the registered handlers to be executed.
   def run!
-    raise("Another testcase is running!") if OpenRubyRMK::Karfunkel::TestClient.current_test_case
+    raise("FATAL: There can only be one test case running at a time!") if $test_case
 
     # Prepare for receiving the ready message
     Signal.trap("SIGUSR1"){@server_ready = true}
     # Spawn server
     spawn("#{OpenRubyRMK::Karfunkel::Paths::BIN_DIR.join("karfunkel")} -d -S #$$ > karfunkel.log")
     # Wait until ready
-    sleep 1 until @server_ready
+    sleep 0.5 until @server_ready
 
     # Run testcase
-    OpenRubyRMK::Karfunkel::TestClient.current_test_case = self
+    $test_case = self
     puts Paint["=== Running testcase '#@name' ===", :cyan]
     begin
       EventMachine.run do
-        EventMachine.connect("localhost", 3141, OpenRubyRMK::Karfunkel::TestClient)
+        EventMachine.connect("localhost", 3141, ORRTP)
       end
     ensure
       pid_file = OpenRubyRMK::Karfunkel::Paths::TMP_DIR + "karfunkel.pid"
       if pid_file.file?
         Process.kill("SIGTERM", File.read(pid_file).to_i)
       end
+
+      # Clean up the global test case variable so another
+      # test case may run now.
+      $test_case = nil
     end
   end
 
@@ -418,8 +418,8 @@ class OpenRubyRMK::Karfunkel::TestCase
   #==Return value
   #The Request instance delivered.
   def request(type, hsh = {})
-    cmd = Command.new(@client.id)
-    req = Request.new(@client.generate_request_id, type)
+    cmd = Command.new(@connection.id)
+    req = Request.new(@connection.generate_request_id, type)
     hsh.each_pair{|k, v| req[k] = v}
     cmd << req
     deliver(cmd)
@@ -442,10 +442,10 @@ class OpenRubyRMK::Karfunkel::TestCase
   #           :bar, nil, # Pass nil if you don’t need any options
   #           :baz, {:foobar => 33}
   def requests(*args)
-    cmd = Command.new(@client.id)
+    cmd = Command.new(@connection.id)
     args.each_slice(2) do |type, hsh|
       hsh = {} if hsh.nil?
-      req = Request.new(@client.generate_request_id, type)
+      req = Request.new(@connection.generate_request_id, type)
       hsh.each_pair{|k, v| req[k] = v}
       cmd << req
     end
@@ -462,8 +462,8 @@ class OpenRubyRMK::Karfunkel::TestCase
   #==Return value
   #The Response instance delivered.
   def response(req, status, hsh = {})
-    cmd = Command.new(@client.id)
-    res = Response.new(@client.generate_request_id, status, req)
+    cmd = Command.new(@connection.id)
+    res = Response.new(@connection.generate_request_id, status, req)
     hsh.each_pair{|k, v| res[k] = v}
     cmd << res
     deliver(cmd)
@@ -485,10 +485,10 @@ class OpenRubyRMK::Karfunkel::TestCase
   #  responses req1, :ok, nil, # Use nil if you don’t need any options
   #            req2, :rejected, {:reason => "I don’t like you."}
   def responses(*args)
-    cmd = Command.new(@client.id)
+    cmd = Command.new(@connection.id)
     args.each_slice(3) do |req, status, hsh|
       hsh = {} if hsh.nil?
-      res = Response.new(@client.generate_request_id, status, req)
+      res = Response.new(@connection.generate_request_id, status, req)
       hsh.each_pair{|k, v| res[k] = v}
       cmd << res
     end
@@ -504,8 +504,8 @@ class OpenRubyRMK::Karfunkel::TestCase
   #==Return value
   #The Notification instance delivered.
   def note(type, hsh = {})
-    cmd  = Command.new(@client.id)
-    note = Notification.new(@client.generate_request_id, type)
+    cmd  = Command.new(@connection.id)
+    note = Notification.new(@connection.generate_request_id, type)
     hsh.each_pair{|k, v| note[k] = v}
     cmd << note
     deliver(cmd)
@@ -528,10 +528,10 @@ class OpenRubyRMK::Karfunkel::TestCase
   #        :bar, nil, # Pass nil if you don’t need any options
   #        :baz, {:foobar => 33}
   def notes(*args)
-    cmd = Command.new(@client.id)
+    cmd = Command.new(@connection.id)
     args.each_slice(2) do |type, hsh|
       hsh  = {} if hsh.nil?
-      note = Notification.new(@client.generate_request_id, type)
+      note = Notification.new(@connection.generate_request_id, type)
       hsh.each_pair{|k, v| note[k] = v}
       cmd << note
     end
@@ -564,12 +564,12 @@ class OpenRubyRMK::Karfunkel::TestCase
 
   #Transforms a Command instance to XML, appends the command
   #separator and delivers the result to Karfunkel.
+  #
+  #Forwards to ORRTP#deliver.
   #==Parameter
   #[cmd] The Command instance to deliver.
   def deliver(cmd)
-    xml = @client.transformer.convert!(cmd)
-    xml << Command::END_OF_COMMAND
-    @client.send_data(xml)
+    @connection.deliver(cmd)
   end
 
   private
@@ -577,9 +577,12 @@ class OpenRubyRMK::Karfunkel::TestCase
   #Calls #setup, executes the test, then calls #teardown.
   #The testcodeblock gets passed +obj+ as a parameter.
   def execute_test(test, obj)
-    execute_at(:setup)
-    test.block.call(obj)
-    execute_at(:teardown)
+    begin
+      execute_at(:setup)
+      test.block.call(obj)
+    ensure
+      execute_at(:teardown)
+    end
   end
 
 end

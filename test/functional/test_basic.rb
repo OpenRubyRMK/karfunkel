@@ -10,7 +10,7 @@ OpenRubyRMK::Karfunkel::TestCase.new("Basic functionality") do
   test_response :hello do |res|
     id = res[:your_id].to_i
     assert_includes(1..Float::INFINITY, id)
-    @client.id = id
+    @connection.id = id
 
     # Remember #request doesn’t wait for the response!
     request :invalidrequesttype

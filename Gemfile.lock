@@ -1,6 +1,6 @@
 GIT
   remote: http://git.pegasus-alpha.eu/openrubyrmk/common.git
-  revision: 8b7a5b037908aede7fc5170cb2999c18be41856a
+  revision: 5574ca11c6fa3f998fa2e34d86a2f5eb4cf77dee
   specs:
     openrubyrmk-common (0.0.1.dev)
       nokogiri
